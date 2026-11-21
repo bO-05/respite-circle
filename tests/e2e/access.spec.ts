@@ -87,10 +87,9 @@ test("a caregiver is refused the desk and its policy page with no coordinator da
 
   for (const path of ["/desk", "/desk/policy", "/desk/audit"]) {
     const response = await context.request.get(path, { maxRedirects: 0 });
-    expect([307, 308], `${path} must refuse a caregiver`).toContain(
-      response.status(),
-    );
-    expect(response.headers()["location"] ?? "").toContain("/unauthorized");
+    // The shell feature replaced the redirect with the real 403 page, so the
+    // refusal carries the status that matches its meaning.
+    expect(response.status(), `${path} must refuse a caregiver`).toBe(403);
     const body = await response.text();
     expect(body).not.toContain("Grace Whitfield");
     expect(body).not.toContain("Daniel Okafor");
@@ -98,7 +97,7 @@ test("a caregiver is refused the desk and its policy page with no coordinator da
   }
 
   await page.goto("/desk");
-  expect(new URL(page.url()).pathname).toBe("/unauthorized");
+  expect(new URL(page.url()).pathname).toBe("/desk");
   await expect(
     page.getByRole("heading", { name: /that area isn't part of your role/i }),
   ).toBeVisible();

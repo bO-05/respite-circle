@@ -95,6 +95,32 @@
     outline: 3px solid var(--color-focus);
     outline-offset: 2px;
   }
+
+  /*
+    The skip link is the first focusable element in the document. It stays
+    off-screen until it has focus, then becomes a full 44px target so a
+    keyboard user can jump past the navigation.
+  */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 60;
+  }
+
+  .skip-link:focus {
+    left: 1rem;
+    top: 1rem;
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    padding: 0 1.25rem;
+    color: var(--color-ink);
+    font-weight: 600;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

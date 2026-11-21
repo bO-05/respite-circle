@@ -191,9 +191,15 @@ describe("git hygiene", () => {
 });
 
 describe("app scaffolding", () => {
-  it("renders the sample-data stamp on the landing page", () => {
-    const page = readText("src/app/(public)/page.tsx");
-    expect(page).toContain("Fictional church, fictional families. Sample data.");
+  it("renders the sample-data stamp from the root shell on every page", () => {
+    const copy = readText("src/lib/site-navigation.ts");
+    expect(copy).toContain("Fictional church, fictional families. Sample data.");
+
+    const footer = readText("src/components/site-footer.tsx");
+    expect(footer).toContain("SAMPLE_DATA_STAMP");
+
+    const layout = readText("src/app/layout.tsx");
+    expect(layout).toContain("<SiteFooter />");
   });
 
   it("ships no credential-shaped strings in app source or configuration", () => {

@@ -49,6 +49,17 @@ export const ROLE_LABEL: Record<Role, string> = {
 /** The desk belongs to the coordinator and the deputy only. */
 export const DESK_ROLES = ["coordinator", "deputy"] as const satisfies readonly Role[];
 
+/**
+ * The desk area's outer shell. The read-only pastor's one page
+ * (`/desk/metrics`) sits under it, so the shell must let them in; every desk
+ * page still names the narrower roles it serves.
+ */
+export const DESK_AREA_ROLES = [
+  "coordinator",
+  "deputy",
+  "pastor",
+] as const satisfies readonly Role[];
+
 /** The congregation board is for volunteers and the desk team. */
 export const BOARD_ROLES = [
   "volunteer",

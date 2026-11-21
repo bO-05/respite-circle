@@ -36,6 +36,11 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: process.env.PW_REUSE === "1",
     timeout: 240_000,
-    env: { NODE_ENV: "production" },
+    env: {
+      NODE_ENV: "production",
+      // Enables the test-only 500 probe (`/error-probe`); production builds
+      // run without it and the route answers 404.
+      RC_E2E: "1",
+    },
   },
 });

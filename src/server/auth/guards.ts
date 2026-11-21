@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { forbidden, redirect } from "next/navigation";
 import { NextResponse } from "next/server";
+import { cache } from "react";
 import { db } from "@/db/client";
 import { person } from "@/db/schema";
 import {
@@ -11,20 +11,20 @@ import {
   isRole,
   type Role,
 } from "./policy";
-import {
-  SESSION_COOKIE_NAME,
-  verifySessionToken,
-  type Session,
-} from "./session";
+import { readSession } from "./read-session";
+import type { Session } from "./session";
 
 /**
  * Server-side guards. Every private page, server action, and route handler
  * resolves the session here — hiding a link in the UI is never enforcement.
  *
- * Pages redirect to `/enter` (no session) or `/unauthorized` (wrong role).
- * Route handlers and actions get a JSON response or an AuthError, never a
- * redirect that a fetch caller would silently follow.
+ * Pages redirect to `/enter` when no session exists and render the real 403
+ * forbidden page when a signed-in person asks for another role's area. Route
+ * handlers and actions get a JSON response or an AuthError, never a redirect
+ * that a fetch caller would silently follow.
  */
+
+export { readSession };
 
 export type SessionPerson = {
   id: string;
@@ -39,54 +39,69 @@ export type Authorized = {
   person: SessionPerson;
 };
 
-/** Read and verify the signed `rc_session` cookie. */
-export async function readSession(): Promise<Session | null> {
-  const store = await cookies();
-  return verifySessionToken(store.get(SESSION_COOKIE_NAME)?.value);
-}
-
 /**
  * Confirm the signed identity still describes an active person in the same
  * church, and that the session's role is still one the person holds.
+ *
+ * Wrapped in React `cache()` and keyed on primitives so an area layout and its
+ * page share one query per request instead of paying two Neon round trips.
  */
+const loadSessionPersonCached = cache(
+  async (
+    personId: string,
+    churchId: string,
+    role: Role,
+  ): Promise<SessionPerson | null> => {
+    const rows = await db
+      .select({
+        id: person.id,
+        firstName: person.firstName,
+        lastName: person.lastName,
+        roles: person.roles,
+        churchId: person.churchId,
+      })
+      .from(person)
+      .where(
+        and(
+          eq(person.id, personId),
+          eq(person.churchId, churchId),
+          eq(person.active, true),
+        ),
+      )
+      .limit(1);
+
+    const row = rows[0];
+    if (!row) return null;
+
+    const roles = row.roles.filter(isRole);
+    if (!roles.includes(role)) return null;
+
+    return {
+      id: row.id,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      role,
+      churchId: row.churchId,
+    };
+  },
+);
+
 export async function loadSessionPerson(
   session: Session,
 ): Promise<SessionPerson | null> {
-  const rows = await db
-    .select({
-      id: person.id,
-      firstName: person.firstName,
-      lastName: person.lastName,
-      roles: person.roles,
-      churchId: person.churchId,
-    })
-    .from(person)
-    .where(
-      and(
-        eq(person.id, session.personId),
-        eq(person.churchId, session.churchId),
-        eq(person.active, true),
-      ),
-    )
-    .limit(1);
-
-  const row = rows[0];
-  if (!row) return null;
-
-  const roles = row.roles.filter(isRole);
-  if (!roles.includes(session.role)) return null;
-
-  return {
-    id: row.id,
-    firstName: row.firstName,
-    lastName: row.lastName,
-    role: session.role,
-    churchId: row.churchId,
-  };
+  return loadSessionPersonCached(
+    session.personId,
+    session.churchId,
+    session.role,
+  );
 }
 
 /**
- * Page guard. Redirects before any private query runs.
+ * Page guard. Redirects to the entry page when there is no session, and
+ * renders the real 403 page (`app/forbidden.tsx`) when a signed-in person asks
+ * for an area their role does not hold. Calling `forbidden()` before any JSX
+ * is returned keeps the response a true 403 instead of a streamed 200.
+ *
  * `allowed` omitted means "any signed-in person".
  */
 export async function requirePage(
@@ -99,7 +114,7 @@ export async function requirePage(
   }
 
   if (allowed && !canAccessRoles(session.role, allowed)) {
-    redirect("/unauthorized");
+    forbidden();
   }
 
   const personRow = await loadSessionPerson(session);
