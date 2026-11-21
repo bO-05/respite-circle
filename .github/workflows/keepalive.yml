@@ -6,6 +6,10 @@ name: Keep production warm
 #
 # The request budget is 15 s: comfortably above a cold wake. A non-2xx response
 # fails the run, so a broken production deployment is visible in Actions.
+#
+# GitHub's schedule event is best-effort: a five-minute cron can be delayed or
+# dropped under load. A dropped tick only means the next visitor pays a cold
+# start; /api/health still answers 200 because its probe budget is 8 s.
 on:
   schedule:
     - cron: "*/5 * * * *"
