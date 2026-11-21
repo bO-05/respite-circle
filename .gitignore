@@ -35,11 +35,6 @@
 *.tsbuildinfo
 next-env.d.ts
 
-# reference material copied into the repo for the mission; never committed
-/.research/
-/docs/respite-circle-source/
-/docs/submission/
-
 # misc
 .DS_Store
 *.pem
