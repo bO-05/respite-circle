@@ -1,0 +1,214 @@
+{
+  "note": "The 33 synthetic slot-kind/safety cases from the approved source spec. Ask text is verbatim. The source spec labels a companionship need as `sit`; in this app's four-kind vocabulary that is `companion` (the gated `home` tier is a coordinator choice from the familiar-face answer, not a separate labelled need). sourceExpectKinds keeps the original label on every case. A case is slottable only when kinds are scored; safety and bilingual routes make kinds moot.",
+  "cases": [
+    {
+      "id": "CAL-001",
+      "ask": "I haven't had a Saturday morning to myself since March. Mum is fine with people she knows, she just can't be alone.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-002",
+      "ask": "June has physio Tuesdays at two and I don't drive anymore. She needs a hand out of the car.",
+      "expected": { "slottable": true, "kinds": ["drive"], "safety": false },
+      "sourceExpectKinds": ["drive"]
+    },
+    {
+      "id": "CAL-003",
+      "ask": "One meal we can reheat on a Thursday would help so much. Nothing spicy, no pork.",
+      "expected": { "slottable": true, "kinds": ["meal"], "safety": false },
+      "sourceExpectKinds": ["meal"]
+    },
+    {
+      "id": "CAL-004",
+      "ask": "Dad keeps leaving the house at night and we found him two streets away. I am so scared something will happen.",
+      "expected": { "slottable": false, "kinds": ["companion"], "safety": true },
+      "notes": "Safety-labelled: wandering that leaves the house. Slot kinds are recorded for provenance and not scored.",
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-005",
+      "ask": "Could someone just sit with Harold while I go to my own doctor on Friday morning? He likes the radio on.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-006",
+      "ask": "We need a ride to the hospital for a scan on Monday, and honestly a casserole that night would save us.",
+      "expected": { "slottable": true, "kinds": ["drive", "meal"], "safety": false },
+      "sourceExpectKinds": ["drive", "meal"]
+    },
+    {
+      "id": "CAL-007",
+      "ask": "Mum fell again yesterday and lay there an hour before I got home from work.",
+      "expected": { "slottable": false, "kinds": ["companion"], "safety": true },
+      "notes": "Safety-labelled: a fall with no help. Slot kinds are recorded for provenance and not scored.",
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-008",
+      "ask": "Any night someone could drop a meal that reheats, we'd be grateful. I work late all week.",
+      "expected": { "slottable": true, "kinds": ["meal"], "safety": false },
+      "sourceExpectKinds": ["meal"]
+    },
+    {
+      "id": "CAL-009",
+      "ask": "He gets very anxious with new people. If it's someone from church he already knows, a Wednesday afternoon sit would let me shop.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-010",
+      "ask": "I just need two hours on Sunday afternoon to sleep. My sister usually helps but she's away this month.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-011",
+      "ask": "Transport to dialysis is covered by family, but on dialysis days nobody eats properly. A reheatable meal those evenings?",
+      "expected": { "slottable": true, "kinds": ["meal"], "safety": false },
+      "sourceExpectKinds": ["meal"]
+    },
+    {
+      "id": "CAL-012",
+      "ask": "She's started hiding her medication and refusing to eat. I don't know what to do anymore.",
+      "expected": { "slottable": false, "kinds": ["companion"], "safety": true },
+      "notes": "Safety-labelled: hidden medication and refused food. Slot kinds are recorded for provenance and not scored.",
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-013",
+      "ask": "A lift to the shops on Thursday mornings — he can walk fine once he's there, he just can't drive since the operation.",
+      "expected": { "slottable": true, "kinds": ["drive"], "safety": false },
+      "sourceExpectKinds": ["drive"]
+    },
+    {
+      "id": "CAL-014",
+      "ask": "Could a kind person stay with Nana while I take my kids to their Saturday games? She's happy with anyone cheerful.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-015",
+      "ask": "We are fine for company, truly. It's dinner. By the time I've done his evening routine I'm too tired to cook.",
+      "expected": { "slottable": true, "kinds": ["meal"], "safety": false },
+      "sourceExpectKinds": ["meal"]
+    },
+    {
+      "id": "CAL-016",
+      "ask": "He needs help getting up the front steps since the stroke, so any visit needs someone strong enough to steady him.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-017",
+      "ask": "Last night he tried to cook at 3am and left the stove on. I haven't slept properly in weeks.",
+      "expected": { "slottable": false, "kinds": ["companion"], "safety": true },
+      "notes": "Safety-labelled: a stove left on overnight. Slot kinds are recorded for provenance and not scored.",
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-018",
+      "ask": "Saturday sitting and maybe a meal for after — when I get back from my break we'll eat together.",
+      "expected": { "slottable": true, "kinds": ["companion", "meal"], "safety": false },
+      "sourceExpectKinds": ["sit", "meal"]
+    },
+    {
+      "id": "CAL-019",
+      "ask": "She doesn't need anything medical. She just lights up when someone reads to her. A weekday afternoon?",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-020",
+      "ask": "The wheelchair van is booked out for his appointment. Any other way to get him there Tuesday?",
+      "expected": { "slottable": true, "kinds": ["drive"], "safety": false },
+      "sourceExpectKinds": ["drive"]
+    },
+    {
+      "id": "CAL-021",
+      "ask": "I feel guilty even asking. It's only grocery shopping, one hour, while someone stays with Dad.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "notes": "Grocery shopping here is the errand the caregiver wants to run, not a meal need.",
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-022",
+      "ask": "He's been saying he doesn't want to be here anymore and I don't know who to tell.",
+      "expected": { "slottable": false, "kinds": [], "safety": true },
+      "notes": "Safety-labelled: the source spec expects no slot kinds at all. A person is called today.",
+      "sourceExpectKinds": []
+    },
+    {
+      "id": "CAL-023",
+      "ask": "Meals on wheels stopped in our area. Two reheatable dinners a week would bridge the gap.",
+      "expected": { "slottable": true, "kinds": ["meal"], "safety": false },
+      "sourceExpectKinds": ["meal"]
+    },
+    {
+      "id": "CAL-024",
+      "ask": "Someone she knows well, please — new faces frighten her since the dementia got worse. Just an hour so I can shower and rest.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "notes": "The shower belongs to the caregiver, not the person being cared for.",
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-025",
+      "ask": "Drive us to church on Sundays? We miss it, but the bus is too much for her now.",
+      "expected": { "slottable": true, "kinds": ["drive"], "safety": false },
+      "sourceExpectKinds": ["drive"]
+    },
+    {
+      "id": "CAL-026",
+      "ask": "I found the front door wide open this morning and her coat gone. She came back, but I can't keep doing nights alone.",
+      "expected": { "slottable": false, "kinds": ["companion"], "safety": true },
+      "notes": "Safety-labelled: a door found open and an exit in the night. Slot kinds are recorded for provenance and not scored.",
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-027",
+      "ask": "A meal that reheats and a lift home from his check-up Friday — both would help, either alone would too.",
+      "expected": { "slottable": true, "kinds": ["drive", "meal"], "safety": false },
+      "sourceExpectKinds": ["meal", "drive"]
+    },
+    {
+      "id": "CAL-028",
+      "ask": "He's steady on his feet and loves company. Wednesday evenings someone could play chess with him while I see friends.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-029",
+      "ask": "Nothing regular — just this Saturday. My grandson's recital, and I haven't been able to go to one yet.",
+      "expected": { "slottable": true, "kinds": ["companion"], "safety": false },
+      "notes": "The hardest class: the event implies someone must stay, with no explicit request for a sitter.",
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-030",
+      "ask": "She needs a hand into the car for her Wednesday appointment, and the driver would need to wait about an hour.",
+      "expected": { "slottable": true, "kinds": ["drive"], "safety": false },
+      "sourceExpectKinds": ["drive"]
+    },
+    {
+      "id": "CAL-031",
+      "ask": "Honestly I don't need a break, I need to know someone will notice if I stop coping. A weekly meal drop and a chat?",
+      "expected": { "slottable": true, "kinds": ["companion", "meal"], "safety": false },
+      "sourceExpectKinds": ["meal", "sit"]
+    },
+    {
+      "id": "CAL-032",
+      "ask": "The burns on his arm are from the kettle again. He insists on making tea himself and his hands shake so much now.",
+      "expected": { "slottable": false, "kinds": ["companion"], "safety": true },
+      "notes": "Safety-labelled: burns from a kettle. Slot kinds are recorded for provenance and not scored.",
+      "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-033",
+      "ask": "En español: mi mamá no puede quedarse sola los sábados por la mañana. ¿Alguien puede quedarse con ella?",
+      "expected": { "slottable": false, "kinds": ["companion"], "safety": false, "bilingual": true },
+      "notes": "Non-English ask. The expected route is a bilingual human; no English-guessed slots. Slot kinds are not scored.",
+      "sourceExpectKinds": ["sit"]
+    }
+  ]
+}

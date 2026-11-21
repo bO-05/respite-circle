@@ -57,23 +57,36 @@ function resolveBoolean(
   return { answer: false, confidence: defaultConfidence };
 }
 
-// Q1 — sitting / companionship
+// Q1 — sitting / companionship.
+// The calibration labels are the specification, so the evidence list covers the
+// phrasing a coordinator reads as "someone should be with this person": staying
+// with, visits, reading to, a chat, a check-in, and the exchange a caregiver
+// names for themselves ("so I can sleep", "haven't been able to go").
 const SIT_POSITIVE =
-  /\b(sit|sits|sitting|companion|companionship|company|keep (her|him|them) company|to myself|time to myself|few (quiet )?hours|quiet hours|a break|need a break|watch (her|him|them)|can'?t be alone|cannot be alone|not be alone|never alone|alone all day|on my own|respite)\b/i;
+  /\b(sit|sits|sitting|companion|companionship|company|keep (her|him|them) company|to myself|time to myself|few (quiet )?hours|quiet hours|a break|need a break|watch (her|him|them)|watch over|can'?t be alone|cannot be alone|not be alone|never alone|alone all day|on my own|respite|stays? with|staying with|be with (her|him|them)|keep an eye on|look after (her|him|them)|someone (reads?|visits?|stays?|sits?|comes?)|reads? to (her|him|them)|a visit|visits?|chat|notice if|so (i|we) (can|could) (sleep|rest|shower|shop|work|go|breathe|eat)|haven'?t been able to go|something to go to|need (a|some|two|three|four|few) (quiet )?hours?)\b/i;
+const SIT_REFUSAL =
+  /\b(fine for company|we'?re fine for company|don'?t need (any )?company|doesn'?t need company|no company needed|not lonely|never lonely)\b/i;
 const SIT_NEGATIVE =
-  /\b(don'?t need (company|someone)|doesn'?t need company|not lonely|never lonely)\b/i;
+  /\b(don'?t need (company|someone)|doesn'?t need (company|someone)|not lonely|never lonely)\b/i;
 
 // Q2 — transport that is not already arranged
 const TRANSPORT_POSITIVE =
-  /\b(ride|rides|transport|pick ?up|lift to|drive (her|him|them|us|to)|driving (her|him|them)|driver|no car|don'?t have a car|(don'?t|do not|can'?t|cannot) drive|needs? a lift|take (her|him|them) to)\b/i;
+  /\b(ride|rides|transport|pick ?up|lift to|lift (home|back)|drive (her|him|them|us|to)|driving (her|him|them)|driver|no car|don'?t have a car|(don'?t|do not|can'?t|cannot) drive|needs? a lift|take (her|him|them) to|wheelchair van|(any|some) other way to get)\b/i;
 const TRANSPORT_APPOINTMENT_NEED =
   /\b(take|bring|get|drive|ride|transport)\s+(?:\w+\s+){0,3}to\s+(?:the\s+)?(?:appointment|physio|physical therapy|clinic|hospital|dialysis|doctor|dentist)\b/i;
 const TRANSPORT_NEGATIVE =
-  /\b(have|has|got) (a |her |his |their )?(ride|lift|transport)|ride is (already )?arranged|transport is (already )?arranged|no (ride|transport) needed|don'?t need (a )?(ride|lift|transport)|someone (drives|takes) (her|him|them)\b/i;
+  /\b(have|has|got) (a |her |his |their )?(ride|lift|transport)|ride is (already )?arranged|transport is (already )?arranged|no (ride|transport) needed|don'?t need (a )?(ride|lift|transport)|someone (drives|takes) (her|him|them)|(transport|ride|lift)[^.;]{0,32}(is|are) (already )?(covered|arranged|handled|sorted)|(covered|arranged) by (family|friends|neighbours|neighbors|church)\b/i;
+// An ask that says the transport is already covered is answering Q2, not
+// asking for a driver. "Transport to dialysis is covered by family" is the
+// calibration case that exposed this.
+const TRANSPORT_EXPLICITLY_ARRANGED =
+  /\b(transport|ride|lift)[^.;]{0,32}(is|are|was|were)\s+(already\s+)?(covered|arranged|handled|sorted)\b|\b(covered|arranged)\s+by\s+(family|friends|neighbours|neighbors|church)\b/i;
 
-// Q3 — meal
+// Q3 — meal. "Grocery shopping" is an errand, not a meal; the calibration
+// labels treat it as companionship time. Groceries only count as a meal when
+// they are explicitly delivered.
 const MEAL_POSITIVE =
-  /\b(meal|meals|food|cook|cooking|cooked|dinner|supper|breakfast|groceries|grocery|reheat|reheatable|casserole|lasagna|soup|stew|hot dish)\b/i;
+  /\b(meal|meals|food|cook|cooking|cooked|dinner|supper|breakfast|reheat|reheatable|casserole|lasagna|soup|stew|hot dish|grocery delivery|groceries delivered)\b/i;
 const LUNCH_DELIVERY =
   /\b(bring|brings|deliver|delivers|drop off|make|makes|provide|prepare|skip|miss)(ed|ing|es)?\b[^.]{0,24}\blunch\b|\blunch\b[^.]{0,24}\b(bring|deliver|drop off|provide|prepare)\b/i;
 const MEAL_NEGATIVE =
@@ -91,9 +104,13 @@ const WINDOW_EVENING = /\b(evenings?|night time|at night|after work)\b/i;
 const WINDOW_CLOCK =
   /\b(?:at|around|by)\s+(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/i;
 
-// Q5 — immediate safety risk
+// Q5 — immediate safety risk.
+// Calibration cases added wandering that leaves the house, a hidden medication
+// or refused food, a door found open, burns, and "doesn't want to be here".
+// A stroke is only immediate when the ask says it is happening or just
+// happened; "since the stroke" is history, not an emergency.
 const SAFETY_POSITIVE =
-  /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt|hurting|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|missing|got lost|abuse|abusive|neglect|chest pain|stroke|seizure|overdose|suicid(?:e|al)|self.?harm|locked out|left the stove|stove on|fire|aggressive|violent|can'?t breathe|bleeding|police)\b/i;
+  /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt|hurting|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|gone missing|missing|got lost|locked out|abuse|abusive|neglect|chest pain|seizure|overdose|suicid(?:e|al)|self.?harm|can'?t breathe|bleeding|police|aggressive|violent|left the stove|stove on|fire|leav(?:e|es|ing) the (house|home|flat|apartment)|left the (house|home)|out of the house at night|found (her|him|them)[^.;]{0,24}(streets?|blocks?|miles?) away|hiding (her|his|their) (medication|meds|medicine|pills|tablets)|refus(?:es|ing) to eat|won'?t eat|stopped eating|not eating|doesn'?t want to be here|don'?t want to be here|no reason to live|better off dead|front door (wide )?open|coat gone|burn(?:s|ed|ing)?|(?:having|had|signs? of|suspected|possible) (?:a )?stroke|stroke (?:last night|this morning|today))\b/i;
 const SAFETY_NEGATIVE =
   /\b(no falls?|hasn'?t fallen|never fallen|not unsafe|no danger|safe|no injur(?:y|ies)|nothing dangerous|not in danger|no emergency)\b/i;
 
@@ -117,9 +134,9 @@ const MOBILITY_NEGATIVE =
 
 // Q9 — personal care
 const PERSONAL_CARE_POSITIVE =
-  /\b(medication|medications|meds|medicine|bathing|bathe|bathes|bath|shower(?:ing|s)?|toileting|toilet|incontinent|incontinence|diaper|nappy|lifting|lift (her|him|them)|transfers?|dressing|undressing|feeding|tube feed(?:ing)?|catheter|wound care|insulin|administer)\b/i;
+  /\b(medication|medications|meds|medicine|bathing|bathe|bathes|bath|shower(?:ing|s)?|toileting|toilet|incontinent|incontinence|diaper|nappy|lifting|lift (her|him|them)|transfers?|dressing|undressing|feeding|feeding tube|tube feed(?:ing)?|catheter|wound care|insulin|administer)\b/i;
 const PERSONAL_CARE_NEGATIVE =
-  /\b(no personal care|not personal care|no medication|no meds|(?:doesn'?t|does not|doesnt) (?:need|take) (?:help with )?medication|(?:doesn'?t|does not|doesnt) need help with (bathing|medication|toileting|dressing|feeding)|no lifting|can (bathe|dress|feed) (herself|himself|themselves))\b/i;
+  /\b(no personal care|not personal care|no medication|no meds|(?:doesn'?t|does not|doesnt) (?:need|take) (?:help with )?medication|(?:doesn'?t|does not|doesnt) need help with (bathing|medication|toileting|dressing|feeding)|no lifting|can (bathe|dress|feed) (herself|himself|themselves)|(?:showers?|bathes?|dresses?|feeds?|toilets?) (?:herself|himself|themselves)|(?:manages?|handles?) (?:her|his|their) own (?:shower|showering|bath|bathing|medication|medications|meds|medicine|tablets|pills|dressing|toileting)|takes? (?:her|his|their) own (?:medication|medications|meds|medicine|tablets|pills))\b/i;
 
 /**
  * Strip phrases where a care term is explicitly negated before running the
@@ -132,6 +149,32 @@ const NEGATED_CARE_TERM =
 
 function withoutNegatedCareTerms(text: string): string {
   return text.replace(NEGATED_CARE_TERM, " omitted ");
+}
+
+/**
+ * An ask can decline personal care in one clause and use a care word in
+ * another ("doesn't need help with bathing or medication"), describe the
+ * caregiver's own shower ("so I can shower and rest"), or say the person
+ * manages it themselves ("she manages her own shower"). None of those is a
+ * personal-care need, so they are removed before the positive rule runs.
+ */
+const PERSONAL_CARE_DECLINED_CLAUSE =
+  /\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without)\b[^.;]{0,80}?\b(?:personal care|medication|medications|meds|medicine|bathing|bathe|toileting|lifting|transfers?|dressing|feeding)\b[^.;]{0,48}/gi;
+const SELF_CARE_STATEMENT =
+  /\b(?:manages?|handles?|takes?) (?:her|his|their) own\b[^.;]{0,48}|\b(?:showers?|bathes?|dresses?|feeds?|toilets?) (?:herself|himself|themselves)\b/gi;
+const CAREGIVER_SELF_CARE =
+  /\b(?:so|while) (?:i|we) (?:can |could )?(?:shower|bathe|sleep|rest|shop|work|go|eat|breathe)\b/gi;
+
+function positiveTextForPersonalCare(text: string): string {
+  // The declined-clause and self-care strips run first, on the original words:
+  // "doesn't need help with bathing or medication" must lose the whole list,
+  // not just the first item, before the generic negation strip runs.
+  return withoutNegatedCareTerms(
+    text
+      .replace(PERSONAL_CARE_DECLINED_CLAUSE, " omitted ")
+      .replace(SELF_CARE_STATEMENT, " omitted ")
+      .replace(CAREGIVER_SELF_CARE, " omitted "),
+  );
 }
 
 function resolveWindow(text: string): PickOutcome {
@@ -194,17 +237,26 @@ function resolveReheat(text: string): PickOutcome {
 }
 
 function resolveTransport(text: string): BooleanOutcome {
-  const explicitNeed = matches(text, TRANSPORT_POSITIVE);
-  const appointmentNeed = matches(text, TRANSPORT_APPOINTMENT_NEED);
+  const explicitlyArranged = matches(text, TRANSPORT_EXPLICITLY_ARRANGED);
+  // Remove the arranged clause before looking for a need, so "transport to
+  // dialysis is covered by family" cannot match its own transport keyword.
+  const remaining = explicitlyArranged
+    ? text.replace(TRANSPORT_EXPLICITLY_ARRANGED, " omitted ")
+    : text;
+  const explicitNeed = matches(remaining, TRANSPORT_POSITIVE);
+  const appointmentNeed = matches(remaining, TRANSPORT_APPOINTMENT_NEED);
   const alreadyArranged = matches(text, TRANSPORT_NEGATIVE);
 
+  if (explicitlyArranged && !explicitNeed && !appointmentNeed) {
+    return { answer: false, confidence: EXPLICIT_NEGATIVE_CONFIDENCE };
+  }
   if ((explicitNeed || appointmentNeed) && alreadyArranged) {
     return { answer: false, confidence: AMBIGUOUS_CONFIDENCE };
   }
   if (explicitNeed || appointmentNeed) {
     return { answer: true, confidence: POSITIVE_CONFIDENCE };
   }
-  if (alreadyArranged) {
+  if (alreadyArranged || explicitlyArranged) {
     return { answer: false, confidence: EXPLICIT_NEGATIVE_CONFIDENCE };
   }
   return { answer: false, confidence: DEFAULT_NEGATIVE_CONFIDENCE };
@@ -229,8 +281,12 @@ function answerFor(
   text: string,
 ): { answer: boolean | string; confidence: number } {
   switch (questionId) {
-    case "Q1":
+    case "Q1": {
+      if (matches(text, SIT_REFUSAL)) {
+        return { answer: false, confidence: EXPLICIT_NEGATIVE_CONFIDENCE };
+      }
       return resolveBoolean(text, SIT_POSITIVE, SIT_NEGATIVE, 0.68);
+    }
     case "Q2":
       return resolveTransport(text);
     case "Q3":
@@ -262,13 +318,12 @@ function answerFor(
       );
     }
     case "Q9": {
-      const positiveText = withoutNegatedCareTerms(text);
       return resolveBoolean(
         text,
         PERSONAL_CARE_POSITIVE,
         PERSONAL_CARE_NEGATIVE,
         SAFETY_DEFAULT_CONFIDENCE,
-        positiveText,
+        positiveTextForPersonalCare(text),
       );
     }
     default:

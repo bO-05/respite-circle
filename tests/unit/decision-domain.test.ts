@@ -283,3 +283,139 @@ describe("the deterministic keyword engine", () => {
     expect(answers.map((answer) => answer.questionId)).toEqual(["Q5", "Q9"]);
   });
 });
+
+describe("keyword-engine rules fixed by the calibration labels", () => {
+  const answer = (askText: string, questionId: string) =>
+    runKeywordEngine({ askText, questions: seedQuestionSet }).find(
+      (entry) => entry.questionId === questionId,
+    )?.answer;
+
+  it("recognises staying with, visiting, and a chat as companionship", () => {
+    expect(
+      answer(
+        "Could a kind person stay with Nana while I take my kids to their Saturday games?",
+        "Q1",
+      ),
+    ).toBe(true);
+    expect(
+      answer(
+        "He needs help getting up the steps, so any visit needs someone strong enough to steady him.",
+        "Q1",
+      ),
+    ).toBe(true);
+    expect(
+      answer(
+        "I need to know someone will notice if I stop coping. A chat would help.",
+        "Q1",
+      ),
+    ).toBe(true);
+  });
+
+  it("recognises the exchange a caregiver names for themselves", () => {
+    expect(
+      answer(
+        "I just need two hours on Sunday afternoon to sleep. My sister usually helps but she is away.",
+        "Q1",
+      ),
+    ).toBe(true);
+    expect(
+      answer(
+        "Just an hour so I can shower and rest.",
+        "Q1",
+      ),
+    ).toBe(true);
+    expect(
+      answer(
+        "Nothing regular, just this Saturday. My grandson's recital, and I haven't been able to go to one yet.",
+        "Q1",
+      ),
+    ).toBe(true);
+  });
+
+  it("treats 'fine for company' as a refusal, not a companionship request", () => {
+    expect(
+      answer(
+        "We are fine for company, truly. It's dinner. By the time I've done his evening routine I'm too tired to cook.",
+        "Q1",
+      ),
+    ).toBe(false);
+  });
+
+  it("does not turn grocery shopping into a meal need", () => {
+    expect(
+      answer(
+        "It's only grocery shopping, one hour, while someone stays with Dad.",
+        "Q3",
+      ),
+    ).toBe(false);
+  });
+
+  it("treats transport the family already covers as an explicit no", () => {
+    expect(
+      answer(
+        "Transport to dialysis is covered by family, but on dialysis days nobody eats properly.",
+        "Q2",
+      ),
+    ).toBe(false);
+  });
+
+  it("flags wandering that leaves the house", () => {
+    expect(
+      answer(
+        "Dad keeps leaving the house at night and we found him two streets away.",
+        "Q5",
+      ),
+    ).toBe(true);
+  });
+
+  it("flags hidden medication, refused food, an open door, burns, and self-harm language", () => {
+    const safetyAsks = [
+      "She's started hiding her medication and refusing to eat.",
+      "I found the front door wide open this morning and her coat gone.",
+      "The burns on his arm are from the kettle again.",
+      "He's been saying he doesn't want to be here anymore.",
+    ];
+    for (const askText of safetyAsks) {
+      expect(answer(askText, "Q5"), askText).toBe(true);
+    }
+  });
+
+  it("does not treat a stroke in the past as an immediate emergency", () => {
+    expect(
+      answer(
+        "He needs help getting up the front steps since the stroke, so any visit needs someone strong enough to steady him.",
+        "Q5",
+      ),
+    ).toBe(false);
+  });
+
+  it("treats the caregiver's own shower as not personal care", () => {
+    expect(
+      answer(
+        "New faces frighten her since the dementia got worse. Just an hour so I can shower and rest.",
+        "Q9",
+      ),
+    ).toBe(false);
+  });
+
+  it("treats self-care statements and declined care lists as not personal care", () => {
+    expect(
+      answer(
+        "She manages her own shower and takes her own tablets. Could someone sit with her Tuesday?",
+        "Q9",
+      ),
+    ).toBe(false);
+    expect(
+      answer(
+        "No personal care needed — she walks, dresses and eats on her own. We just need a lift to church.",
+        "Q9",
+      ),
+    ).toBe(false);
+    expect(
+      answer(
+        "He doesn't need help with bathing or medication — honestly he's more capable than me.",
+        "Q9",
+      ),
+    ).toBe(false);
+  });
+});
