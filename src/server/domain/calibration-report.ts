@@ -41,6 +41,11 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
   lines.push(
     `**Cases:** ${report.caseCount} total · ${report.slottableCaseCount} slottable · ${report.safetyCaseCount} safety · ${report.personalCareCaseCount} personal-care`,
   );
+  if (report.source === "deterministic-baseline") {
+    lines.push(
+      "**Model calls:** none — the deterministic baseline runs the labelled rules engine over every case.",
+    );
+  }
   lines.push("");
   lines.push(
     "These numbers describe this configuration on this date against these hand-labelled fictional cases. They are not a claim about any other model, prompt, date, or case set. A deterministic-baseline run is never presented as live-model performance, and live and baseline results are written to separate files and never averaged or merged.",

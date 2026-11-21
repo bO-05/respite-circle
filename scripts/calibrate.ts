@@ -171,7 +171,9 @@ async function runCases(
       latencyMs: result.latencyMs,
       provider: result.provider,
       model: result.model,
-      degraded: result.degraded,
+      // The deterministic engine is the requested engine in a baseline run, not
+      // a fallback from a live provider.
+      degraded: mode === "baseline" ? false : result.degraded,
       providerAttempted,
       invalidResponse,
     };
