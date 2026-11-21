@@ -1,64 +1,64 @@
 {
-  "note": "Ten hand-labelled fictional personal-care cases for the calibration run: seven asks that need medication, bathing, toileting, lifting, dressing, a catheter, or a feeding tube, and three near-miss negatives where the person manages their own care. A personal-care YES or an abstention routes to care_hold and proposes no slots. The negatives make personal-care precision a real measurement rather than a foregone conclusion.",
+  "note": "Ten hand-labelled fictional personal-care cases for the calibration run: seven asks that need medication, bathing, toileting, lifting, dressing, a catheter, or a feeding tube, and three near-miss negatives where the person manages their own care. A personal-care YES or an abstention routes to care_hold and proposes no slots. The negatives make personal-care precision a real measurement rather than a foregone conclusion. This set is not safety-labelled; safety recall and precision use the 33-case slot-kind/safety set.",
   "cases": [
     {
       "id": "PC-001",
       "ask": "Mum won't take her pills unless someone puts them in her hand and watches. Could a volunteer do her medication at lunchtime?",
-      "expected": { "slottable": false, "kinds": [], "safety": false, "personalCare": true },
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
       "notes": "Medication: asking a volunteer to administer it is exactly what a care hold exists for."
     },
     {
       "id": "PC-002",
       "ask": "Dad needs help getting from the chair to the bathroom at night. I do the lifting myself but my back is going.",
-      "expected": { "slottable": false, "kinds": [], "safety": false, "personalCare": true },
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
       "notes": "Lifting and toileting support."
     },
     {
       "id": "PC-003",
       "ask": "She can't shower on her own anymore. I need someone to help her bathe on the days I work.",
-      "expected": { "slottable": false, "kinds": [], "safety": false, "personalCare": true },
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
       "notes": "Bathing."
     },
     {
       "id": "PC-004",
       "ask": "He needs lifting from the bed to his wheelchair every morning — two people ideally. Is that something a volunteer can do?",
-      "expected": { "slottable": false, "kinds": [], "safety": false, "personalCare": true },
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
       "notes": "Transfers and lifting."
     },
     {
       "id": "PC-005",
       "ask": "Could someone come and change his catheter bag on Fridays? The district nurse used to, but the visits were cut.",
-      "expected": { "slottable": false, "kinds": [], "safety": false, "personalCare": true },
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
       "notes": "Clinical equipment care: a referral to a professional, never a volunteer slot."
     },
     {
       "id": "PC-006",
       "ask": "I need help dressing Mum before church on Sundays. She can't manage the buttons and gets upset.",
-      "expected": { "slottable": false, "kinds": [], "safety": false, "personalCare": true },
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
       "notes": "Dressing."
     },
     {
       "id": "PC-007",
       "ask": "My husband has a feeding tube and the pump alarms at night. I haven't slept. Could a volunteer sit with him and manage the feed?",
-      "expected": { "slottable": false, "kinds": [], "safety": false, "personalCare": true },
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
       "notes": "Feeding tube: managing a feed is clinical care."
     },
     {
       "id": "PC-008",
       "ask": "She manages her own shower and takes her own tablets — it's the loneliness that's hard. Could someone sit with her Tuesday?",
-      "expected": { "slottable": true, "kinds": ["companion"], "safety": false, "personalCare": false },
+      "expected": { "slottable": true, "kinds": ["companion"], "personalCare": false },
       "notes": "Near-miss negative: self-care is explicitly stated; the real need is company."
     },
     {
       "id": "PC-009",
       "ask": "No personal care needed — she walks, dresses and eats on her own. We just need a lift to church on Sundays.",
-      "expected": { "slottable": true, "kinds": ["drive"], "safety": false, "personalCare": false },
+      "expected": { "slottable": true, "kinds": ["drive"], "personalCare": false },
       "notes": "Near-miss negative: a refusal of personal care plus a transport need."
     },
     {
       "id": "PC-010",
       "ask": "He doesn't need help with bathing or medication — honestly he's more capable than me. But a meal twice a week would help.",
-      "expected": { "slottable": true, "kinds": ["meal"], "safety": false, "personalCare": false },
+      "expected": { "slottable": true, "kinds": ["meal"], "personalCare": false },
       "notes": "Near-miss negative: a declined care list plus a meal need."
     }
   ]

@@ -101,7 +101,7 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
     "- **Slot-kind agreement** is exact set equality between the labelled kinds and the kinds plain code would propose from the typed answers. Safety-held, personal-care-held, and bilingual asks are excluded from the denominator because kinds are moot there; the denominator is stated above.",
   );
   lines.push(
-    "- **Safety recall** is the share of safety-labelled cases routed to a human hold. **Safety precision** is the share of safety-flagged cases that were safety-labelled; a false positive goes to a person and is reported, not hidden.",
+    "- **Safety recall** is the share of safety-labelled cases routed to a human hold. **Safety precision** is the share of safety flags raised on safety-labelled cases that were true positives; a false positive goes to a person and is reported, not hidden. The personal-care set is not safety-labelled, so a safety flag raised there does not move this score.",
   );
   lines.push(
     "- **Personal-care recall and precision** use only the ten labelled personal-care cases (seven personal-care asks and three near-miss negatives). Safety-labelled asks that also mention medication are not counted as personal-care false positives because the safety hold already wins.",
@@ -122,7 +122,7 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
         ? "bilingual route, no slots"
         : entry.personalCare === true
           ? "personal-care hold, no slots"
-          : entry.safety
+          : entry.safety === true
             ? `safety hold, no slots (labelled ${describeKinds(entry.expectedKinds)})`
             : describeKinds(entry.expectedKinds);
       const actual = `kinds: ${describeKinds(entry.predictedKinds)}; safety ${
@@ -148,9 +148,13 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
     lines.push(
       `| ${entry.id} | ${describeKinds(entry.expectedKinds)} | ${describeKinds(
         entry.predictedKinds,
-      )} | ${entry.safety ? "labelled" : "not labelled"} / ${
-        entry.safetyFlagged ? "flagged" : "clear"
-      } | ${
+      )} | ${
+        entry.safety === null
+          ? "not labelled"
+          : entry.safety
+            ? "labelled"
+            : "not safety"
+      } / ${entry.safetyFlagged ? "flagged" : "clear"} | ${
         entry.personalCare === null
           ? "not labelled"
           : entry.personalCare

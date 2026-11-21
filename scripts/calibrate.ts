@@ -108,13 +108,17 @@ function uniformValue(values: readonly string[], what: string): string {
 
 /**
  * Cases that never called a provider (non-English, empty, or contract-guarded)
- * carry the routing label instead of the engine's model. The run's provider and
- * model come from the cases the engine actually answered.
+ * carry the routing label instead of the engine's model. A live run may also
+ * contain a few cases that fell back to the labelled rules engine; the run's
+ * provider and model come from the provider's successful answers, while each
+ * per-case row keeps its own provider and model.
  */
 function engineOutcomes(
   outcomes: readonly CalibrationOutcome[],
 ): readonly CalibrationOutcome[] {
   const attempted = outcomes.filter((outcome) => outcome.providerAttempted);
+  const answeredByProvider = attempted.filter((outcome) => !outcome.degraded);
+  if (answeredByProvider.length > 0) return answeredByProvider;
   return attempted.length > 0 ? attempted : outcomes;
 }
 

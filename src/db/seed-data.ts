@@ -224,19 +224,24 @@ export const seedQuestionSet: PolicyQuestion[] = [
   {
     id: "Q1",
     key: "sit",
-    text: "Would sitting with them for a few hours help?",
+    // Wording follows the approved source spec plus the calibration log's
+    // documented fix: name the evidence a coordinator reads as companionship,
+    // not only the word "sitting".
+    text: "Does this ask contain a sitting or companionship need (someone staying with them, keeping them company, visiting, or giving the caregiver a break)?",
     answerType: "yesno",
   },
   {
     id: "Q2",
     key: "transport",
-    text: "Is a ride needed for an appointment, and is it not already arranged?",
+    text: "Does this ask contain a transport need that is not already arranged (a ride or drive to an appointment, church, the shops, or anywhere else)?",
     answerType: "yesno",
   },
   {
     id: "Q3",
     key: "meal",
-    text: "Would a meal they can reheat help this week?",
+    // Reheat preference is Q7; asking it here made the model answer no when the
+    // meal was for later.
+    text: "Does this ask contain a meal need (meals, dinners, food, or groceries delivered)?",
     answerType: "yesno",
   },
   {
@@ -257,7 +262,7 @@ export const seedQuestionSet: PolicyQuestion[] = [
   {
     id: "Q5",
     key: "safety",
-    text: "Does anything here suggest an immediate safety risk?",
+    text: "Does anything in this ask suggest someone may be unsafe right now (a fall with no help, wandering, a medical emergency, or harm)?",
     answerType: "yesno",
     samples: 3,
   },
@@ -283,7 +288,7 @@ export const seedQuestionSet: PolicyQuestion[] = [
   {
     id: "Q9",
     key: "personal_care",
-    text: "Is help needed with medication, bathing, toileting, or lifting?",
+    text: "Does this ask involve personal care (medication, bathing, toileting, dressing, lifting, or transfers)?",
     answerType: "yesno",
     samples: 3,
   },

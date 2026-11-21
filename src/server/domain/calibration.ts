@@ -69,7 +69,8 @@ const ExpectedSchema = z.strictObject({
   slottable: z.boolean(),
   /** The care kinds a careful coordinator would assign, in app vocabulary. */
   kinds: z.array(SlotKindSchema),
-  safety: z.boolean(),
+  /** Present only in the slot-kind/safety set; absent means "not labelled". */
+  safety: z.boolean().optional(),
   /** Present only in the personal-care set; absent means "not labelled". */
   personalCare: z.boolean().optional(),
   /** True when the expected route is the bilingual coordinator route. */
@@ -125,7 +126,7 @@ export function parseCalibrationDataset(
     }
     seen.add(entry.id);
 
-    if (entry.expected.safety && entry.expected.slottable) {
+    if (entry.expected.safety === true && entry.expected.slottable) {
       throw new CalibrationHarnessError(
         `${label} case ${entry.id} is safety-labelled and slottable; safety routes to a human and constructs no slots.`,
       );
@@ -232,7 +233,7 @@ export type CalibrationCaseResult = {
   ask: string;
   expectedKinds: SlotKind[];
   predictedKinds: SlotKind[];
-  safety: boolean;
+  safety: boolean | null;
   safetyFlagged: boolean;
   personalCare: boolean | null;
   personalCareFlagged: boolean;
@@ -349,15 +350,16 @@ function evaluateCase(
       } with ${describeKinds(outcome.predictedKinds)}`;
     }
   } else if (expected.personalCare === false) {
-    pass = !outcome.personalCareFlagged && !outcome.safetyFlagged && kindsMatch;
+    const safetyOk = expected.safety === undefined || !outcome.safetyFlagged;
+    pass = !outcome.personalCareFlagged && safetyOk && kindsMatch;
     if (!pass) {
-      failure = `expected ${describeKinds(expected.kinds)} with no personal-care or safety hold, got ${describeKinds(
+      failure = `expected ${describeKinds(expected.kinds)} with no personal-care hold, got ${describeKinds(
         outcome.predictedKinds,
-      )} (personal care ${outcome.personalCareFlagged ? "flagged" : "clear"}, safety ${
-        outcome.safetyFlagged ? "flagged" : "clear"
-      })`;
+      )} (personal care ${
+        outcome.personalCareFlagged ? "flagged" : "clear"
+      }${safetyOk ? "" : ", safety held"})`;
     }
-  } else if (expected.safety) {
+  } else if (expected.safety === true) {
     pass = outcome.safetyFlagged && outcome.predictedKinds.length === 0;
     if (!pass) {
       failure = `expected a safety hold, got ${
@@ -365,7 +367,7 @@ function evaluateCase(
       } with ${describeKinds(outcome.predictedKinds)}`;
     }
   } else if (scoredForKinds) {
-    pass = kindsMatch && !outcome.safetyFlagged && !outcome.personalCareFlagged;
+    pass = kindsMatch;
     if (!pass) {
       failure = `expected ${describeKinds(expected.kinds)}, got ${describeKinds(
         outcome.predictedKinds,
@@ -385,7 +387,7 @@ function evaluateCase(
     ask: entry.ask,
     expectedKinds: canonicalKinds(expected.kinds),
     predictedKinds: canonicalKinds(outcome.predictedKinds),
-    safety: expected.safety,
+    safety: expected.safety ?? null,
     safetyFlagged: outcome.safetyFlagged,
     personalCare: expected.personalCare ?? null,
     personalCareFlagged: outcome.personalCareFlagged,
@@ -469,9 +471,11 @@ export function scoreCalibration(
   const slotKindCorrect = slottable.filter((entry) => entry.pass).length;
   const slotKindDenominator = slottable.length;
 
-  const safetyCases = perCase.filter((entry) => entry.safety);
+  const safetyCases = perCase.filter((entry) => entry.safety === true);
   const safetyTruePositives = safetyCases.filter((entry) => entry.safetyFlagged);
-  const safetyFlagged = perCase.filter((entry) => entry.safetyFlagged);
+  const safetyFlagged = perCase.filter(
+    (entry) => entry.safety !== null && entry.safetyFlagged,
+  );
 
   const personalCareCases = perCase.filter((entry) => entry.personalCare !== null);
   const personalCarePositives = personalCareCases.filter(
