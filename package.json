@@ -11,16 +11,17 @@
     "start": "next start -p 3130",
     "typecheck": "next typegen && tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
-    "test": "vitest run --pool=forks --maxWorkers=2",
+    "test": "vitest run --pool=forks --maxWorkers=2 && vitest run --config vitest.integration.config.ts --pool=forks --maxWorkers=1",
     "test:unit": "vitest run --config vitest.unit.config.ts --pool=forks --maxWorkers=2",
     "test:integration": "vitest run --config vitest.integration.config.ts --pool=forks --maxWorkers=1",
     "test:e2e": "playwright test --workers=1",
     "calibrate": "npx tsx scripts/calibrate.ts",
     "calibrate:baseline": "npx tsx scripts/calibrate.ts --baseline",
     "db:generate": "npx drizzle-kit generate",
-    "db:migrate": "npx drizzle-kit migrate",
+    "db:migrate": "npx tsx scripts/db-migrate.ts",
     "db:seed": "npx tsx src/db/seed.ts",
-    "db:reset": "npx tsx scripts/reset-demo.ts"
+    "db:reset": "npx tsx scripts/reset-demo.ts",
+    "db:verify": "npx tsx scripts/verify-seed.ts"
   },
   "dependencies": {
     "@ai-sdk/mistral": "4.0.89",

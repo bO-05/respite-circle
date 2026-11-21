@@ -49,6 +49,32 @@ Every variable is documented with an empty value in `.env.example`; real values
 live in `.env.local` (never committed) or in the Vercel dashboard. Only
 `NEXT_PUBLIC_APP_URL` is public; nothing secret carries a `NEXT_PUBLIC_` prefix.
 
+## Database
+
+Neon Postgres 18. `DATABASE_URL` is the pooled connection the app uses at
+runtime; `DATABASE_URL_UNPOOLED` is the direct connection used by migrations,
+seed, reset, and verification. Both must be Neon strings; there is no local
+database server.
+
+```powershell
+npm run db:generate   # write a migration from src/db/schema.ts
+$env:RC_SEED_ALLOW_REMOTE='1'
+npm run db:migrate    # apply committed migrations
+npm run db:seed       # deterministic fictional cast (idempotent)
+npm run db:verify     # print row counts; non-zero exit when a row is missing
+npm run db:reset      # truncate the demo tables and reseed
+```
+
+Writable targets refuse to run without `RC_SEED_ALLOW_REMOTE=1` for the app
+database, or `RC_DB_BRANCH=e2e` for the isolated test database
+`respite_circle_e2e`. Integration tests (`npm test`) apply the committed
+migrations and truncate only that test database.
+
+The seed creates Grace Community Church, the families Marta/Elena, David/June,
+and Priya/Mr. Rao, coordinator Grace, deputy Pastor Daniel, volunteers Ruth,
+Sara, Tom, and Ben, one policy version, and four upcoming Tuesday Respite
+Morning sessions (10:00–14:00).
+
 ## Port
 
 The app uses **3130** for development, production, and Playwright.

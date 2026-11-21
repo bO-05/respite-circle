@@ -1,20 +1,32 @@
 import { NextResponse } from "next/server";
+import { sql } from "@/db/client";
 
-// The database probe is added with the Drizzle client in the schema feature.
-// Until then the endpoint reports the truth: no database is configured here.
+// Health must never be prerendered: it performs one live `SELECT 1`.
+// Neon suspends an idle compute, so the first hit after a quiet period can
+// take several seconds; the probe stays a single statement on purpose.
 export const dynamic = "force-dynamic";
 
-export function GET() {
+export async function GET() {
   const providerConfigured = Boolean(
     process.env.MISTRAL_API_KEY ||
       process.env.HF_TOKEN ||
       process.env.OPENROUTER_API_KEY,
   );
 
-  return NextResponse.json({
-    ok: true,
-    db: "unconfigured",
-    provider: providerConfigured ? "configured" : "unconfigured",
-    version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
-  });
+  let db: "ok" | "down" = "ok";
+  try {
+    await sql`SELECT 1`;
+  } catch {
+    db = "down";
+  }
+
+  return NextResponse.json(
+    {
+      ok: db === "ok",
+      db,
+      provider: providerConfigured ? "configured" : "unconfigured",
+      version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
+    },
+    { status: db === "ok" ? 200 : 503 },
+  );
 }
