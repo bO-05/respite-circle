@@ -5,6 +5,8 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Respite Circle",
   description: "A church-run break for the family caregiver.",
+  // Access links carry a bearer token in the path; never leak it in a Referer.
+  referrer: "no-referrer",
 };
 
 export default function RootLayout({
