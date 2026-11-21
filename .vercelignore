@@ -1,0 +1,12 @@
+# Never upload local secrets or local-only reference material to Vercel.
+# Vercel reads this in addition to .gitignore when it builds the upload.
+.env.local
+.env.vercel.local
+.env.*.local
+.research/
+docs/
+test-results/
+playwright-report/
+coverage/
+.next/
+node_modules/

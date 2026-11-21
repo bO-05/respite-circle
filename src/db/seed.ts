@@ -16,6 +16,7 @@ import {
   seedSessions,
   seedVolunteers,
 } from "./seed-data";
+import { requireRemoteTarget } from "./remote-target";
 import { assertWritableTarget, requireDirectUrl } from "./target";
 
 export type SeedDb = PostgresJsDatabase<typeof schema> & { $client: Sql };
@@ -206,10 +207,13 @@ export function isDirectRun(metaUrl: string): boolean {
 async function main(): Promise<void> {
   loadEnvLocal();
 
-  const url = requireDirectUrl(
-    "DATABASE_URL_UNPOOLED",
-    process.env.DATABASE_URL_UNPOOLED,
-  );
+  const remote = process.argv.includes("--remote");
+  const url = remote
+    ? requireRemoteTarget("db:seed:remote")
+    : requireDirectUrl(
+        "DATABASE_URL_UNPOOLED",
+        process.env.DATABASE_URL_UNPOOLED,
+      );
   assertWritableTarget(url);
 
   const client = postgres(url, {

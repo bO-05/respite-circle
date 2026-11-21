@@ -1,0 +1,33 @@
+name: Keep production warm
+
+# Neon suspends an idle compute. This is the shortest schedule GitHub supports
+# (every five minutes), and it keeps the production database awake so the first
+# visitor after a quiet period does not pay the measured 5.4-5.6 s wake.
+#
+# The request budget is 15 s: comfortably above a cold wake. A non-2xx response
+# fails the run, so a broken production deployment is visible in Actions.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: GET /api/health
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Warm the production health endpoint
+        env:
+          HEALTH_URL: https://respite-circle.vercel.app/api/health
+        run: |
+          set -eu
+          curl --fail --silent --show-error --location --max-time 15 "$HEALTH_URL"
+          echo

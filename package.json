@@ -19,7 +19,9 @@
     "calibrate:baseline": "npx tsx scripts/calibrate.ts --baseline",
     "db:generate": "npx drizzle-kit generate",
     "db:migrate": "npx tsx scripts/db-migrate.ts",
+    "db:migrate:remote": "npx tsx scripts/db-migrate.ts --remote",
     "db:seed": "npx tsx src/db/seed.ts",
+    "db:seed:remote": "npx tsx src/db/seed.ts --remote",
     "db:reset": "npx tsx scripts/reset-demo.ts",
     "db:verify": "npx tsx scripts/verify-seed.ts"
   },
