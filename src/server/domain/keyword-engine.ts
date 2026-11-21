@@ -1,0 +1,301 @@
+import type { PolicyQuestion } from "@/db/schema";
+
+/**
+ * The deterministic keyword engine: the labelled last resort.
+ *
+ * It never writes a sentence. It maps the caregiver's own words onto the same
+ * nine typed questions with the same closed answers the model must use, and it
+ * is always labelled `provider: "deterministic"` / `model: "rule-engine-v1"`.
+ *
+ * The rules are conservative: a signal and its negation in the same ask makes
+ * the answer abstain (confidence below 0.60), which routes safety and personal
+ * care to a human rather than a slot. Calibration labels are the specification;
+ * when the baseline misses, fix a rule here rather than the labels.
+ */
+
+export type KeywordAnswer = {
+  questionId: string;
+  answerType: "yesno" | "pick";
+  answer: boolean | string;
+  confidence: number;
+};
+
+type BooleanOutcome = { answer: boolean; confidence: number };
+type PickOutcome = { answer: string; confidence: number };
+
+const AMBIGUOUS_CONFIDENCE = 0.45;
+const POSITIVE_CONFIDENCE = 0.9;
+const EXPLICIT_NEGATIVE_CONFIDENCE = 0.86;
+const DEFAULT_NEGATIVE_CONFIDENCE = 0.72;
+const SAFETY_DEFAULT_CONFIDENCE = 0.78;
+
+function matches(text: string, pattern: RegExp): boolean {
+  return pattern.test(text);
+}
+
+/**
+ * A positive signal plus its negation is not a licence to answer NO: it
+ * abstains, so a safety flag or a slot is left to a person.
+ */
+function resolveBoolean(
+  text: string,
+  positive: RegExp,
+  negative: RegExp,
+  defaultConfidence = DEFAULT_NEGATIVE_CONFIDENCE,
+  positiveText: string = text,
+): BooleanOutcome {
+  const positiveHit = matches(positiveText, positive);
+  const negativeHit = matches(text, negative);
+
+  if (positiveHit && negativeHit) {
+    return { answer: false, confidence: AMBIGUOUS_CONFIDENCE };
+  }
+  if (positiveHit) return { answer: true, confidence: POSITIVE_CONFIDENCE };
+  if (negativeHit) {
+    return { answer: false, confidence: EXPLICIT_NEGATIVE_CONFIDENCE };
+  }
+  return { answer: false, confidence: defaultConfidence };
+}
+
+// Q1 — sitting / companionship
+const SIT_POSITIVE =
+  /\b(sit|sits|sitting|companion|companionship|company|keep (her|him|them) company|to myself|time to myself|few (quiet )?hours|quiet hours|a break|need a break|watch (her|him|them)|can'?t be alone|cannot be alone|not be alone|never alone|alone all day|on my own|respite)\b/i;
+const SIT_NEGATIVE =
+  /\b(don'?t need (company|someone)|doesn'?t need company|not lonely|never lonely)\b/i;
+
+// Q2 — transport that is not already arranged
+const TRANSPORT_POSITIVE =
+  /\b(ride|rides|transport|pick ?up|lift to|drive (her|him|them|us|to)|driving (her|him|them)|driver|no car|don'?t have a car|(don'?t|do not|can'?t|cannot) drive|needs? a lift|take (her|him|them) to)\b/i;
+const TRANSPORT_APPOINTMENT_NEED =
+  /\b(take|bring|get|drive|ride|transport)\s+(?:\w+\s+){0,3}to\s+(?:the\s+)?(?:appointment|physio|physical therapy|clinic|hospital|dialysis|doctor|dentist)\b/i;
+const TRANSPORT_NEGATIVE =
+  /\b(have|has|got) (a |her |his |their )?(ride|lift|transport)|ride is (already )?arranged|transport is (already )?arranged|no (ride|transport) needed|don'?t need (a )?(ride|lift|transport)|someone (drives|takes) (her|him|them)\b/i;
+
+// Q3 — meal
+const MEAL_POSITIVE =
+  /\b(meal|meals|food|cook|cooking|cooked|dinner|supper|breakfast|groceries|grocery|reheat|reheatable|casserole|lasagna|soup|stew|hot dish)\b/i;
+const LUNCH_DELIVERY =
+  /\b(bring|brings|deliver|delivers|drop off|make|makes|provide|prepare|skip|miss)(ed|ing|es)?\b[^.]{0,24}\blunch\b|\blunch\b[^.]{0,24}\b(bring|deliver|drop off|provide|prepare)\b/i;
+const MEAL_NEGATIVE =
+  /\b(meals? (are|is) (covered|arranged|handled|taken care of)|no meal|don'?t need (a )?meal|don'?t need meals|food is (covered|arranged)|we'?re fine for food|we are fine for food)\b/i;
+
+// Q4 — window
+const WINDOW_FLEXIBLE =
+  /\b(flexible|any day|anytime|any time|no preference|whenever|whatever works)\b/i;
+const WINDOW_WEEKDAY_MORNING = /\bweekday mornings?\b/i;
+const WINDOW_WEEKDAY_AFTERNOON = /\bweekday afternoons?\b/i;
+const WINDOW_WEEKDAY_EVENING = /\bweekday evenings?\b/i;
+const WINDOW_MORNING = /\bmornings?\b/i;
+const WINDOW_AFTERNOON = /\bafternoons?\b/i;
+const WINDOW_EVENING = /\b(evenings?|night time|at night|after work)\b/i;
+const WINDOW_CLOCK =
+  /\b(?:at|around|by)\s+(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/i;
+
+// Q5 — immediate safety risk
+const SAFETY_POSITIVE =
+  /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt|hurting|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|missing|got lost|abuse|abusive|neglect|chest pain|stroke|seizure|overdose|suicid(?:e|al)|self.?harm|locked out|left the stove|stove on|fire|aggressive|violent|can'?t breathe|bleeding|police)\b/i;
+const SAFETY_NEGATIVE =
+  /\b(no falls?|hasn'?t fallen|never fallen|not unsafe|no danger|safe|no injur(?:y|ies)|nothing dangerous|not in danger|no emergency)\b/i;
+
+// Q6 — familiar faces
+const FAMILIAR_POSITIVE =
+  /\b(people (she|he|they) knows?|people (we|i) know|someone (she|he|they) knows?|familiar|fine with people|comfortable with (people|someone)|knows (her|him|them)|recogni[sz]es?|friends from (church|the church)|our (friends|neighbours|neighbors)|already know)\b/i;
+const FAMILIAR_NEGATIVE =
+  /\b(fine with (anyone|strangers|new people)|doesn'?t mind (strangers|new people)|happy with (anyone|strangers))\b/i;
+
+// Q7 — reheat preference
+const REHEAT_REHEATS = /\b(reheat|reheats|reheatable|microwave|warm up)\b/i;
+const REHEAT_FRESH = /\b(fresh|home.?cooked|cook(?:ed)? it fresh)\b/i;
+const REHEAT_EITHER = /\beither\b/i;
+const REHEAT_NOT_A_MEAL = /\b(not a meal|no meal)\b/i;
+
+// Q8 — mobility (orientation only)
+const MOBILITY_POSITIVE =
+  /\b(walker|walking frame|wheelchair|mobility|stairs|steps|balance|transfer|steady hand|hand getting (in|out)|getting (in|out) of|help (getting|moving|walking)|help moving|physically help|lift(?:ing)? (her|him|them))\b/i;
+const MOBILITY_NEGATIVE =
+  /\b(doesn'?t need (help )?(walking|moving)|walks fine|no mobility (issues|problems)|gets around fine)\b/i;
+
+// Q9 — personal care
+const PERSONAL_CARE_POSITIVE =
+  /\b(medication|medications|meds|medicine|bathing|bathe|bathes|bath|shower(?:ing|s)?|toileting|toilet|incontinent|incontinence|diaper|nappy|lifting|lift (her|him|them)|transfers?|dressing|undressing|feeding|tube feed(?:ing)?|catheter|wound care|insulin|administer)\b/i;
+const PERSONAL_CARE_NEGATIVE =
+  /\b(no personal care|not personal care|no medication|no meds|(?:doesn'?t|does not|doesnt) (?:need|take) (?:help with )?medication|(?:doesn'?t|does not|doesnt) need help with (bathing|medication|toileting|dressing|feeding)|no lifting|can (bathe|dress|feed) (herself|himself|themselves))\b/i;
+
+/**
+ * Strip phrases where a care term is explicitly negated before running the
+ * positive safety/personal-care rules. "No falls so far" is not a fall, and
+ * "does not need help with medication" is not personal care, while "no falls,
+ * but she wanders at night" still leaves the wandering signal intact.
+ */
+const NEGATED_CARE_TERM =
+  /\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without|hasn'?t|haven'?t)\b[^.;]{0,32}?\b(?:falls?|fallen|falling|injur(?:y|ed|ies)|hurt|unsafe|danger|emergency|medication|medications|meds|medicine|bathing|toileting|lifting|transfers?|dressing|feeding|personal care|walking|moving|mobility|stairs|steps)\b/gi;
+
+function withoutNegatedCareTerms(text: string): string {
+  return text.replace(NEGATED_CARE_TERM, " omitted ");
+}
+
+function resolveWindow(text: string): PickOutcome {
+  if (matches(text, /\bsaturdays?\b/i)) {
+    return { answer: "saturday", confidence: POSITIVE_CONFIDENCE };
+  }
+  if (matches(text, /\bsundays?\b/i)) {
+    return { answer: "sunday", confidence: POSITIVE_CONFIDENCE };
+  }
+  if (matches(text, WINDOW_WEEKDAY_MORNING)) {
+    return { answer: "weekday_morning", confidence: POSITIVE_CONFIDENCE };
+  }
+  if (matches(text, WINDOW_WEEKDAY_AFTERNOON)) {
+    return { answer: "weekday_afternoon", confidence: POSITIVE_CONFIDENCE };
+  }
+  if (matches(text, WINDOW_WEEKDAY_EVENING)) {
+    return { answer: "weekday_evening", confidence: POSITIVE_CONFIDENCE };
+  }
+  if (matches(text, WINDOW_MORNING)) {
+    return { answer: "weekday_morning", confidence: 0.82 };
+  }
+  if (matches(text, WINDOW_AFTERNOON)) {
+    return { answer: "weekday_afternoon", confidence: 0.82 };
+  }
+  if (matches(text, WINDOW_EVENING)) {
+    return { answer: "weekday_evening", confidence: 0.82 };
+  }
+  if (matches(text, WINDOW_CLOCK)) {
+    const clock = /\b(?:at|around|by)\s+(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/i.exec(
+      text,
+    );
+    const word = clock?.[1].toLowerCase();
+    if (word && ["six", "seven", "eight", "nine", "ten", "eleven", "twelve"].includes(word)) {
+      return { answer: "weekday_evening", confidence: 0.75 };
+    }
+    if (word && ["one", "two", "three", "four", "five"].includes(word)) {
+      return { answer: "weekday_afternoon", confidence: 0.75 };
+    }
+  }
+  if (matches(text, WINDOW_FLEXIBLE)) {
+    return { answer: "flexible", confidence: POSITIVE_CONFIDENCE };
+  }
+  return { answer: "none_stated", confidence: 0.7 };
+}
+
+function resolveReheat(text: string): PickOutcome {
+  if (matches(text, REHEAT_REHEATS)) {
+    return { answer: "reheats", confidence: POSITIVE_CONFIDENCE };
+  }
+  if (matches(text, REHEAT_FRESH)) {
+    return { answer: "fresh", confidence: 0.85 };
+  }
+  if (matches(text, REHEAT_EITHER)) {
+    return { answer: "either", confidence: 0.8 };
+  }
+  if (matches(text, REHEAT_NOT_A_MEAL)) {
+    return { answer: "not_a_meal", confidence: 0.85 };
+  }
+  return { answer: "unknown", confidence: 0.7 };
+}
+
+function resolveTransport(text: string): BooleanOutcome {
+  const explicitNeed = matches(text, TRANSPORT_POSITIVE);
+  const appointmentNeed = matches(text, TRANSPORT_APPOINTMENT_NEED);
+  const alreadyArranged = matches(text, TRANSPORT_NEGATIVE);
+
+  if ((explicitNeed || appointmentNeed) && alreadyArranged) {
+    return { answer: false, confidence: AMBIGUOUS_CONFIDENCE };
+  }
+  if (explicitNeed || appointmentNeed) {
+    return { answer: true, confidence: POSITIVE_CONFIDENCE };
+  }
+  if (alreadyArranged) {
+    return { answer: false, confidence: EXPLICIT_NEGATIVE_CONFIDENCE };
+  }
+  return { answer: false, confidence: DEFAULT_NEGATIVE_CONFIDENCE };
+}
+
+function resolveMeal(text: string): BooleanOutcome {
+  const positive = matches(text, MEAL_POSITIVE) || matches(text, LUNCH_DELIVERY);
+  const negative = matches(text, MEAL_NEGATIVE);
+
+  if (positive && negative) {
+    return { answer: false, confidence: AMBIGUOUS_CONFIDENCE };
+  }
+  if (positive) return { answer: true, confidence: POSITIVE_CONFIDENCE };
+  if (negative) {
+    return { answer: false, confidence: EXPLICIT_NEGATIVE_CONFIDENCE };
+  }
+  return { answer: false, confidence: DEFAULT_NEGATIVE_CONFIDENCE };
+}
+
+function answerFor(
+  questionId: string,
+  text: string,
+): { answer: boolean | string; confidence: number } {
+  switch (questionId) {
+    case "Q1":
+      return resolveBoolean(text, SIT_POSITIVE, SIT_NEGATIVE, 0.68);
+    case "Q2":
+      return resolveTransport(text);
+    case "Q3":
+      return resolveMeal(text);
+    case "Q4":
+      return resolveWindow(text);
+    case "Q5": {
+      const positiveText = withoutNegatedCareTerms(text);
+      return resolveBoolean(
+        text,
+        SAFETY_POSITIVE,
+        SAFETY_NEGATIVE,
+        SAFETY_DEFAULT_CONFIDENCE,
+        positiveText,
+      );
+    }
+    case "Q6":
+      return resolveBoolean(text, FAMILIAR_POSITIVE, FAMILIAR_NEGATIVE);
+    case "Q7":
+      return resolveReheat(text);
+    case "Q8": {
+      const positiveText = withoutNegatedCareTerms(text);
+      return resolveBoolean(
+        text,
+        MOBILITY_POSITIVE,
+        MOBILITY_NEGATIVE,
+        SAFETY_DEFAULT_CONFIDENCE,
+        positiveText,
+      );
+    }
+    case "Q9": {
+      const positiveText = withoutNegatedCareTerms(text);
+      return resolveBoolean(
+        text,
+        PERSONAL_CARE_POSITIVE,
+        PERSONAL_CARE_NEGATIVE,
+        SAFETY_DEFAULT_CONFIDENCE,
+        positiveText,
+      );
+    }
+    default:
+      return { answer: false, confidence: AMBIGUOUS_CONFIDENCE };
+  }
+}
+
+/** Run the rules for exactly the requested questions, in the requested order. */
+export function runKeywordEngine(input: {
+  askText: string;
+  questions: readonly PolicyQuestion[];
+}): KeywordAnswer[] {
+  const text = input.askText.normalize("NFC");
+
+  return input.questions.map((question) => {
+    const outcome = answerFor(question.id, text);
+    const answerType = question.answerType === "pick" ? "pick" : "yesno";
+    const answer =
+      answerType === "yesno"
+        ? outcome.answer === true
+        : String(outcome.answer);
+
+    return {
+      questionId: question.id,
+      answerType,
+      answer,
+      confidence: outcome.confidence,
+    };
+  });
+}
