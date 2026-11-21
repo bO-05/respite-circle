@@ -15,6 +15,20 @@
       "when": 1795280351788,
       "tag": "0001_immutability_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795287657096,
+      "tag": "0002_foamy_hammerhead",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795287670582,
+      "tag": "0003_policy_immutability",
+      "breakpoints": true
     }
   ]
 }

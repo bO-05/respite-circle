@@ -289,18 +289,31 @@ export const seedQuestionSet: PolicyQuestion[] = [
   },
 ];
 
+/**
+ * The church's own safeguarding promises, in the approved wording from the
+ * source spec. These are content the church owns; a change creates a new
+ * policy version instead of rewriting this one.
+ */
 export const seedSafeguardingPromises: string[] = [
-  "A named coordinator reads every ask before a neighbour sees a time.",
-  "Two adults are present for a first in-home visit.",
-  "No caregiver is ranked, scored, or compared with another.",
-  "If a time goes unclaimed, the caregiver is sent nothing and a coordinator calls.",
-  "Personal care and safety concerns route to a person, with professional referrals.",
+  "Companions at Respite Morning complete our dementia-awareness training before their first morning.",
+  "Anyone who visits a vulnerable adult at home is on that family's familiar-faces list, or has completed our church's safeguarding checklist (background check run by the church, two references).",
+  "First home visit is two people, or introduced by the coordinator.",
+  "No personal care, ever. No medication, no bathing, no toileting, no lifting or transfers. Asks like that go to Grace, who connects the family with professional help (Area Agency on Aging, ARCH Respite Locator).",
+  "Companions check in and out with the coordinator for home visits.",
+  "If a slot goes unclaimed, the coordinator calls the caregiver personally. The software sends nothing.",
 ];
 
 export const seedCrisisScript =
-  "If anything in the ask suggests immediate danger, stop and tell the caregiver a person will call today. " +
-  "For risk to life, call 911. For emotional crisis support in the United States, call or text 988 at any hour. " +
-  "Grace Community Church adds its current local line in the invitation.";
+  "If anything in the ask suggests immediate danger, stop and tell the caregiver that a person will call today. " +
+  "For danger to life, call 911 now. For emotional crisis support in the United States, call or text 988 at any hour. " +
+  "The church's local line is printed with this script; a person answers it.";
+
+/**
+ * The configurable local crisis line the church adds for its own community.
+ * Fictional: 555-01xx is reserved for made-up numbers.
+ */
+export const seedLocalCrisisLine =
+  "(202) 555-0142 — Grace Community Church on-call line, answered any hour.";
 
 export const seedReferralResources: ReferralResource[] = [
   {
@@ -318,11 +331,6 @@ export const seedReferralResources: ReferralResource[] = [
     detail:
       "Local aging and disability services; the coordinator adds the current county line when a family needs it.",
   },
-  {
-    name: "Grace Community Church office",
-    detail:
-      "A person answers on weekday mornings. The office line is printed on each invitation.",
-  },
 ];
 
 export const seedPolicy = {
@@ -331,8 +339,11 @@ export const seedPolicy = {
   safeguardingPromises: seedSafeguardingPromises,
   questionSet: seedQuestionSet,
   crisisScript: seedCrisisScript,
+  localCrisisLine: seedLocalCrisisLine,
   referralResources: seedReferralResources,
   familiarFaceDefault: true,
+  reminderWindowHours: 24,
+  callThresholdHours: 48,
   autoPublishLowRisk: false,
   signedOffBy: "Grace Whitfield",
   signedOffAt: new Date("2026-11-15T15:00:00.000Z"),

@@ -166,6 +166,8 @@ export const policy = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
     crisisScript: text("crisis_script").notNull(),
+    /** The church's own local crisis line; shown beside the crisis script. */
+    localCrisisLine: text("local_crisis_line"),
     referralResources: jsonb("referral_resources")
       .$type<ReferralResource[]>()
       .notNull()
@@ -173,6 +175,12 @@ export const policy = pgTable(
     familiarFaceDefault: boolean("familiar_face_default")
       .notNull()
       .default(true),
+    /** Hours before a covered slot when its one reminder may be written. */
+    reminderWindowHours: integer("reminder_window_hours")
+      .notNull()
+      .default(24),
+    /** Hours before a slot window when the coverage watch starts. */
+    callThresholdHours: integer("call_threshold_hours").notNull().default(48),
     autoPublishLowRisk: boolean("auto_publish_low_risk")
       .notNull()
       .default(false),
@@ -188,6 +196,14 @@ export const policy = pgTable(
   (t) => [
     uniqueIndex("policy_church_version_uidx").on(t.churchId, t.version),
     check("policy_version_positive", sql`${t.version} >= 1`),
+    check(
+      "policy_reminder_window_positive",
+      sql`${t.reminderWindowHours} >= 1`,
+    ),
+    check(
+      "policy_call_threshold_positive",
+      sql`${t.callThresholdHours} >= 1`,
+    ),
   ],
 );
 

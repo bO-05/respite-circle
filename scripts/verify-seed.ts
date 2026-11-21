@@ -10,7 +10,13 @@ import {
   seedCareRecipients,
   seedCaregivers,
   seedChurch,
+  seedCrisisScript,
+  seedLocalCrisisLine,
   seedPeople,
+  seedPolicy,
+  seedQuestionSet,
+  seedReferralResources,
+  seedSafeguardingPromises,
   seedSessions,
   seedSessionTemplate,
   seedVolunteers,
@@ -158,14 +164,106 @@ export async function verifySeed(db: SeedDb): Promise<VerifySeedResult> {
     }
   }
 
-  const policies = await db.$client<
-    { version: number; auto_publish_low_risk: boolean }[]
-  >`SELECT version, auto_publish_low_risk FROM policy ORDER BY version`;
-  if (!policies.some((row) => row.version === 1)) {
+  type PolicyVerificationRow = {
+    id: string;
+    version: number;
+    safeguarding_promises: string[];
+    question_set: Array<{
+      id: string;
+      text: string;
+      answerType: string;
+      options?: string[];
+      samples?: number;
+    }>;
+    crisis_script: string;
+    local_crisis_line: string | null;
+    referral_resources: Array<{ name: string; detail: string }>;
+    familiar_face_default: boolean;
+    reminder_window_hours: number;
+    call_threshold_hours: number;
+    auto_publish_low_risk: boolean;
+    signed_off_by: string | null;
+    signed_off_at: Date | null;
+  };
+
+  const policies = await db.$client<PolicyVerificationRow[]>`
+    SELECT id, version, safeguarding_promises, question_set, crisis_script,
+           local_crisis_line, referral_resources, familiar_face_default,
+           reminder_window_hours, call_threshold_hours, auto_publish_low_risk,
+           signed_off_by, signed_off_at
+      FROM policy
+     WHERE version = 1
+  `;
+  const seededPolicy = policies[0];
+
+  if (!seededPolicy) {
     failures.push("missing policy version 1");
-  }
-  if (policies.some((row) => row.auto_publish_low_risk)) {
-    failures.push("policy auto_publish_low_risk must be false");
+  } else {
+    const questionIds = seededPolicy.question_set.map((question) => question.id);
+    if (questionIds.join(",") !== seedQuestionSet.map((q) => q.id).join(",")) {
+      failures.push(
+        "policy version 1 must carry the nine typed questions Q1–Q9 in order",
+      );
+    }
+    for (const question of seededPolicy.question_set) {
+      if (!question.text?.trim()) {
+        failures.push(`policy question ${question.id} is missing its text`);
+      }
+      if (question.answerType !== "yesno" && question.answerType !== "pick") {
+        failures.push(
+          `policy question ${question.id} has an unexpected type: ${question.answerType}`,
+        );
+      }
+    }
+
+    if (
+      JSON.stringify(seededPolicy.safeguarding_promises) !==
+      JSON.stringify(seedSafeguardingPromises)
+    ) {
+      failures.push(
+        "policy version 1 promises do not match the approved wording",
+      );
+    }
+    if (seededPolicy.crisis_script !== seedCrisisScript) {
+      failures.push("policy version 1 crisis script is missing or has changed");
+    }
+    if (seededPolicy.local_crisis_line !== seedLocalCrisisLine) {
+      failures.push("policy version 1 local crisis line is missing");
+    }
+
+    const referralNames = seededPolicy.referral_resources.map(
+      (resource) => resource.name,
+    );
+    for (const resource of seedReferralResources) {
+      if (!referralNames.includes(resource.name)) {
+        failures.push(
+          `policy version 1 is missing the ${resource.name} referral`,
+        );
+      }
+    }
+
+    if (!seededPolicy.familiar_face_default) {
+      failures.push("policy familiar_face_default must be true");
+    }
+    if (seededPolicy.reminder_window_hours !== seedPolicy.reminderWindowHours) {
+      failures.push(
+        `policy reminder_window_hours must be ${seedPolicy.reminderWindowHours}`,
+      );
+    }
+    if (seededPolicy.call_threshold_hours !== seedPolicy.callThresholdHours) {
+      failures.push(
+        `policy call_threshold_hours must be ${seedPolicy.callThresholdHours}`,
+      );
+    }
+    if (seededPolicy.auto_publish_low_risk) {
+      failures.push("policy auto_publish_low_risk must be false");
+    }
+    if (!seededPolicy.signed_off_by?.trim()) {
+      failures.push("policy version 1 needs a named sign-off");
+    }
+    if (!seededPolicy.signed_off_at) {
+      failures.push("policy version 1 needs a sign-off timestamp");
+    }
   }
 
   const templates = await db.$client<

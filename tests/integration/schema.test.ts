@@ -80,6 +80,7 @@ describe("database schema invariants", () => {
         "audit_event_immutable",
         "decision_immutable",
         "notification_requires_covered_slot",
+        "policy_immutable",
       ]),
     );
   });
