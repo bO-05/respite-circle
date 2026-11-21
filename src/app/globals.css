@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+  shadcn/ui components key off a `.dark` ancestor. This app has no dark
+  theme, so the variant exists only to satisfy the component CSS; nothing
+  ever applies the class.
+*/
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Respite Circle design tokens.
+  Warm paper, quiet ink, terracotta accent. There is deliberately no dark
+  theme: this surface stays calm and readable for tired, older eyes.
+*/
+@theme {
+  --color-paper: #faf6f0;
+  --color-surface: #fffcf8;
+  --color-ink: #2b2622;
+  --color-ink-muted: #6b615a;
+  --color-muted: #f2ece4;
+  --color-muted-foreground: #6b615a;
+  --color-accent: #b4552d;
+  --color-accent-soft: #f7e3d7;
+  --color-accent-foreground: #fffaf5;
+  --color-green: #2e7d4f;
+  --color-green-soft: #e2f2e7;
+  --color-amber: #a86a12;
+  --color-amber-soft: #fdf0d5;
+  --color-red: #b3372e;
+  --color-red-soft: #fbe7e4;
+  --color-line: #e7ddd0;
+  --color-focus: #b4552d;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.6;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/*
+  shadcn/ui semantic tokens.
+  `accent` keeps its Respite Circle meaning (terracotta action colour) and the
+  shadcn hover tint is exposed as `accent-soft`. `muted` is the quiet surface;
+  secondary text uses `muted-foreground` / `ink-muted`, which pass AA on paper.
+*/
+@theme inline {
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: var(--color-accent-foreground);
+  --color-secondary: var(--color-accent-soft);
+  --color-secondary-foreground: var(--color-ink);
+  --color-destructive: var(--color-red);
+  --color-border: var(--color-line);
+  --color-input: var(--color-line);
+  --color-ring: var(--color-accent);
+  --font-heading: var(--font-serif);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
