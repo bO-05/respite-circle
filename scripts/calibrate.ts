@@ -5,10 +5,10 @@ import { fileURLToPath } from "node:url";
 import { loadEnvLocal } from "../src/db/env";
 import { seedQuestionSet } from "../src/db/seed-data";
 import {
-  CALIBRATION_QUESTION_SET,
   CALIBRATION_RESULT_FILES,
   CALIBRATION_SOURCE_LABEL,
   CalibrationHarnessError,
+  calibrationQuestionSetLabel,
   combineCalibrationCases,
   parseCalibrationDataset,
   predictSlotKinds,
@@ -369,7 +369,7 @@ async function main(): Promise<void> {
       "model",
     ),
     generatedAt,
-    questionSet: CALIBRATION_QUESTION_SET,
+    questionSet: calibrationQuestionSetLabel(seedQuestionSet),
     promptVersion: PROMPT_VERSION,
     gitCommit,
     command: commandLabel(forcedBaseline),

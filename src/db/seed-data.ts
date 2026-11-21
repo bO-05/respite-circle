@@ -227,7 +227,7 @@ export const seedQuestionSet: PolicyQuestion[] = [
     // Wording follows the approved source spec plus the calibration log's
     // documented fix: name the evidence a coordinator reads as companionship,
     // not only the word "sitting".
-    text: "Does this ask contain a sitting or companionship need (someone staying with them, keeping them company, visiting, or giving the caregiver a break)?",
+    text: "Is there a sitting or companionship need — someone staying with them, keeping them company, visiting, giving the caregiver a break, or letting the caregiver go out or rest?",
     answerType: "yesno",
   },
   {
@@ -262,7 +262,7 @@ export const seedQuestionSet: PolicyQuestion[] = [
   {
     id: "Q5",
     key: "safety",
-    text: "Does anything in this ask suggest someone may be unsafe right now (a fall with no help, wandering, a medical emergency, or harm)?",
+    text: "Does anything in this ask suggest a current safety risk — wandering or leaving the house, a recent fall, confusion, a medical emergency, self-harm, or harm?",
     answerType: "yesno",
     samples: 3,
   },
@@ -282,13 +282,16 @@ export const seedQuestionSet: PolicyQuestion[] = [
   {
     id: "Q8",
     key: "mobility",
-    text: "Is physical help moving or walking needed?",
+    text: "Is physical help moving or walking needed (a hand in or out of a car, stairs, a wheelchair, or steadying)?",
     answerType: "yesno",
   },
   {
     id: "Q9",
     key: "personal_care",
-    text: "Does this ask involve personal care (medication, bathing, toileting, dressing, lifting, or transfers)?",
+    // Personal care is help with the person's body, not a steadying hand in a
+    // car (Q8) and not the caregiver's own shower. The calibration labels draw
+    // that line, and a first live run crossed it.
+    text: "Does this ask involve personal care of the person (help with medication, bathing, toileting, dressing, feeding, a catheter, or lifting them)?",
     answerType: "yesno",
     samples: 3,
   },

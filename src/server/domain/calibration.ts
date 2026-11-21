@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { DecisionRouting } from "@/server/domain/decision-routing";
 import type {
@@ -52,8 +53,23 @@ export const CALIBRATION_SOURCE_LABEL: Record<CalibrationSource, string> = {
   "deterministic-baseline": "Deterministic baseline (no model calls)",
 };
 
-/** Identifies the seeded nine-question set; policy version 1. */
-export const CALIBRATION_QUESTION_SET = "qset-1";
+/** Identifies the exact nine question texts and sampling a run used. */
+export function calibrationQuestionSetLabel(
+  questions: readonly {
+    id: string;
+    text: string;
+    answerType: string;
+    samples?: number;
+  }[],
+): string {
+  const canonical = questions
+    .map(
+      (question) =>
+        `${question.id}|${question.answerType}|${question.samples ?? 1}|${question.text}`,
+    )
+    .join("\n");
+  return `qset-${createHash("sha256").update(canonical).digest("hex").slice(0, 8)}`;
+}
 
 export class CalibrationHarnessError extends Error {
   constructor(message: string) {
