@@ -3,13 +3,16 @@ import { RolePage } from "@/components/role-page";
 import { AskReviewSection } from "@/components/ask-review-section";
 import { DraftSlotSection } from "@/components/draft-slot-section";
 import { ExclusionPanelSection } from "@/components/exclusion-panel";
+import { HoldCardSection } from "@/components/hold-card";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { holdReasonFor } from "@/server/domain/desk-queue";
+import { formatWindowLabel } from "@/server/domain/slots";
 import { getCoordinatorAskWords } from "@/server/repositories/asks";
 import { getAskPublication } from "@/server/repositories/ask-review";
 import { getDraftEditorContext } from "@/server/repositories/draft-slots";
 import { getExclusionPanel } from "@/server/repositories/exclusions";
+import { getHeldAskCard } from "@/server/repositories/holds";
 
 export const dynamic = "force-dynamic";
 
@@ -41,15 +44,18 @@ export default async function DeskAskPage({
   const { person, session } = await requirePage(DESK_ROLES);
   const { id } = await params;
 
-  // Four independent scoped reads in parallel: the words, the drafts, the
-  // exclusion explanations, and the approval/send-back record. The Neon round
-  // trip is ~325 ms, so the page must not serialise them.
-  const [review, draftContext, exclusionContext, publication] = await Promise.all([
-    getCoordinatorAskWords(session, id),
-    getDraftEditorContext(session, id),
-    getExclusionPanel(session, id),
-    getAskPublication(session, id),
-  ]);
+  // Five independent scoped reads in parallel: the words, the drafts, the
+  // exclusion explanations, the approval/send-back record, and the held ask's
+  // human route. The Neon round trip is ~325 ms, so the page must not
+  // serialise them.
+  const [review, draftContext, exclusionContext, publication, heldCard] =
+    await Promise.all([
+      getCoordinatorAskWords(session, id),
+      getDraftEditorContext(session, id),
+      getExclusionPanel(session, id),
+      getAskPublication(session, id),
+      getHeldAskCard(session, id),
+    ]);
 
   if (!review || !draftContext || !exclusionContext || !publication) {
     notFound();
@@ -104,6 +110,42 @@ export default async function DeskAskPage({
         >
           {holdReason}
         </p>
+      ) : null}
+
+      {heldCard ? <HoldCardSection held={heldCard} /> : null}
+
+      {review.safetyOverrideAt ? (
+        <section
+          data-testid="desk-override-record"
+          aria-labelledby="desk-override-record-heading"
+          className="flex flex-col gap-2 rounded-lg border border-amber bg-amber-soft p-5"
+        >
+          <h2
+            id="desk-override-record-heading"
+            className="font-serif text-2xl text-ink"
+          >
+            Safety hold converted by a person
+          </h2>
+          <p className="max-w-prose text-base leading-relaxed text-ink">
+            {review.safetyOverrideByName ?? "A coordinator"} confirmed a call
+            with the family on{" "}
+            {formatWindowLabel(
+              review.safetyOverrideAt,
+              null,
+              draftContext.timeZone,
+            )}{" "}
+            and recorded why. This was an explicit action, not an automatic
+            one.
+          </p>
+          {review.safetyOverrideReason ? (
+            <blockquote
+              data-testid="desk-override-reason"
+              className="max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
+            >
+              {review.safetyOverrideReason}
+            </blockquote>
+          ) : null}
+        </section>
       ) : null}
 
       <section

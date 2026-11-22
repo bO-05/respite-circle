@@ -95,6 +95,7 @@ export async function constructDraftSlots(
       status: ask.status,
       slotsConstructedAt: ask.slotsConstructedAt,
       policyVersionId: ask.policyVersionId,
+      safetyOverrideAt: ask.safetyOverrideAt,
       timeZone: church.timezone,
       transportEnabled: policy.transportEnabled,
       recipientFirstName: careRecipient.firstName,
@@ -180,6 +181,9 @@ export async function constructDraftSlots(
     policy: { transportEnabled: askRow.transportEnabled },
     now,
     timeZone: askRow.timeZone,
+    // Only an explicit, audited safety conversion can excuse a Q5 flag. It
+    // never excuses Q9; `buildDraftSlots` refuses personal care first.
+    safetyOverridden: askRow.safetyOverrideAt !== null,
     // A companion place for a week with no Respite Morning is refused with
     // the same dates the desk banner shows.
     calendar: calendarGuardFrom(schedules, sessions, askRow.timeZone, now),
@@ -264,6 +268,7 @@ export async function constructDraftSlots(
         noNeed: plan.proposals.length === 0 && plan.skipped.length === 0,
         policyVersionId: askRow.policyVersionId,
         revisionId: latestRevision.id,
+        safetyOverride: askRow.safetyOverrideAt !== null,
       },
     });
 

@@ -79,6 +79,13 @@ export type CaregiverAskView = {
   sendBackNote: string | null;
   sentBackAt: Date | null;
   sentBackByFirstName: string | null;
+  /**
+   * The human close of a held ask: a coordinator's own words, kept exactly as
+   * written. Present only when a person closed a safety or personal-care hold.
+   */
+  closeNote: string | null;
+  closedAt: Date | null;
+  closedByFirstName: string | null;
 };
 
 export type DeskAskWords = {
@@ -90,6 +97,14 @@ export type DeskAskWords = {
   revisionCount: number;
   caregiverFirstName: string;
   careRecipientFirstName: string;
+  /**
+   * The safety conversion record, if a coordinator made one. The desk shows
+   * who converted the hold, when, and their reason, so the decision is never
+   * invisible after the status moves.
+   */
+  safetyOverrideAt: Date | null;
+  safetyOverrideByName: string | null;
+  safetyOverrideReason: string | null;
 };
 
 /**
@@ -318,6 +333,7 @@ export async function getCaregiverAsk(
   requireRoleSession(actor, CAREGIVER_ROLES);
 
   const sentBackBy = alias(person, "ask_sent_back_by");
+  const closedBy = alias(person, "ask_closed_by");
 
   const rows = await database
     .select({
@@ -330,11 +346,15 @@ export async function getCaregiverAsk(
       sendBackNote: ask.sendBackNote,
       sentBackAt: ask.sentBackAt,
       sentBackByFirstName: sentBackBy.firstName,
+      closeNote: ask.closeNote,
+      closedAt: ask.closedAt,
+      closedByFirstName: closedBy.firstName,
     })
     .from(ask)
     .innerJoin(careRecipient, eq(careRecipient.id, ask.careRecipientId))
     .innerJoin(policy, eq(policy.id, ask.policyVersionId))
     .leftJoin(sentBackBy, eq(sentBackBy.id, ask.sentBackBy))
+    .leftJoin(closedBy, eq(closedBy.id, ask.closedBy))
     .where(
       and(
         eq(ask.id, askId),
@@ -368,6 +388,9 @@ export async function getCaregiverAsk(
     sendBackNote: row.sendBackNote,
     sentBackAt: row.sentBackAt,
     sentBackByFirstName: row.sentBackByFirstName,
+    closeNote: row.closeNote,
+    closedAt: row.closedAt,
+    closedByFirstName: row.closedByFirstName,
   };
 }
 
@@ -383,6 +406,8 @@ export async function getCoordinatorAskWords(
 ): Promise<DeskAskWords | null> {
   requireRoleSession(actor, DESK_ROLES);
 
+  const overrider = alias(person, "ask_safety_overrider");
+
   const rows = await database
     .select({
       id: ask.id,
@@ -391,10 +416,14 @@ export async function getCoordinatorAskWords(
       originalText: ask.verbatimText,
       caregiverFirstName: person.firstName,
       careRecipientFirstName: careRecipient.firstName,
+      safetyOverrideAt: ask.safetyOverrideAt,
+      safetyOverrideByName: overrider.firstName,
+      safetyOverrideReason: ask.safetyOverrideReason,
     })
     .from(ask)
     .innerJoin(person, eq(person.id, ask.caregiverId))
     .innerJoin(careRecipient, eq(careRecipient.id, ask.careRecipientId))
+    .leftJoin(overrider, eq(overrider.id, ask.safetyOverrideBy))
     .where(and(eq(ask.id, askId), eq(ask.churchId, actor.churchId)))
     .limit(1);
 
@@ -412,5 +441,8 @@ export async function getCoordinatorAskWords(
     revisionCount: revisions.length,
     caregiverFirstName: row.caregiverFirstName,
     careRecipientFirstName: row.careRecipientFirstName,
+    safetyOverrideAt: row.safetyOverrideAt,
+    safetyOverrideByName: row.safetyOverrideByName,
+    safetyOverrideReason: row.safetyOverrideReason,
   };
 }

@@ -64,6 +64,13 @@
       "when": 1795341920146,
       "tag": "0008_real_quicksilver",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795355012665,
+      "tag": "0009_magical_the_renegades",
+      "breakpoints": true
     }
   ]
 }

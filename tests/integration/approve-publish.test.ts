@@ -459,8 +459,9 @@ describe("approve, publish, and send back", () => {
     const notes = await listCaregiverNotes(MARTA, t.db);
     expect(notes).toHaveLength(1);
     expect(notes[0].askId).toBe(askId);
+    expect(notes[0].kind).toBe("send_back");
     expect(notes[0].note).toBe(note);
-    expect(notes[0].sentBackByName).toBe("Grace");
+    expect(notes[0].notedByName).toBe("Grace");
 
     // No other caregiver, no volunteer, no other church reads it.
     expect(await getCaregiverAsk(DAVID, askId, t.db)).toBeNull();

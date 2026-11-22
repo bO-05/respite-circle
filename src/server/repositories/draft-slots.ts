@@ -32,7 +32,9 @@ import {
   type SlotTier,
   type ValidatedDraftSlot,
 } from "@/server/domain/slots";
+import { personalCareFlagged } from "@/server/domain/holds";
 import type { AppDatabase } from "./coordinator";
+import { readLatestTypedAnswers } from "./holds";
 import {
   calendarGuardFrom,
   listTemplateSchedules,
@@ -706,6 +708,20 @@ export async function addDraftSlot(
   const blocked = constructionBlockedForStatus(askRow.status);
   if (blocked) {
     return { ok: false, message: blocked.message };
+  }
+
+  // A status is not enough. A safety hold converted by an audited override
+  // returns to `waiting_coordinator`, so re-read the typed answers: a Q9
+  // personal-care flag still refuses every manual kind. This is the same gate
+  // slot construction uses, in front of the only other write path that could
+  // create a slot.
+  const latestAnswers = await readLatestTypedAnswers(database, askRow.id);
+  if (personalCareFlagged(latestAnswers)) {
+    return {
+      ok: false,
+      message:
+        "The ask names personal care. Personal care is never a volunteer time — no companion, home, drive, or meal slot can be added for it.",
+    };
   }
 
   const sessions = await listSessionOptions(actor.churchId, database, now);

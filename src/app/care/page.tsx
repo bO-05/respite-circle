@@ -176,10 +176,11 @@ export default async function CarePage({
                 key={note.askId}
                 data-testid="care-note"
                 data-ask-id={note.askId}
+                data-kind={note.kind}
                 className="rounded-md border border-line bg-paper p-4"
               >
                 <p className="text-base font-semibold text-ink">
-                  From {note.sentBackByName ?? "your coordinator"}
+                  From {note.notedByName ?? "your coordinator"}
                 </p>
                 <blockquote
                   data-testid="care-note-body"

@@ -129,10 +129,30 @@ export default async function AskReceiptPage({
           >
             This ask is closed
           </h2>
-          <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
-            This ask is closed. Nothing else will be sent to you or to a
-            neighbour.
-          </p>
+          {receipt.closeNote ? (
+            <div data-testid="ask-close-note-block" className="mt-3">
+              <p className="max-w-prose text-lg leading-relaxed text-ink">
+                {receipt.closedByFirstName ?? reader} closed this ask with these
+                words.
+              </p>
+              <blockquote
+                data-testid="ask-close-note"
+                className="mt-3 max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-accent-soft px-5 py-4 text-xl leading-relaxed text-ink"
+              >
+                {receipt.closeNote}
+              </blockquote>
+              <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
+                These are {receipt.closedByFirstName ?? reader}&apos;s own
+                words. Nothing here is generated, and nothing else will be sent
+                to you or to a neighbour.
+              </p>
+            </div>
+          ) : (
+            <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
+              This ask is closed. Nothing else will be sent to you or to a
+              neighbour.
+            </p>
+          )}
           <div className="mt-4 flex flex-col gap-2">
             <p className="max-w-prose text-base leading-relaxed text-ink-muted">
               If another week is hard, you can ask again. It starts with an

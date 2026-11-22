@@ -353,10 +353,41 @@ export const ask = pgTable(
       withTimezone: true,
       mode: "date",
     }),
+    /**
+     * A coordinator's explicit, audited conversion of a *safety* hold back
+     * into the ordinary queue. All three columns are written together by
+     * `overrideSafetyHold`; personal care never carries them. Slot
+     * construction reads this to know that a Q5 flag has been through a human
+     * call, and never to excuse a Q9 personal-care flag.
+     */
+    safetyOverrideAt: timestamp("safety_override_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    safetyOverrideBy: uuid("safety_override_by").references(() => person.id),
+    safetyOverrideReason: text("safety_override_reason"),
+    /**
+     * The human close of a held ask. The family reads these words exactly as
+     * the coordinator wrote them; nothing here is generated.
+     */
+    closeNote: text("close_note"),
+    closedBy: uuid("closed_by").references(() => person.id),
+    closedAt: timestamp("closed_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
   },
   (t) => [
     index("ask_church_status_idx").on(t.churchId, t.status),
     index("ask_caregiver_idx").on(t.caregiverId),
+    check(
+      "ask_safety_override_complete",
+      sql`(${t.safetyOverrideAt} IS NULL AND ${t.safetyOverrideBy} IS NULL AND ${t.safetyOverrideReason} IS NULL) OR (${t.safetyOverrideAt} IS NOT NULL AND ${t.safetyOverrideBy} IS NOT NULL AND ${t.safetyOverrideReason} IS NOT NULL)`,
+    ),
+    check(
+      "ask_close_note_complete",
+      sql`(${t.closedAt} IS NULL AND ${t.closedBy} IS NULL AND ${t.closeNote} IS NULL) OR (${t.closedAt} IS NOT NULL AND ${t.closedBy} IS NOT NULL AND ${t.closeNote} IS NOT NULL)`,
+    ),
   ],
 );
 

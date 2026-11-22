@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db as appDb } from "@/db/client";
 import {
@@ -70,6 +70,10 @@ export type AskPublication = {
   sendBackNote: string | null;
   sentBackAt: Date | null;
   sentBackByName: string | null;
+  /** The human close of a held ask, shown back to the coordinator. */
+  closeNote: string | null;
+  closedAt: Date | null;
+  closedByName: string | null;
   published: PublishedSlot[];
 };
 
@@ -88,6 +92,7 @@ export async function getAskPublication(
 
   const approver = alias(person, "approver");
   const sender = alias(person, "send_back_sender");
+  const closer = alias(person, "close_sender");
 
   const [askRows, slotRows] = await Promise.all([
     database
@@ -100,11 +105,15 @@ export async function getAskPublication(
         sendBackNote: ask.sendBackNote,
         sentBackAt: ask.sentBackAt,
         sentBackByName: sender.firstName,
+        closeNote: ask.closeNote,
+        closedAt: ask.closedAt,
+        closedByName: closer.firstName,
       })
       .from(ask)
       .innerJoin(church, eq(church.id, ask.churchId))
       .leftJoin(approver, eq(approver.id, ask.approvedBy))
       .leftJoin(sender, eq(sender.id, ask.sentBackBy))
+      .leftJoin(closer, eq(closer.id, ask.closedBy))
       .where(and(eq(ask.id, askId), eq(ask.churchId, actor.churchId)))
       .limit(1),
     database
@@ -143,6 +152,9 @@ export async function getAskPublication(
     sendBackNote: row.sendBackNote,
     sentBackAt: row.sentBackAt,
     sentBackByName: row.sentBackByName,
+    closeNote: row.closeNote,
+    closedAt: row.closedAt,
+    closedByName: row.closedByName,
     published: slotRows.map((entry) => ({
       ...entry,
       kind: entry.kind as SlotKind,
@@ -153,14 +165,18 @@ export async function getAskPublication(
 
 export type CaregiverNote = {
   askId: string;
+  /** A send-back note or the human close of a held ask. */
+  kind: "send_back" | "close";
   note: string;
-  sentBackAt: Date | null;
-  sentBackByName: string | null;
+  notedAt: Date | null;
+  notedByName: string | null;
 };
 
 /**
- * The notes a caregiver can read on `/care`. Only their own asks, only a
- * genuine send-back with a note. The note is returned exactly as stored.
+ * The notes a caregiver can read on `/care`. Only their own asks, and only a
+ * surface where a coordinator actually wrote to them: a send-back note, or the
+ * human close of a safety or personal-care hold. The note is returned exactly
+ * as stored. Nothing here is generated.
  */
 export async function listCaregiverNotes(
   actor: Actor,
@@ -169,35 +185,59 @@ export async function listCaregiverNotes(
   requireRoleSession(actor, CAREGIVER_ROLES);
 
   const sender = alias(person, "note_sender");
+  const closer = alias(person, "close_sender");
 
   const rows = await database
     .select({
       askId: ask.id,
-      note: ask.sendBackNote,
+      status: ask.status,
+      sendBackNote: ask.sendBackNote,
       sentBackAt: ask.sentBackAt,
       sentBackByName: sender.firstName,
+      closeNote: ask.closeNote,
+      closedAt: ask.closedAt,
+      closedByName: closer.firstName,
     })
     .from(ask)
     .leftJoin(sender, eq(sender.id, ask.sentBackBy))
+    .leftJoin(closer, eq(closer.id, ask.closedBy))
     .where(
       and(
         eq(ask.churchId, actor.churchId),
         eq(ask.caregiverId, actor.personId),
-        eq(ask.status, "sent_back"),
-        isNotNull(ask.sendBackNote),
+        inArray(ask.status, ["sent_back", "closed"]),
+        or(isNotNull(ask.sendBackNote), isNotNull(ask.closeNote)),
       ),
     )
-    .orderBy(desc(ask.sentBackAt), desc(ask.createdAt))
+    .orderBy(desc(ask.updatedAt), desc(ask.createdAt), desc(ask.id))
     .limit(5);
 
-  return rows
-    .filter((row): row is typeof row & { note: string } => row.note !== null)
-    .map((row) => ({
-      askId: row.askId,
-      note: row.note,
-      sentBackAt: row.sentBackAt,
-      sentBackByName: row.sentBackByName,
-    }));
+  const notes: CaregiverNote[] = [];
+
+  for (const row of rows) {
+    if (row.status === "closed" && row.closeNote !== null) {
+      notes.push({
+        askId: row.askId,
+        kind: "close",
+        note: row.closeNote,
+        notedAt: row.closedAt,
+        notedByName: row.closedByName,
+      });
+      continue;
+    }
+
+    if (row.status === "sent_back" && row.sendBackNote !== null) {
+      notes.push({
+        askId: row.askId,
+        kind: "send_back",
+        note: row.sendBackNote,
+        notedAt: row.sentBackAt,
+        notedByName: row.sentBackByName,
+      });
+    }
+  }
+
+  return notes;
 }
 
 // ---------------------------------------------------------------------------

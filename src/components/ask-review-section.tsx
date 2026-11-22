@@ -278,7 +278,59 @@ export function AskReviewSection({
     );
   }
 
-  // Safety holds, personal-care holds, closed, withdrawn, and unsubmitted asks
-  // have no publish or send-back decision on this page.
+  if (status === "closed") {
+    const note = publication.closeNote;
+    const closer = publication.closedByName ?? "A coordinator";
+
+    return (
+      <section
+        data-testid="ask-review"
+        data-status={status}
+        aria-labelledby="ask-review-heading"
+        className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+      >
+        <div>
+          <h2 id="ask-review-heading" className="font-serif text-2xl text-ink">
+            Closed
+          </h2>
+          {note ? (
+            <>
+              <p
+                data-testid="close-meta"
+                className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted"
+              >
+                {closer} closed this ask
+                {publication.closedAt
+                  ? ` on ${formatWindowLabel(
+                      publication.closedAt,
+                      null,
+                      timeZone,
+                    )}`
+                  : ""}
+                . The family reads these words exactly.
+              </p>
+              <blockquote
+                data-testid="close-copy"
+                className="mt-3 max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-accent-soft px-5 py-4 text-lg leading-relaxed text-ink"
+              >
+                {note}
+              </blockquote>
+              <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
+                Nothing was published from this ask, and no message was
+                generated.
+              </p>
+            </>
+          ) : (
+            <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
+              This ask is closed. Nothing was published from it.
+            </p>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  // Safety holds, personal-care holds, withdrawn, and unsubmitted asks have no
+  // publish or send-back decision on this page.
   return null;
 }

@@ -147,6 +147,12 @@ export type ConstructionInput = {
   now: Date;
   timeZone: string;
   calendar?: CalendarGuard;
+  /**
+   * True only after a coordinator's explicit, audited conversion of a safety
+   * hold. It excuses a Q5 flag and nothing else: a Q9 personal-care flag still
+   * blocks absolutely, so no override can turn personal care into a slot.
+   */
+  safetyOverridden?: boolean;
 };
 
 export type SlotProposal = {
@@ -280,17 +286,23 @@ function reheatPreference(
 }
 
 /**
- * The pre-construction gate. Safety and personal care win outright; an
- * abstention on a need question is a human handoff, never a guess.
+ * The pre-construction gate. Personal care is absolute: Q9 wins over every
+ * other answer and over any safety override, because no code path may turn
+ * personal care into a slot. A safety flag then wins outright, unless a
+ * coordinator has explicitly converted the hold. An abstention on a need
+ * question is a human handoff, never a guess.
  */
 function blockForAnswers(
   answers: readonly TypedAnswer[],
+  safetyOverridden = false,
 ): ConstructionBlock | null {
-  const q5 = answerFor(answers, "Q5");
-  if (q5 && (q5.answer === true || q5.abstained)) return SAFETY_BLOCK;
-
   const q9 = answerFor(answers, "Q9");
   if (q9 && (q9.answer === true || q9.abstained)) return PERSONAL_CARE_BLOCK;
+
+  const q5 = answerFor(answers, "Q5");
+  if (q5 && (q5.answer === true || q5.abstained) && !safetyOverridden) {
+    return SAFETY_BLOCK;
+  }
 
   const uncertain = answers
     .filter(
@@ -654,7 +666,7 @@ function proposalBase(ruleRef: SlotRuleRef): {
 }
 
 export function buildDraftSlots(input: ConstructionInput): ConstructionPlan {
-  const blocked = blockForAnswers(input.answers);
+  const blocked = blockForAnswers(input.answers, input.safetyOverridden);
   if (blocked) return { proposals: [], skipped: [], blocked };
 
   const proposals: SlotProposal[] = [];
