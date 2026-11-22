@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CareClosure } from "@/components/care-closure";
+import { CaregiverInviteList } from "@/components/caregiver-invite";
 import { ClaimFlash } from "@/components/my-claim-flash";
 import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
@@ -13,6 +14,10 @@ import { formatWindowLabel } from "@/server/domain/slots";
 import { listCaregiverNotes } from "@/server/repositories/ask-review";
 import { listCaregiverConfirmations } from "@/server/repositories/claim-review";
 import { listCaregiverWorkingLines } from "@/server/repositories/coverage";
+import {
+  listCaregiverInvites,
+  markCaregiverInvitesSeen,
+} from "@/server/repositories/invites";
 import { listCaregiverReminders } from "@/server/repositories/reminders";
 
 export const dynamic = "force-dynamic";
@@ -37,13 +42,20 @@ export default async function CarePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { person, session } = await requirePage(CAREGIVER_ROLES);
-  const [notes, confirmations, reminders, working, query] = await Promise.all([
-    listCaregiverNotes(session),
-    listCaregiverConfirmations(session),
-    listCaregiverReminders(session),
-    listCaregiverWorkingLines(session),
-    searchParams,
-  ]);
+  const [notes, confirmations, reminders, working, invites, query] =
+    await Promise.all([
+      listCaregiverNotes(session),
+      listCaregiverConfirmations(session),
+      listCaregiverReminders(session),
+      listCaregiverWorkingLines(session),
+      listCaregiverInvites(session),
+      searchParams,
+    ]);
+
+  if (invites.some((invite) => invite.seenAt === null)) {
+    // A failed marker must not cost the family their page; the words remain.
+    await markCaregiverInvitesSeen(session).catch(() => undefined);
+  }
 
   const thanksParam = typeof query.thanks === "string" ? query.thanks : null;
   const thanksCode = isCareThanksFlashCode(thanksParam) ? thanksParam : null;
@@ -55,6 +67,8 @@ export default async function CarePage({
       title="What's covered for your family"
       lead="The times a neighbour has taken, and the words the church has sent you."
     >
+      <CaregiverInviteList invites={invites} />
+
       {working ? (
         <p
           data-testid="care-coordinator-working"

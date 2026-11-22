@@ -105,6 +105,7 @@ describe("document titles", () => {
     { role: "coordinator", path: "/desk/ask/abc", label: "Ask review" },
     { role: "coordinator", path: "/desk/slot/abc", label: "Slot review" },
     { role: "coordinator", path: "/desk/failures", label: "Coverage watch" },
+    { role: "coordinator", path: "/desk/invite", label: "Invite a family" },
     { role: "coordinator", path: "/desk/audit", label: "Decision log" },
     { role: "coordinator", path: "/desk/policy", label: "Church policy" },
     { role: "coordinator", path: "/desk/metrics", label: "Church numbers" },
@@ -133,6 +134,7 @@ describe("document titles", () => {
   it("never puts a hidden route label in the title for the wrong role", () => {
     expect(titleForPath("/desk", "caregiver")).toBe(SITE_NAME);
     expect(titleForPath("/desk/policy", "caregiver")).toBe(SITE_NAME);
+    expect(titleForPath("/desk/invite", "caregiver")).toBe(SITE_NAME);
     expect(titleForPath("/desk/audit", "volunteer")).toBe(SITE_NAME);
     expect(titleForPath("/ask", "volunteer")).toBe(SITE_NAME);
     expect(titleForPath("/care", "coordinator")).toBe(SITE_NAME);

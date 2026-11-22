@@ -98,6 +98,7 @@ test("every page carries a skip link, one h1, landmarks, and the stamp", async (
     { path: "/ask", token: seedAccessTokens.marta },
     { path: "/care", token: seedAccessTokens.marta },
     { path: "/desk", token: seedAccessTokens.grace },
+    { path: "/desk/invite", token: seedAccessTokens.grace },
     { path: "/desk/metrics", token: seedAccessTokens.grace },
     { path: "/circle", token: seedAccessTokens.ruth },
     { path: "/my-claims", token: seedAccessTokens.ruth },
@@ -165,7 +166,7 @@ test("a refused caregiver gets a 403 page and never the hidden label in the titl
 }) => {
   const { context, page } = await signIn(browser, seedAccessTokens.marta);
 
-  for (const path of ["/desk", "/desk/policy", "/desk/audit"]) {
+  for (const path of ["/desk", "/desk/policy", "/desk/audit", "/desk/invite"]) {
     const response = await context.request.get(path, { maxRedirects: 0 });
     expect(response.status(), `${path} must refuse a caregiver`).toBe(403);
     const body = await response.text();
@@ -194,6 +195,12 @@ test("a refused caregiver gets a 403 page and never the hidden label in the titl
   const policyTitle = await page.title();
   expect(policyTitle.toLowerCase()).not.toContain("policy");
   expect(policyTitle.toLowerCase()).not.toContain("desk");
+
+  await page.goto("/desk/invite");
+  const inviteTitle = await page.title();
+  expect(inviteTitle.toLowerCase()).not.toContain("invite");
+  expect(inviteTitle.toLowerCase()).not.toContain("family");
+  expect(inviteTitle.toLowerCase()).not.toContain("desk");
 
   await context.close();
 });

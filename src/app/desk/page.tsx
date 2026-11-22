@@ -294,6 +294,17 @@ export default async function DeskPage() {
         This queue is scoped to your own church. An ask from another church
         cannot be opened here, even by its id.
       </p>
+
+      <p className="max-w-prose text-base leading-relaxed text-ink-muted">
+        <Link
+          href="/desk/invite"
+          className="inline-flex min-h-11 items-center font-semibold text-ink underline decoration-accent underline-offset-4"
+        >
+          Invite a family by name
+        </Link>{" "}
+        — the first thing a family receives is a person&apos;s own sentence.
+        Nothing is emailed or texted.
+      </p>
     </RolePage>
   );
 }
