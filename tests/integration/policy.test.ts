@@ -17,6 +17,9 @@ import {
   getPolicyForCoordinator,
   getPolicyInForce,
   getVolunteerPolicyView,
+  listPolicyVersions,
+  savePolicyVersion,
+  POLICY_AUDIT_ACTIONS,
   type PolicyVersionInput,
 } from "../../src/server/repositories/policy";
 import {
@@ -82,8 +85,33 @@ const revisedPolicy: PolicyVersionInput = {
   familiarFaceDefault: true,
   reminderWindowHours: 24,
   callThresholdHours: 48,
+  callAfterOpenHours: 24,
   autoPublishLowRisk: false,
   signedOffBy: "Grace Whitfield",
+};
+
+/**
+ * The save path the editor uses: a named sign-off is mandatory, and a change
+ * that gives the church less notice before a person calls needs the typed
+ * confirmation word. These tests speak to the repository directly; the E2E
+ * spec drives the same path through the screen.
+ */
+const signedSave = {
+  ...revisedPolicy,
+  signedOffBy: "Grace Whitfield",
+  authorName: "Grace Whitfield",
+};
+
+type PolicyAuditRow = {
+  action: string;
+  actor_id: string | null;
+  detail: {
+    version?: number;
+    signedOffBy?: string;
+    authorName?: string | null;
+    loosenedThresholds?: string[];
+    changes?: Array<{ field: string; previous: number; next: number }>;
+  };
 };
 
 describe("versioned policy content", () => {
@@ -387,5 +415,283 @@ describe("versioned policy content", () => {
         t.db,
       ),
     ).rejects.toThrow(/Q9/);
+  });
+});
+
+describe("the policy editor's save path", () => {
+  let t: TestDatabase;
+
+  beforeAll(async () => {
+    t = await openTestDatabase();
+  });
+
+  afterAll(async () => {
+    await t.client.end();
+  });
+
+  beforeEach(async () => {
+    await truncateAll(t.db);
+    await seedDatabase(t.db);
+  });
+
+  async function policyCount(): Promise<number> {
+    const [row] = await t.client<{ count: number }[]>`
+      SELECT COUNT(*)::int AS count FROM policy
+    `;
+    return row?.count ?? 0;
+  }
+
+  async function auditFor(policyId: string): Promise<PolicyAuditRow[]> {
+    return t.client<PolicyAuditRow[]>`
+      SELECT action, actor_id, detail
+        FROM audit_event
+       WHERE entity = 'policy' AND entity_id = ${policyId}
+       ORDER BY created_at, action
+    `;
+  }
+
+  it("refuses a blank or missing named sign-off and writes nothing", async () => {
+    for (const signedOffBy of ["", "   "]) {
+      const result = await savePolicyVersion(
+        grace,
+        { ...signedSave, signedOffBy },
+        t.db,
+      );
+
+      expect(result.ok).toBe(false);
+      if (result.ok) continue;
+      expect(result.code).toBe("signoff_required");
+      expect(result.message).toMatch(/sign-off/i);
+      expect(result.message).toMatch(/name/i);
+    }
+
+    expect(await policyCount()).toBe(1);
+    const inForce = await getPolicyInForce(seedIds.church, t.db);
+    expect(inForce?.version).toBe(1);
+  });
+
+  it("saves version 2 with a named sign-off, the author, and a timestamp", async () => {
+    const editedPromise =
+      "We review these promises with the church family every Advent.";
+    const before = Date.now();
+
+    const result = await savePolicyVersion(
+      grace,
+      {
+        ...signedSave,
+        safeguardingPromises: [...seedSafeguardingPromises, editedPromise],
+      },
+      t.db,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.policy.version).toBe(2);
+    expect(result.policy.signedOffBy).toBe("Grace Whitfield");
+    expect(result.policy.signedOffAt).toBeInstanceOf(Date);
+    expect(result.policy.createdAt).toBeInstanceOf(Date);
+    expect(result.policy.createdAt.getTime()).toBeGreaterThanOrEqual(
+      before - 1_000,
+    );
+    expect(result.policy.safeguardingPromises).toContain(editedPromise);
+    expect(result.loosened).toEqual([]);
+
+    const [oldRow] = await t.client<
+      { safeguarding_promises: string[]; crisis_script: string }[]
+    >`
+      SELECT safeguarding_promises, crisis_script
+        FROM policy
+       WHERE id = ${seedIds.policyV1}
+    `;
+    expect(oldRow.safeguarding_promises).toEqual(seedSafeguardingPromises);
+    expect(oldRow.crisis_script).toBe(seedCrisisScript);
+
+    const audits = await auditFor(result.policy.id);
+    const saved = audits.find(
+      (row) => row.action === POLICY_AUDIT_ACTIONS.saved,
+    );
+    expect(saved).toBeTruthy();
+    expect(saved?.actor_id).toBe(seedIds.people.grace);
+    expect(saved?.detail.version).toBe(2);
+    expect(saved?.detail.signedOffBy).toBe("Grace Whitfield");
+    expect(saved?.detail.authorName).toBe("Grace Whitfield");
+
+    const versions = await listPolicyVersions(grace, t.db);
+    expect(versions.map((row) => row.version)).toEqual([2, 1]);
+    expect(versions[0].inForce).toBe(true);
+    expect(versions[0].signedOffBy).toBe("Grace Whitfield");
+    expect(versions[0].createdAt).toBeInstanceOf(Date);
+
+    const inForce = await getPolicyInForce(seedIds.church, t.db);
+    expect(inForce?.version).toBe(2);
+  });
+
+  it("refuses to loosen the window clock without the typed confirmation", async () => {
+    const missing = await savePolicyVersion(
+      grace,
+      { ...signedSave, callThresholdHours: 24 },
+      t.db,
+    );
+
+    expect(missing.ok).toBe(false);
+    if (missing.ok) return;
+    expect(missing.code).toBe("confirmation_required");
+    expect(missing.message).toMatch(/LOOSEN/);
+    expect(missing.loosened.map((change) => change.field)).toEqual([
+      "callThresholdHours",
+    ]);
+
+    const wrongWord = await savePolicyVersion(
+      grace,
+      {
+        ...signedSave,
+        callThresholdHours: 24,
+        loosenConfirmation: "yes please",
+      },
+      t.db,
+    );
+    expect(wrongWord.ok).toBe(false);
+    if (wrongWord.ok) return;
+    expect(wrongWord.code).toBe("confirmation_required");
+
+    expect(await policyCount()).toBe(1);
+  });
+
+  it("saves a loosened window clock with LOOSEN and flags it in the audit", async () => {
+    const result = await savePolicyVersion(
+      grace,
+      {
+        ...signedSave,
+        callThresholdHours: 24,
+        loosenConfirmation: " loosen ",
+      },
+      t.db,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.policy.callThresholdHours).toBe(24);
+    expect(result.loosened.map((change) => change.field)).toEqual([
+      "callThresholdHours",
+    ]);
+
+    const audits = await auditFor(result.policy.id);
+    const flagged = audits.find(
+      (row) => row.action === POLICY_AUDIT_ACTIONS.loosened,
+    );
+    expect(flagged).toBeTruthy();
+    expect(flagged?.actor_id).toBe(seedIds.people.grace);
+    expect(flagged?.detail.version).toBe(2);
+    expect(flagged?.detail.loosenedThresholds).toContain(
+      "callThresholdHours",
+    );
+    expect(flagged?.detail.changes?.[0]).toMatchObject({
+      field: "callThresholdHours",
+      previous: 48,
+      next: 24,
+    });
+  });
+
+  it("treats a later publication clock as a loosening too", async () => {
+    const refused = await savePolicyVersion(
+      grace,
+      { ...signedSave, callAfterOpenHours: 48 },
+      t.db,
+    );
+
+    expect(refused.ok).toBe(false);
+    if (refused.ok) return;
+    expect(refused.code).toBe("confirmation_required");
+    expect(refused.loosened.map((change) => change.field)).toEqual([
+      "callAfterOpenHours",
+    ]);
+
+    const saved = await savePolicyVersion(
+      grace,
+      {
+        ...signedSave,
+        callAfterOpenHours: 48,
+        loosenConfirmation: "LOOSEN",
+      },
+      t.db,
+    );
+
+    expect(saved.ok).toBe(true);
+    if (!saved.ok) return;
+    expect(saved.policy.callAfterOpenHours).toBe(48);
+
+    const inForce = await getPolicyInForce(seedIds.church, t.db);
+    expect(inForce?.callAfterOpenHours).toBe(48);
+
+    const audits = await auditFor(saved.policy.id);
+    const flagged = audits.find(
+      (row) => row.action === POLICY_AUDIT_ACTIONS.loosened,
+    );
+    expect(flagged?.detail.loosenedThresholds).toContain(
+      "callAfterOpenHours",
+    );
+  });
+
+  it("saves a tighter clock without a confirmation and persists both values", async () => {
+    const result = await savePolicyVersion(
+      grace,
+      {
+        ...signedSave,
+        callThresholdHours: 72,
+        callAfterOpenHours: 8,
+      },
+      t.db,
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.loosened).toEqual([]);
+    expect(result.policy.callThresholdHours).toBe(72);
+    expect(result.policy.callAfterOpenHours).toBe(8);
+
+    const audits = await auditFor(result.policy.id);
+    expect(
+      audits.some((row) => row.action === POLICY_AUDIT_ACTIONS.loosened),
+    ).toBe(false);
+
+    const [row] = await t.client<
+      { call_threshold_hours: number; call_after_open_hours: number }[]
+    >`
+      SELECT call_threshold_hours, call_after_open_hours
+        FROM policy
+       WHERE id = ${result.policy.id}
+    `;
+    expect(row.call_threshold_hours).toBe(72);
+    expect(row.call_after_open_hours).toBe(8);
+  });
+
+  it("refuses the save path to a caregiver and a volunteer", async () => {
+    await expect(
+      savePolicyVersion(marta, signedSave, t.db),
+    ).rejects.toBeInstanceOf(AuthError);
+    await expect(
+      savePolicyVersion(ruth, signedSave, t.db),
+    ).rejects.toBeInstanceOf(AuthError);
+
+    expect(await policyCount()).toBe(1);
+  });
+
+  it("refuses incomplete content before writing a version", async () => {
+    const result = await savePolicyVersion(
+      grace,
+      {
+        ...signedSave,
+        questionSet: seedQuestionSet.slice(0, 8),
+      },
+      t.db,
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe("invalid_content");
+    expect(result.errors.join("\n")).toMatch(/Q9/);
+    expect(await policyCount()).toBe(1);
   });
 });

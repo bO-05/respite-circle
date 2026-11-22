@@ -23,6 +23,22 @@ export const REQUIRED_QUESTION_IDS = [
 
 export type RequiredQuestionId = (typeof REQUIRED_QUESTION_IDS)[number];
 
+/**
+ * Published defaults for the two safeguarding clocks. They are the values a
+ * seeded church signs, and the fallbacks a reader uses when a row predates the
+ * field (the publication clock joined the policy content after version 1).
+ */
+export const POLICY_DEFAULT_REMINDER_WINDOW_HOURS = 24;
+export const POLICY_DEFAULT_CALL_THRESHOLD_HOURS = 48;
+export const POLICY_DEFAULT_CALL_AFTER_OPEN_HOURS = 24;
+
+/**
+ * The word a coordinator types to confirm a change that gives the church less
+ * notice before a person calls. It is checked server-side, and the save is
+ * flagged in the audit trail.
+ */
+export const POLICY_LOOSEN_CONFIRMATION = "LOOSEN";
+
 /** One immutable policy version, structurally identical to a `policy` row. */
 export type PolicyContent = {
   id: string;
@@ -35,7 +51,10 @@ export type PolicyContent = {
   referralResources: ReferralResource[];
   familiarFaceDefault: boolean;
   reminderWindowHours: number;
+  /** Hours before a time starts when the coverage watch opens. */
   callThresholdHours: number;
+  /** Hours on the board after publication when an untaken time needs a call. */
+  callAfterOpenHours: number;
   /** True only when the church has signed its volunteer-driver policy. */
   transportEnabled: boolean;
   autoPublishLowRisk: boolean;
@@ -51,6 +70,7 @@ export type PolicyContentInput = {
   referralResources: readonly ReferralResource[];
   reminderWindowHours: number;
   callThresholdHours: number;
+  callAfterOpenHours: number;
 };
 
 /**
@@ -207,6 +227,11 @@ export function validatePolicyContent(
       "The call threshold must be a whole number of hours, at least 1.",
     );
   }
+  if (!isPositiveWholeHours(input.callAfterOpenHours)) {
+    errors.push(
+      "The call-after clock must be a whole number of hours, at least 1.",
+    );
+  }
 
   errors.push(...validateQuestionSet(input.questionSet));
 
@@ -218,6 +243,104 @@ export function assertPolicyContent(input: PolicyContentInput): void {
   if (errors.length > 0) {
     throw new PolicyContentError(errors);
   }
+}
+
+// ---------------------------------------------------------------------------
+// The two safeguarding clocks
+// ---------------------------------------------------------------------------
+
+export type PolicyClockField = "callThresholdHours" | "callAfterOpenHours";
+
+export type PolicyClockDirection = "tighter" | "looser";
+
+/**
+ * One clock the church moved, with the direction that matters to a family:
+ * "looser" means less notice before a person picks up the phone.
+ *
+ * `callThresholdHours` counts backwards from the time itself, so shrinking it
+ * starts the watch later. `callAfterOpenHours` counts forward from publication,
+ * so growing it waits longer. Both directions are read from the family's side,
+ * never from a bigger-is-stricter instinct.
+ */
+export type PolicyClockChange = {
+  field: PolicyClockField;
+  label: string;
+  previous: number;
+  next: number;
+  direction: PolicyClockDirection;
+};
+
+export const POLICY_CLOCK_LABELS: Record<PolicyClockField, string> = {
+  callThresholdHours: "Call threshold (hours before the time starts)",
+  callAfterOpenHours: "Call after (hours on the board)",
+};
+
+type ClockValues = {
+  callThresholdHours: number;
+  callAfterOpenHours: number;
+};
+
+/** Every clock that moved between two versions, in a stable order. */
+export function policyClockChanges(
+  previous: ClockValues,
+  next: ClockValues,
+): PolicyClockChange[] {
+  const changes: PolicyClockChange[] = [];
+
+  if (previous.callThresholdHours !== next.callThresholdHours) {
+    const direction: PolicyClockDirection =
+      next.callThresholdHours < previous.callThresholdHours
+        ? "looser"
+        : "tighter";
+    changes.push({
+      field: "callThresholdHours",
+      label: POLICY_CLOCK_LABELS.callThresholdHours,
+      previous: previous.callThresholdHours,
+      next: next.callThresholdHours,
+      direction,
+    });
+  }
+
+  if (previous.callAfterOpenHours !== next.callAfterOpenHours) {
+    const direction: PolicyClockDirection =
+      next.callAfterOpenHours > previous.callAfterOpenHours
+        ? "looser"
+        : "tighter";
+    changes.push({
+      field: "callAfterOpenHours",
+      label: POLICY_CLOCK_LABELS.callAfterOpenHours,
+      previous: previous.callAfterOpenHours,
+      next: next.callAfterOpenHours,
+      direction,
+    });
+  }
+
+  return changes;
+}
+
+/** The changes that reduce how soon a person is called. */
+export function loosenedPolicyClocks(
+  changes: readonly PolicyClockChange[],
+): PolicyClockChange[] {
+  return changes.filter((change) => change.direction === "looser");
+}
+
+/**
+ * The typed confirmation guard. Returns a message to show the coordinator, or
+ * null when the change is safe to save without it. A tightened clock never
+ * needs the word; a loosened one always does.
+ */
+export function validateLoosenConfirmation(
+  loosened: readonly PolicyClockChange[],
+  confirmation: string | null | undefined,
+): string | null {
+  if (loosened.length === 0) return null;
+
+  const typed = (confirmation ?? "").trim().toUpperCase();
+  if (typed === POLICY_LOOSEN_CONFIRMATION) return null;
+
+  const clocks = loosened.map((change) => change.label).join(" and ");
+  return `This change gives the church less notice before a person calls: ${clocks}. Type ${POLICY_LOOSEN_CONFIRMATION} to confirm it.`;
 }
 
 /**

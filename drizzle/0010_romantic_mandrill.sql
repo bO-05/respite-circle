@@ -1,0 +1,2 @@
+ALTER TABLE "policy" ADD COLUMN "call_after_open_hours" integer DEFAULT 24 NOT NULL;--> statement-breakpoint
+ALTER TABLE "policy" ADD CONSTRAINT "policy_call_after_open_positive" CHECK ("policy"."call_after_open_hours" >= 1);

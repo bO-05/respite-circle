@@ -195,6 +195,12 @@ export const policy = pgTable(
     /** Hours before a slot window when the coverage watch starts. */
     callThresholdHours: integer("call_threshold_hours").notNull().default(48),
     /**
+     * Hours on the board after publication when an untaken time needs a call.
+     * The second of the two safeguarding clocks: the earlier of the two wins,
+     * so a church tunes both the near-window and the still-unclaimed case.
+     */
+    callAfterOpenHours: integer("call_after_open_hours").notNull().default(24),
+    /**
      * True only when the church has signed its volunteer-driver policy. A
      * drive slot is never proposed or added while this is false; the seed
      * default is false because transport imports liability the group model
@@ -223,6 +229,10 @@ export const policy = pgTable(
     check(
       "policy_call_threshold_positive",
       sql`${t.callThresholdHours} >= 1`,
+    ),
+    check(
+      "policy_call_after_open_positive",
+      sql`${t.callAfterOpenHours} >= 1`,
     ),
   ],
 );

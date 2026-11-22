@@ -22,8 +22,8 @@ import {
 import { isUuid } from "@/server/domain/claim";
 import {
   ABSENCE_PROOF_QUERY_TEXT,
-  DEFAULT_CALL_AFTER_OPEN_HOURS,
-  DEFAULT_CALL_THRESHOLD_HOURS,
+  callAfterOpenHoursFromPolicy,
+  callThresholdHoursFromPolicy,
   caregiverWorkingSentence,
   coverageExpiryRefusalCopy,
   coverageOpenFor,
@@ -191,20 +191,24 @@ export const COVERAGE_AUDIT_ACTIONS = {
 export const COVERAGE_CALL_SAVED_MESSAGE =
   "The call is recorded. Nothing was sent to the family.";
 
-function thresholdFromPolicy(value: number | null | undefined): number {
-  return typeof value === "number" &&
-    Number.isFinite(value) &&
-    value >= 1
-    ? Math.floor(value)
-    : DEFAULT_CALL_THRESHOLD_HOURS;
-}
-
-async function thresholdHoursFor(
+/**
+ * Both safeguarding clocks as the signed version currently carries them. An
+ * older row without the publication clock reads the seeded default, so the
+ * watch behaves exactly as it did before the clock became editable.
+ */
+async function callClocksFor(
   churchId: string,
   database: AppDatabase,
-): Promise<number> {
-  const policy = await getPolicyInForce(churchId, database);
-  return thresholdFromPolicy(policy?.callThresholdHours);
+): Promise<{ thresholdHours: number; openAfterHours: number }> {
+  const policyRow = await getPolicyInForce(churchId, database);
+  return {
+    thresholdHours: callThresholdHoursFromPolicy(
+      policyRow?.callThresholdHours,
+    ),
+    openAfterHours: callAfterOpenHoursFromPolicy(
+      policyRow?.callAfterOpenHours,
+    ),
+  };
 }
 
 function toCallRow(row: {
@@ -245,6 +249,7 @@ function buildItem(input: {
   churchOutboxCount: number;
   absenceProof: CoverageAbsenceProofRow | null;
   thresholdHours: number;
+  openAfterHours: number;
   now: Date;
 }): CoverageWatchItem {
   const openSince = input.row.approvedAt ?? input.row.createdAt;
@@ -253,7 +258,7 @@ function buildItem(input: {
     windowStart: input.row.windowStart,
     openSince,
     thresholdHours: input.thresholdHours,
-    openAfterHours: DEFAULT_CALL_AFTER_OPEN_HOURS,
+    openAfterHours: input.openAfterHours,
   });
 
   return {
@@ -276,11 +281,11 @@ function buildItem(input: {
       windowStart: input.row.windowStart,
       openSince,
       thresholdHours: input.thresholdHours,
-      openAfterHours: DEFAULT_CALL_AFTER_OPEN_HOURS,
+      openAfterHours: input.openAfterHours,
       now: input.now,
     }),
     thresholdHours: input.thresholdHours,
-    openAfterHours: DEFAULT_CALL_AFTER_OPEN_HOURS,
+    openAfterHours: input.openAfterHours,
     caregiverOutboxCount: input.caregiverOutboxCount,
     churchOutboxCount: input.churchOutboxCount,
     calls: input.calls,
@@ -338,9 +343,9 @@ export async function getDeskSlotCoverage(
   const row = rows[0];
   if (!row) return null;
 
-  const [thresholdHours, countRows, callRows, reofferRow, proofRows] =
+  const [clocks, countRows, callRows, reofferRow, proofRows] =
     await Promise.all([
-      thresholdHoursFor(actor.churchId, database),
+      callClocksFor(actor.churchId, database),
       database
         .select({
           slotId: notification.slotId,
@@ -422,7 +427,8 @@ export async function getDeskSlotCoverage(
     caregiverOutboxCount: countBySlot.get(slotId) ?? 0,
     churchOutboxCount,
     absenceProof: proofRows[0] ?? null,
-    thresholdHours,
+    thresholdHours: clocks.thresholdHours,
+    openAfterHours: clocks.openAfterHours,
     now,
   });
 
@@ -481,8 +487,8 @@ export async function listCoverageWatch(
 
   const slotIds = rows.map((row) => row.slotId);
 
-  const [thresholdHours, countRows, callRows, reofferRows] = await Promise.all([
-    thresholdHoursFor(actor.churchId, database),
+  const [clocks, countRows, callRows, reofferRows] = await Promise.all([
+    callClocksFor(actor.churchId, database),
     database
       .select({
         slotId: notification.slotId,
@@ -567,7 +573,8 @@ export async function listCoverageWatch(
         caregiverOutboxCount: countBySlot.get(row.slotId) ?? 0,
         churchOutboxCount,
         absenceProof: null,
-        thresholdHours,
+        thresholdHours: clocks.thresholdHours,
+        openAfterHours: clocks.openAfterHours,
         now,
       }),
     )

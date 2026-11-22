@@ -9,8 +9,12 @@
  *
  *   - the church's `call_threshold_hours` before the window starts (48 hours
  *     by default), so a near time is never discovered too late;
- *   - `DEFAULT_CALL_AFTER_OPEN_HOURS` after it was published to the board
- *     (24 hours), so a far time does not sit silently for weeks.
+ *   - the church's `call_after_open_hours` after it was published to the board
+ *     (24 hours by default), so a far time does not sit silently for weeks.
+ *
+ * Both are policy content and both are editable on the desk. A row that
+ * predates the publication clock reads the constant below, which is the
+ * seeded value, so an older version behaves exactly as it did.
  *
  * There is no urgency score and no ranking. A time that is due is due.
  *
@@ -21,15 +25,55 @@
  * database's `absence_proof_zero_outbox` CHECK refuses anything but zero.
  */
 
+import {
+  POLICY_DEFAULT_CALL_AFTER_OPEN_HOURS,
+  POLICY_DEFAULT_CALL_THRESHOLD_HOURS,
+} from "./policy";
+
 const HOUR_MS = 3_600_000;
 const DAY_MS = 24 * HOUR_MS;
 const WEEK_MS = 7 * DAY_MS;
 
 /** Hours before a published time's window when the coverage watch starts. */
-export const DEFAULT_CALL_THRESHOLD_HOURS = 48;
+export const DEFAULT_CALL_THRESHOLD_HOURS =
+  POLICY_DEFAULT_CALL_THRESHOLD_HOURS;
 
 /** Hours after publication when a still-unclaimed time needs a call. */
-export const DEFAULT_CALL_AFTER_OPEN_HOURS = 24;
+export const DEFAULT_CALL_AFTER_OPEN_HOURS =
+  POLICY_DEFAULT_CALL_AFTER_OPEN_HOURS;
+
+function positiveWholeHours(
+  value: number | null | undefined,
+  fallback: number,
+): number {
+  return typeof value === "number" &&
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value >= 1
+    ? value
+    : fallback;
+}
+
+/**
+ * The window clock a policy row carries, or the published default when the row
+ * predates the field or holds something that is not a whole hour.
+ */
+export function callThresholdHoursFromPolicy(
+  value: number | null | undefined,
+): number {
+  return positiveWholeHours(value, DEFAULT_CALL_THRESHOLD_HOURS);
+}
+
+/**
+ * The publication clock a policy row carries, or the published default. This
+ * is the fallback that keeps an older row behaving as it did before the clock
+ * became editable policy content.
+ */
+export function callAfterOpenHoursFromPolicy(
+  value: number | null | undefined,
+): number {
+  return positiveWholeHours(value, DEFAULT_CALL_AFTER_OPEN_HOURS);
+}
 
 /** The five human outcomes a coordinator can record after a call. */
 export const COVERAGE_CALL_OUTCOMES = [

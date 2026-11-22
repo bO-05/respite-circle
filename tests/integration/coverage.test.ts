@@ -3,7 +3,15 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { truncateAll } from "../../src/db/reset";
 import { seedDatabase } from "../../src/db/seed";
-import { SEED_REFERENCE_DATE, seedIds } from "../../src/db/seed-data";
+import {
+  SEED_REFERENCE_DATE,
+  seedCrisisScript,
+  seedIds,
+  seedLocalCrisisLine,
+  seedQuestionSet,
+  seedReferralResources,
+  seedSafeguardingPromises,
+} from "../../src/db/seed-data";
 import {
   absenceProof,
   ask,
@@ -32,6 +40,7 @@ import {
   reofferSlot,
 } from "../../src/server/repositories/coverage";
 import { writeReminder } from "../../src/server/repositories/reminders";
+import { createPolicyVersion } from "../../src/server/repositories/policy";
 import { approveAskForCoordinator } from "../../src/server/services/ask-review";
 import { sha256Hex } from "../../src/server/services/decision-contract";
 import { constructDraftSlots } from "../../src/server/services/slot-construction";
@@ -375,6 +384,61 @@ describe("the coverage watch and the failure-path proof", () => {
     expect(
       await getDeskSlotCoverage(FOREIGN_COORDINATOR, homeId, t.db, NOW),
     ).toBeNull();
+  });
+
+  it("reads the publication clock from the signed policy, not from a constant", async () => {
+    const { companionId } = await publishedAsk(t);
+    const afterADay = new Date(NOW.getTime() + 25 * 3_600_000);
+
+    const byDefault = await getDeskSlotCoverage(
+      GRACE,
+      companionId,
+      t.db,
+      afterADay,
+    );
+    expect(byDefault?.openAfterHours).toBe(24);
+    expect(byDefault?.thresholdHours).toBe(48);
+    expect(byDefault?.isDue).toBe(true);
+
+    // A signed version with a longer publication clock gives the church more
+    // time on the board before a person is called. The next read must use it.
+    await createPolicyVersion(
+      GRACE,
+      {
+        safeguardingPromises: [...seedSafeguardingPromises],
+        questionSet: seedQuestionSet.map((question) => ({ ...question })),
+        crisisScript: seedCrisisScript,
+        localCrisisLine: seedLocalCrisisLine,
+        referralResources: seedReferralResources.map((resource) => ({
+          ...resource,
+        })),
+        reminderWindowHours: 24,
+        callThresholdHours: 48,
+        callAfterOpenHours: 72,
+        signedOffBy: "Grace Whitfield",
+      },
+      t.db,
+    );
+
+    const byPolicy = await getDeskSlotCoverage(
+      GRACE,
+      companionId,
+      t.db,
+      afterADay,
+    );
+    expect(byPolicy?.openAfterHours).toBe(72);
+    expect(byPolicy?.isDue).toBe(false);
+    expect(byPolicy?.dueAt.toISOString()).toBe(
+      new Date(NOW.getTime() + 72 * 3_600_000).toISOString(),
+    );
+
+    const later = await getDeskSlotCoverage(
+      GRACE,
+      companionId,
+      t.db,
+      new Date(NOW.getTime() + 73 * 3_600_000),
+    );
+    expect(later?.isDue).toBe(true);
   });
 
   it("records the call with actor, timestamp, outcome, and note and sends nothing", async () => {

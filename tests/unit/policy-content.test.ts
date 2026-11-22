@@ -33,6 +33,7 @@ const seededPolicy: PolicyContent = {
   familiarFaceDefault: seedPolicy.familiarFaceDefault,
   reminderWindowHours: seedPolicy.reminderWindowHours,
   callThresholdHours: seedPolicy.callThresholdHours,
+  callAfterOpenHours: seedPolicy.callAfterOpenHours,
   transportEnabled: seedPolicy.transportEnabled,
   autoPublishLowRisk: seedPolicy.autoPublishLowRisk,
   signedOffBy: seedPolicy.signedOffBy,
@@ -183,9 +184,11 @@ describe("policy content validation", () => {
       ...seededPolicy,
       reminderWindowHours: 0,
       callThresholdHours: -1,
+      callAfterOpenHours: 0,
     }).join("\n");
     expect(errors).toMatch(/reminder window/i);
     expect(errors).toMatch(/call threshold/i);
+    expect(errors).toMatch(/call[- ]after/i);
   });
 });
 

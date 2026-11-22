@@ -9,9 +9,17 @@ import {
   expectedSeedCounts,
   SEED_REFERENCE_DATE,
   seedChurch,
+  seedCrisisScript,
+  seedIds,
+  seedLocalCrisisLine,
   seedPeople,
+  seedQuestionSet,
+  seedReferralResources,
+  seedSafeguardingPromises,
   seedSessions,
 } from "../../src/db/seed-data";
+import type { Actor } from "../../src/server/auth/policy";
+import { createPolicyVersion } from "../../src/server/repositories/policy";
 import { verifySeed } from "../../scripts/verify-seed";
 import { openTestDatabase, type TestDatabase } from "./helpers/db";
 
@@ -112,6 +120,49 @@ describe("deterministic seed", () => {
     expect(new Date(sessions[3].starts_at).getTime()).toBeGreaterThan(
       new Date(sessions[2].starts_at).getTime(),
     );
+  });
+
+  it("tolerates a later policy version while still requiring version 1's exact content", async () => {
+    await seedDatabase(t.db);
+
+    const grace: Actor = {
+      personId: seedIds.people.grace,
+      role: "coordinator",
+      churchId: seedIds.church,
+    };
+
+    const second = await createPolicyVersion(
+      grace,
+      {
+        safeguardingPromises: [
+          ...seedSafeguardingPromises,
+          "A promise added after the first signing.",
+        ],
+        questionSet: seedQuestionSet.map((question) => ({ ...question })),
+        crisisScript: seedCrisisScript,
+        localCrisisLine: seedLocalCrisisLine,
+        referralResources: seedReferralResources.map((resource) => ({
+          ...resource,
+        })),
+        reminderWindowHours: 24,
+        callThresholdHours: 48,
+        callAfterOpenHours: 24,
+        signedOffBy: "Grace Whitfield",
+      },
+      t.db,
+    );
+
+    expect(second.version).toBe(2);
+
+    const [count] = await t.client<{ count: number }[]>`
+      SELECT COUNT(*)::int AS count FROM policy
+    `;
+    expect(count.count).toBe(2);
+
+    const verified = await verifySeed(t.db);
+    expect(verified.failures).toEqual([]);
+    expect(verified.ok).toBe(true);
+    expect(verified.counts.policy).toBe(2);
   });
 
   it("fails verification with a clear message when rows are missing", async () => {

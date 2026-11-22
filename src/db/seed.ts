@@ -132,6 +132,7 @@ export async function seedDatabase(db: SeedDb): Promise<SeedCounts> {
         familiarFaceDefault: seedPolicy.familiarFaceDefault,
         reminderWindowHours: seedPolicy.reminderWindowHours,
         callThresholdHours: seedPolicy.callThresholdHours,
+        callAfterOpenHours: seedPolicy.callAfterOpenHours,
         transportEnabled: seedPolicy.transportEnabled,
         autoPublishLowRisk: seedPolicy.autoPublishLowRisk,
         signedOffBy: seedPolicy.signedOffBy,

@@ -352,6 +352,7 @@ export const seedPolicy = {
   familiarFaceDefault: true,
   reminderWindowHours: 24,
   callThresholdHours: 48,
+  callAfterOpenHours: 24,
   /**
    * Off by default: the group model leaves transport to families, and a drive
    * imports volunteer-driver liability. A church turns it on only with a signed
@@ -384,7 +385,14 @@ export const seedSessions = [1, 2, 3, 4].map((week) => {
   };
 });
 
-/** Expected counts after one seed run. Shared by `verify-seed.ts` and tests. */
+/**
+ * Expected counts after one seed run. Shared by `verify-seed.ts` and tests.
+ *
+ * `policy` is deliberately absent: the table is append-only, so a church that
+ * has saved an edit holds version 1 plus later versions. The seed verifier
+ * requires version 1 to exist with its exact seeded content and tolerates any
+ * later versions, rather than pinning the row count to one.
+ */
 export const expectedSeedCounts = {
   church: 1,
   person: 9,
@@ -392,7 +400,6 @@ export const expectedSeedCounts = {
   care_recipient: 3,
   volunteer: 4,
   familiar_face: 2,
-  policy: 1,
   session_template: 1,
   session: 4,
 } as const;

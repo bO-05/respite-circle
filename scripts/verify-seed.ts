@@ -181,18 +181,24 @@ export async function verifySeed(db: SeedDb): Promise<VerifySeedResult> {
     familiar_face_default: boolean;
     reminder_window_hours: number;
     call_threshold_hours: number;
+    call_after_open_hours: number;
+    transport_enabled: boolean;
     auto_publish_low_risk: boolean;
     signed_off_by: string | null;
     signed_off_at: Date | null;
   };
 
+  // A church that has saved an edit holds version 1 plus later versions, so
+  // this verifier requires version 1 and tolerates the rest. The count is
+  // reported (see `printCounts`) but never pinned to one.
   const policies = await db.$client<PolicyVerificationRow[]>`
     SELECT id, version, safeguarding_promises, question_set, crisis_script,
            local_crisis_line, referral_resources, familiar_face_default,
-           reminder_window_hours, call_threshold_hours, auto_publish_low_risk,
+           reminder_window_hours, call_threshold_hours, call_after_open_hours,
+           transport_enabled, auto_publish_low_risk,
            signed_off_by, signed_off_at
       FROM policy
-     WHERE version = 1
+     WHERE version = 1 AND church_id = ${seedChurch.id}
   `;
   const seededPolicy = policies[0];
 
@@ -253,6 +259,16 @@ export async function verifySeed(db: SeedDb): Promise<VerifySeedResult> {
     if (seededPolicy.call_threshold_hours !== seedPolicy.callThresholdHours) {
       failures.push(
         `policy call_threshold_hours must be ${seedPolicy.callThresholdHours}`,
+      );
+    }
+    if (seededPolicy.call_after_open_hours !== seedPolicy.callAfterOpenHours) {
+      failures.push(
+        `policy call_after_open_hours must be ${seedPolicy.callAfterOpenHours}`,
+      );
+    }
+    if (seededPolicy.transport_enabled !== seedPolicy.transportEnabled) {
+      failures.push(
+        `policy transport_enabled must be ${seedPolicy.transportEnabled}`,
       );
     }
     if (seededPolicy.auto_publish_low_risk) {
