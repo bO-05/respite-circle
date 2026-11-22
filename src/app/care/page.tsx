@@ -1,11 +1,22 @@
+import Link from "next/link";
 import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
+import { listCaregiverNotes } from "@/server/repositories/ask-review";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * The caregiver's home.
+ *
+ * When a coordinator sends an ask back, its note appears here exactly as it was
+ * written, alongside the receipt it belongs to. The page never shows a count,
+ * a wait, or a message the church did not write; there is no automated chase.
+ * Covered times arrive here in a later feature.
+ */
 export default async function CarePage() {
   const { person, session } = await requirePage(CAREGIVER_ROLES);
+  const notes = await listCaregiverNotes(session);
 
   return (
     <RolePage
@@ -14,12 +25,56 @@ export default async function CarePage() {
       title="What's covered for your family"
       lead="The times a neighbour has taken, and the words the church has sent you."
     >
+      {notes.length > 0 ? (
+        <section
+          aria-labelledby="care-notes-heading"
+          className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+        >
+          <div>
+            <h2 id="care-notes-heading" className="font-serif text-2xl text-ink">
+              A note from your coordinator
+            </h2>
+            <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+              These are the church&apos;s own words, kept exactly as they were
+              written. Nothing here is generated.
+            </p>
+          </div>
+
+          <ul className="flex flex-col gap-4">
+            {notes.map((note) => (
+              <li
+                key={note.askId}
+                data-testid="care-note"
+                data-ask-id={note.askId}
+                className="rounded-md border border-line bg-paper p-4"
+              >
+                <p className="text-base font-semibold text-ink">
+                  From {note.sentBackByName ?? "your coordinator"}
+                </p>
+                <blockquote
+                  data-testid="care-note-body"
+                  className="mt-2 max-w-prose whitespace-pre-wrap break-words text-lg leading-relaxed text-ink"
+                >
+                  {note.note}
+                </blockquote>
+                <Link
+                  href={`/ask/${note.askId}`}
+                  className="mt-3 inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+                >
+                  Read your ask again
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <section
         aria-labelledby="care-empty"
         className="rounded-lg border border-line bg-surface p-5"
       >
         <h2 id="care-empty" className="font-serif text-2xl text-ink">
-          Nothing to show yet
+          No time is covered yet
         </h2>
         <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
           When a time is covered, it appears here with the name of the person

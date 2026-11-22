@@ -332,6 +332,27 @@ export const ask = pgTable(
       withTimezone: true,
       mode: "date",
     }),
+    /**
+     * Who approved the ask and when. The same actor is copied onto every slot
+     * that approval published, so the congregation board can show a visible
+     * "Approved — Grace, time" line without ever reading the caregiver's story.
+     */
+    approvedBy: uuid("approved_by").references(() => person.id),
+    approvedAt: timestamp("approved_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    /**
+     * The human note on a send-back. It is stored exactly as typed (the
+     * repository refuses an empty note and never trims it), and the caregiver's
+     * receipt renders it character-for-character. Nothing is published.
+     */
+    sendBackNote: text("send_back_note"),
+    sentBackBy: uuid("sent_back_by").references(() => person.id),
+    sentBackAt: timestamp("sent_back_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
   },
   (t) => [
     index("ask_church_status_idx").on(t.churchId, t.status),

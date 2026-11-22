@@ -1,20 +1,27 @@
 import { notFound } from "next/navigation";
 import { RolePage } from "@/components/role-page";
+import { AskReviewSection } from "@/components/ask-review-section";
 import { DraftSlotSection } from "@/components/draft-slot-section";
 import { ExclusionPanelSection } from "@/components/exclusion-panel";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { holdReasonFor } from "@/server/domain/desk-queue";
 import { getCoordinatorAskWords } from "@/server/repositories/asks";
+import { getAskPublication } from "@/server/repositories/ask-review";
 import { getDraftEditorContext } from "@/server/repositories/draft-slots";
 import { getExclusionPanel } from "@/server/repositories/exclusions";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<string, string> = {
+  draft: "Not submitted yet",
   waiting_coordinator: "Waiting for a person",
   safety_hold: "Safety hold — a person will call",
   care_hold: "Personal-care hold — a person will call",
+  approved: "Approved — published to the board",
+  sent_back: "Sent back to the family",
+  closed: "Closed",
+  withdrawn: "Withdrawn",
 };
 
 /**
@@ -34,20 +41,27 @@ export default async function DeskAskPage({
   const { person, session } = await requirePage(DESK_ROLES);
   const { id } = await params;
 
-  // Three independent scoped reads in parallel: the words, the drafts, and the
-  // exclusion explanations. The Neon round trip is ~325 ms, so the page must
-  // not serialise them.
-  const [review, draftContext, exclusionContext] = await Promise.all([
+  // Four independent scoped reads in parallel: the words, the drafts, the
+  // exclusion explanations, and the approval/send-back record. The Neon round
+  // trip is ~325 ms, so the page must not serialise them.
+  const [review, draftContext, exclusionContext, publication] = await Promise.all([
     getCoordinatorAskWords(session, id),
     getDraftEditorContext(session, id),
     getExclusionPanel(session, id),
+    getAskPublication(session, id),
   ]);
 
-  if (!review || !draftContext || !exclusionContext) {
+  if (!review || !draftContext || !exclusionContext || !publication) {
     notFound();
   }
 
   const holdReason = holdReasonFor(review.status);
+  // The draft editor belongs to the review step and the two hold states. After
+  // a decision, the review section owns the published times and held drafts.
+  const showDraftEditor =
+    review.status === "waiting_coordinator" ||
+    review.status === "safety_hold" ||
+    review.status === "care_hold";
 
   return (
     <RolePage
@@ -122,9 +136,18 @@ export default async function DeskAskPage({
         ) : null}
       </section>
 
-      <DraftSlotSection context={draftContext} timeZone={draftContext.timeZone} />
+      {showDraftEditor ? (
+        <DraftSlotSection context={draftContext} timeZone={draftContext.timeZone} />
+      ) : null}
 
       <ExclusionPanelSection context={exclusionContext} />
+
+      <AskReviewSection
+        askId={publication.askId}
+        status={publication.status}
+        publication={publication}
+        drafts={draftContext.slots}
+      />
     </RolePage>
   );
 }

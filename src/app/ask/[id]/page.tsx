@@ -30,6 +30,7 @@ type StatusCopy = { label: string; tone: "amber" | "green" | "ink" };
 function statusCopy(
   status: AskStatus,
   coordinatorFirstName: string | null,
+  sentBackByFirstName: string | null,
 ): StatusCopy {
   const name = coordinatorFirstName ?? "Your coordinator";
 
@@ -43,7 +44,10 @@ function statusCopy(
     case "approved":
       return { label: `Approved by ${name}`, tone: "green" };
     case "sent_back":
-      return { label: `Read — ${name} will be in touch`, tone: "amber" };
+      return {
+        label: `Read — ${sentBackByFirstName ?? name} will be in touch`,
+        tone: "amber",
+      };
     case "closed":
       return { label: "Closed", tone: "ink" };
     case "withdrawn":
@@ -85,8 +89,13 @@ export default async function AskReceiptPage({
   const trailRows = trail ? buildTrailRows(trail.decisions) : [];
 
   const name = receipt.coordinatorFirstName;
-  const status = statusCopy(receipt.status, name);
+  const status = statusCopy(
+    receipt.status,
+    name,
+    receipt.sentBackByFirstName,
+  );
   const reader = name ?? "your coordinator";
+  const sender = receipt.sentBackByFirstName ?? name ?? "Your coordinator";
 
   return (
     <RolePage
@@ -106,6 +115,31 @@ export default async function AskReceiptPage({
         status={receipt.status}
         coordinatorFirstName={name}
       />
+
+      {receipt.status === "sent_back" && receipt.sendBackNote ? (
+        <section
+          data-testid="send-back-note"
+          aria-labelledby="send-back-note-heading"
+          className="flex flex-col gap-3 rounded-lg border border-amber bg-amber-soft p-5"
+        >
+          <h2
+            id="send-back-note-heading"
+            className="font-serif text-2xl text-ink"
+          >
+            A note from {sender}
+          </h2>
+          <p className="max-w-prose text-lg leading-relaxed text-ink">
+            {sender} read your words and sent this back with a note. Nothing was
+            shared with a neighbour, and nothing was published.
+          </p>
+          <blockquote
+            data-testid="send-back-note-body"
+            className="max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-surface px-5 py-4 text-xl leading-relaxed text-ink"
+          >
+            {receipt.sendBackNote}
+          </blockquote>
+        </section>
+      ) : null}
 
       <section
         aria-labelledby="your-words"

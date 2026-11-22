@@ -50,6 +50,13 @@
       "when": 1795316372764,
       "tag": "0006_exclusion_candidates",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795322875938,
+      "tag": "0007_fat_frank_castle",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,5 @@
 import { and, asc, eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db as appDb } from "@/db/client";
 import {
   ask,
@@ -70,6 +71,14 @@ export type CaregiverAskView = {
   coordinatorFirstName: string | null;
   /** The church's policy in force when the ask was first submitted. */
   policyVersion: number;
+  /**
+   * A send-back note, exactly as the coordinator wrote it. Present only after
+   * a send-back; the page renders it character-for-character and never trims
+   * or rewraps it.
+   */
+  sendBackNote: string | null;
+  sentBackAt: Date | null;
+  sentBackByFirstName: string | null;
 };
 
 export type DeskAskWords = {
@@ -308,6 +317,8 @@ export async function getCaregiverAsk(
 ): Promise<CaregiverAskView | null> {
   requireRoleSession(actor, CAREGIVER_ROLES);
 
+  const sentBackBy = alias(person, "ask_sent_back_by");
+
   const rows = await database
     .select({
       id: ask.id,
@@ -316,10 +327,14 @@ export async function getCaregiverAsk(
       originalText: ask.verbatimText,
       careRecipientFirstName: careRecipient.firstName,
       policyVersion: policy.version,
+      sendBackNote: ask.sendBackNote,
+      sentBackAt: ask.sentBackAt,
+      sentBackByFirstName: sentBackBy.firstName,
     })
     .from(ask)
     .innerJoin(careRecipient, eq(careRecipient.id, ask.careRecipientId))
     .innerJoin(policy, eq(policy.id, ask.policyVersionId))
+    .leftJoin(sentBackBy, eq(sentBackBy.id, ask.sentBackBy))
     .where(
       and(
         eq(ask.id, askId),
@@ -350,6 +365,9 @@ export async function getCaregiverAsk(
     careRecipientFirstName: row.careRecipientFirstName,
     coordinatorFirstName,
     policyVersion: row.policyVersion,
+    sendBackNote: row.sendBackNote,
+    sentBackAt: row.sentBackAt,
+    sentBackByFirstName: row.sentBackByFirstName,
   };
 }
 
