@@ -103,7 +103,13 @@ export type BoardLockCopy = {
   unlock: string;
 };
 
-function coordinatorName(coordinatorFirstName: string | null): string {
+/**
+ * The human who confirms a claim, as the copy should name them. A church with
+ * no seeded coordinator degrades to "your coordinator", never to an id.
+ */
+export function coordinatorDisplayName(
+  coordinatorFirstName: string | null,
+): string {
   return coordinatorFirstName?.trim() || "your coordinator";
 }
 
@@ -117,7 +123,7 @@ export function boardLockCopy(
   ruleCode: Exclude<RuleCode, "eligible">,
   coordinatorFirstName: string | null,
 ): BoardLockCopy {
-  const name = coordinatorName(coordinatorFirstName);
+  const name = coordinatorDisplayName(coordinatorFirstName);
 
   switch (ruleCode) {
     case "not_familiar":
@@ -169,7 +175,7 @@ export const BOARD_ACTION_LABEL = "Claim this time";
 export function boardClaimHint(
   coordinatorFirstName: string | null,
 ): string {
-  return `${coordinatorName(coordinatorFirstName)} will confirm it with you before the time is covered.`;
+  return `${coordinatorDisplayName(coordinatorFirstName)} will confirm it with you before the time is covered.`;
 }
 
 export type BoardEmptyCopy = {
@@ -188,7 +194,7 @@ export function boardEmptyCopy(
   role: "volunteer" | "coordinator" | "deputy",
   coordinatorFirstName: string | null,
 ): BoardEmptyCopy {
-  const name = coordinatorName(coordinatorFirstName);
+  const name = coordinatorDisplayName(coordinatorFirstName);
 
   if (role === "volunteer") {
     const subject = coordinatorFirstName?.trim() || "Your coordinator";

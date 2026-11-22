@@ -1,8 +1,10 @@
 import { BoardEmpty } from "@/components/board-empty";
 import { BoardSlotCard } from "@/components/board-slot-card";
+import { ClaimBanner } from "@/components/claim-banner";
 import { RolePage } from "@/components/role-page";
 import { BOARD_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
+import { isClaimOutcome, isRuleCode } from "@/server/domain/claim";
 import { getBoard } from "@/server/repositories/board";
 
 export const dynamic = "force-dynamic";
@@ -19,11 +21,24 @@ export const dynamic = "force-dynamic";
  *
  * It never shows the family's name, the person they care for, their words, the
  * orientation note, a claimant's name, or any count. Neighbours see times, never
- * stories.
+ * stories. A claim that comes back as a redirect reads one calm sentence here;
+ * the closed code is validated, never echoed.
  */
-export default async function CirclePage() {
+export default async function CirclePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { person, session } = await requirePage(BOARD_ROLES);
-  const board = await getBoard(session);
+  const [params, board] = await Promise.all([
+    searchParams,
+    getBoard(session),
+  ]);
+
+  const claimParam = typeof params.claim === "string" ? params.claim : null;
+  const claimCode = isClaimOutcome(claimParam) ? claimParam : null;
+  const ruleParam = typeof params.rule === "string" ? params.rule : null;
+  const ruleCode = isRuleCode(ruleParam) ? ruleParam : null;
 
   // `requirePage(BOARD_ROLES)` admits only these three roles.
   const viewerRole: "volunteer" | "coordinator" | "deputy" =
@@ -48,6 +63,13 @@ export default async function CirclePage() {
         aria-labelledby="board-open-heading"
         className="flex flex-col gap-4"
       >
+        {claimCode ? (
+          <ClaimBanner
+            code={claimCode}
+            ruleCode={ruleCode}
+            coordinatorFirstName={board?.coordinatorFirstName ?? null}
+          />
+        ) : null}
         <div>
           <h2 id="board-open-heading" className="font-serif text-2xl text-ink">
             Times you can take
