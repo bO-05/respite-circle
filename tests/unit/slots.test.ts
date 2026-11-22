@@ -478,6 +478,31 @@ describe("editing rules", () => {
     if (published.ok) return;
     expect(published.reason).toBe("not_draft");
   });
+
+  it("lets the deliberate hold-resolution path publish only a genuinely held draft", () => {
+    const held = {
+      status: "draft",
+      holdReason: "Waiting to hear about the family's Saturday.",
+    };
+    expect(canPublishDraft(held, { holdResolved: true }).ok).toBe(true);
+
+    const unheld = canPublishDraft(
+      { status: "draft", holdReason: null },
+      { holdResolved: true },
+    );
+    expect(unheld.ok).toBe(false);
+    if (unheld.ok) return;
+    expect(unheld.reason).toBe("not_held");
+    expect(unheld.message).toMatch(/nothing to resolve/i);
+
+    const alreadyOpen = canPublishDraft(
+      { status: "open", holdReason: "anything" },
+      { holdResolved: true },
+    );
+    expect(alreadyOpen.ok).toBe(false);
+    if (alreadyOpen.ok) return;
+    expect(alreadyOpen.reason).toBe("not_draft");
+  });
 });
 
 describe("manual additions", () => {

@@ -1048,14 +1048,31 @@ export type PublishableDraft = {
 
 export type PublishGuard =
   | { ok: true }
-  | { ok: false; reason: "held" | "not_draft"; message: string };
+  | { ok: false; reason: "held" | "not_draft" | "not_held"; message: string };
+
+export type PublishOptions = {
+  /**
+   * Set only by the deliberate path that resolves a hold and publishes that one
+   * draft in the same action. Every draft-to-open transition still asks this
+   * guard; the resolved path states that the hold was the reason for the visit.
+   */
+  holdResolved?: boolean;
+};
 
 /**
- * The single publication guard. A held draft cannot become visible until a
+ * The single publication guard.
+ *
+ * Every draft that becomes visible to the congregation passes through here.
+ * A held draft cannot become visible during an ordinary approval until a
  * coordinator resolves the hold and says why; a slot that is already published
- * is not a draft any more.
+ * is not a draft any more. The held-draft path passes `holdResolved: true`,
+ * which requires the hold to actually be present rather than skipping the
+ * check.
  */
-export function canPublishDraft(slot: PublishableDraft): PublishGuard {
+export function canPublishDraft(
+  slot: PublishableDraft,
+  options: PublishOptions = {},
+): PublishGuard {
   if (slot.status !== "draft") {
     return {
       ok: false,
@@ -1063,7 +1080,21 @@ export function canPublishDraft(slot: PublishableDraft): PublishGuard {
       message: "This time is not a draft any more.",
     };
   }
-  if (slot.holdReason && slot.holdReason.trim().length > 0) {
+
+  const held = Boolean(slot.holdReason && slot.holdReason.trim().length > 0);
+
+  if (options.holdResolved) {
+    if (!held) {
+      return {
+        ok: false,
+        reason: "not_held",
+        message: "This draft is not held, so there is nothing to resolve.",
+      };
+    }
+    return { ok: true };
+  }
+
+  if (held) {
     return {
       ok: false,
       reason: "held",

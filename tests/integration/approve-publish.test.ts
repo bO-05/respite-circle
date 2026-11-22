@@ -296,6 +296,7 @@ describe("approve, publish, and send back", () => {
         [
           "approvedAt",
           "approvedByName",
+          "claim",
           "gated",
           "id",
           "kind",

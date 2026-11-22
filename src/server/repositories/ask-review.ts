@@ -550,9 +550,10 @@ export type PublishHeldOutcome =
  * Resolve a held draft's hold and publish it, one deliberate action.
  *
  * This is the only path that can publish a time after its ask was approved.
- * It re-checks that the slot is still a draft, that it actually carries a hold
- * reason, and that the ask is already `approved` — an unapproved ask can never
- * leak an open slot. The resolved reason is kept in the audit log.
+ * It goes through `canPublishDraft` in its hold-resolved form, which requires
+ * the slot to still be a draft and to actually carry a hold reason; the ask must
+ * already be `approved`, so an unapproved ask can never leak an open slot. The
+ * resolved reason is kept in the audit log.
  */
 export async function resolveHeldDraftAndPublish(
   actor: Actor,
@@ -601,19 +602,19 @@ export async function resolveHeldDraftAndPublish(
       };
     }
 
-    if (target.status !== "draft") {
+    // The same publication guard as an ordinary approval, stating in one place
+    // that this visit resolves the hold. A non-draft or an unheld draft is
+    // refused with the desk's own sentence.
+    const publishGuard = canPublishDraft(target, { holdResolved: true });
+    if (!publishGuard.ok) {
       return {
         ok: false,
-        reason: "not_draft",
-        message: "That time is already published.",
-      };
-    }
-
-    if (!target.holdReason) {
-      return {
-        ok: false,
-        reason: "not_held",
-        message: "That draft is not held, so there is nothing to resolve.",
+        reason:
+          publishGuard.reason === "not_held" ? "not_held" : "not_draft",
+        message:
+          publishGuard.reason === "not_held"
+            ? "That draft is not held, so there is nothing to resolve."
+            : "That time is already published.",
       };
     }
 
