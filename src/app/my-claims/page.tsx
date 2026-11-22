@@ -1,31 +1,142 @@
+import Link from "next/link";
+import { MyClaimCard } from "@/components/my-claim-card";
 import { RolePage } from "@/components/role-page";
 import { CLAIMS_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
+import { coordinatorDisplayName } from "@/server/domain/board";
+import { myClaimEmptyCopy } from "@/server/domain/my-claims";
+import { listMyClaims } from "@/server/repositories/my-claims";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * A volunteer's own claims.
+ *
+ * Only the signed-in volunteer's rows are selected, and only in the four states
+ * that belong on this page: claimed, covered, done, cancelled. Draft slots and
+ * open times are absent by status, so a real waiting ask holding draft slots
+ * behind it cannot appear here even if the volunteer later claims one of them.
+ *
+ * The orientation note is never part of this page's data: the list query does
+ * not select it. It arrives on the detail page after the coordinator approves
+ * the claim.
+ */
 export default async function MyClaimsPage() {
   const { person, session } = await requirePage(CLAIMS_ROLES);
+  const list = await listMyClaims(session);
+
+  const active = list.claims.filter(
+    (claim) => claim.status === "claimed" || claim.status === "covered",
+  );
+  const finished = list.claims
+    .filter((claim) => claim.status === "done" || claim.status === "cancelled")
+    .slice()
+    .sort(
+      (left, right) =>
+        (right.windowStart?.getTime() ?? 0) -
+        (left.windowStart?.getTime() ?? 0),
+    );
+
+  const empty = myClaimEmptyCopy(list.coordinatorFirstName);
+  const name = coordinatorDisplayName(list.coordinatorFirstName);
+  const sentenceName = name.charAt(0).toUpperCase() + name.slice(1);
 
   return (
     <RolePage
       person={person}
       role={session.role}
       title="Times you've offered to cover"
-      lead="Only your own claims appear here, and the family's orientation note arrives after the coordinator approves your claim."
+      lead={`Only the times you said yes to. ${sentenceName} confirms a claim before the family's orientation note appears.`}
     >
-      <section
-        aria-labelledby="claims-empty"
-        className="rounded-lg border border-line bg-surface p-5"
-      >
-        <h2 id="claims-empty" className="font-serif text-2xl text-ink">
-          Nothing claimed yet
-        </h2>
-        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-          When you claim a time, it shows here with one calm status line. The
-          family&apos;s words are never part of this list.
-        </p>
-      </section>
+      {active.length > 0 ? (
+        <section
+          data-testid="my-claims-active"
+          aria-labelledby="claims-active-heading"
+          className="flex flex-col gap-4"
+        >
+          <div>
+            <h2
+              id="claims-active-heading"
+              className="font-serif text-2xl text-ink"
+            >
+              Times ahead
+            </h2>
+            <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+              Each time shows one calm status. When it is confirmed, the
+              family&apos;s orientation note appears on its own page.
+            </p>
+          </div>
+          <ul
+            data-testid="my-claims-list"
+            aria-label="Your claims"
+            className="flex flex-col gap-4"
+          >
+            {active.map((claim) => (
+              <MyClaimCard
+                key={claim.id}
+                claim={claim}
+                timeZone={list.timeZone}
+                coordinatorFirstName={list.coordinatorFirstName}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {finished.length > 0 ? (
+        <section
+          data-testid="my-claims-past"
+          aria-labelledby="claims-past-heading"
+          className="flex flex-col gap-4"
+        >
+          <div>
+            <h2
+              id="claims-past-heading"
+              className="font-serif text-2xl text-ink"
+            >
+              Times that are finished
+            </h2>
+            <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+              They stay here in plain words, so you can look back at what you
+              gave.
+            </p>
+          </div>
+          <ul aria-label="Finished times" className="flex flex-col gap-4">
+            {finished.map((claim) => (
+              <MyClaimCard
+                key={claim.id}
+                claim={claim}
+                timeZone={list.timeZone}
+                coordinatorFirstName={list.coordinatorFirstName}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {list.claims.length === 0 ? (
+        <section
+          data-testid="my-claims-empty"
+          aria-labelledby="claims-empty-heading"
+          className="rounded-lg border border-line bg-surface p-5"
+        >
+          <h2
+            id="claims-empty-heading"
+            className="font-serif text-2xl text-ink"
+          >
+            {empty.title}
+          </h2>
+          <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+            {empty.body}
+          </p>
+          <Link
+            href={empty.href}
+            className="mt-4 inline-flex min-h-11 min-w-11 w-fit items-center justify-center rounded-md border border-accent bg-accent px-5 py-2 text-lg font-semibold text-accent-foreground"
+          >
+            {empty.linkLabel}
+          </Link>
+        </section>
+      ) : null}
     </RolePage>
   );
 }
