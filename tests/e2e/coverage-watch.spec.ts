@@ -671,6 +671,11 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     expectNoDeskConcepts(careText, "/care");
     expect(careText).not.toMatch(/unclaimed|declined|waiting time|decline/i);
 
+    // The server-rendered payload, not just the hydrated text, must not carry
+    // the desk's status words to the caregiver.
+    const careHtml = await (await marta.page.request.get("/care")).text();
+    expect(careHtml).not.toMatch(/unclaimed|still waiting|waiting time|declined/i);
+
     await expect(
       marta.page.getByTestId("care-confirmation-body").first(),
     ).toContainText(/is covered/);
@@ -679,6 +684,10 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     await marta.page.goto(`/ask/${QUIET_ASK_TWO}`);
     const askText = await marta.page.locator("body").innerText();
     expectNoDeskConcepts(askText, "/ask/[id]");
+    const askHtml = await (
+      await marta.page.request.get(`/ask/${QUIET_ASK_TWO}`)
+    ).text();
+    expect(askHtml).not.toMatch(/unclaimed|still waiting|waiting time|declined/i);
     await expect(marta.page.getByTestId("ask-status")).toContainText(
       /Approved by Grace/i,
     );
