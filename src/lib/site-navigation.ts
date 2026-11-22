@@ -81,6 +81,7 @@ const VOLUNTEER_TITLES: readonly TitleRule[] = [
 const DESK_TITLES: readonly TitleRule[] = [
   { match: /^\/desk\/ask\/[^/]+$/, label: "Ask review" },
   { match: /^\/desk\/slot\/[^/]+$/, label: "Slot review" },
+  { match: /^\/desk\/failures$/, label: "Coverage watch" },
   { match: /^\/desk\/sessions$/, label: "Respite Morning sessions" },
   { match: /^\/desk\/audit$/, label: "Decision log" },
   { match: /^\/desk\/policy$/, label: "Church policy" },

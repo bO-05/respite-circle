@@ -12,6 +12,7 @@ import {
 import { formatWindowLabel } from "@/server/domain/slots";
 import { listCaregiverNotes } from "@/server/repositories/ask-review";
 import { listCaregiverConfirmations } from "@/server/repositories/claim-review";
+import { listCaregiverWorkingLines } from "@/server/repositories/coverage";
 import { listCaregiverReminders } from "@/server/repositories/reminders";
 
 export const dynamic = "force-dynamic";
@@ -36,10 +37,11 @@ export default async function CarePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { person, session } = await requirePage(CAREGIVER_ROLES);
-  const [notes, confirmations, reminders, query] = await Promise.all([
+  const [notes, confirmations, reminders, working, query] = await Promise.all([
     listCaregiverNotes(session),
     listCaregiverConfirmations(session),
     listCaregiverReminders(session),
+    listCaregiverWorkingLines(session),
     searchParams,
   ]);
 
@@ -53,6 +55,15 @@ export default async function CarePage({
       title="What's covered for your family"
       lead="The times a neighbour has taken, and the words the church has sent you."
     >
+      {working ? (
+        <p
+          data-testid="care-coordinator-working"
+          className="max-w-prose whitespace-pre-wrap rounded-lg border border-line bg-surface px-5 py-4 text-xl leading-relaxed text-ink"
+        >
+          {working.sentence}
+        </p>
+      ) : null}
+
       {thanksCode ? (
         <div data-testid="care-thanks-flash">
           <ClaimFlash
@@ -154,7 +165,7 @@ export default async function CarePage({
           </h2>
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
             When a time is covered, it appears here with the name of the person
-            coming. Nothing is ever counted, timed, or chased.
+            coming. Nothing here is a score, a timer, or a chase.
           </p>
         </section>
       )}

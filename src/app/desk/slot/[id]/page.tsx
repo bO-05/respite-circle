@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClaimReviewSection } from "@/components/claim-review-section";
+import { CoverageSection } from "@/components/coverage-card";
 import { ReminderSection } from "@/components/reminder-section";
 import { RolePage } from "@/components/role-page";
 import { DESK_ROLES } from "@/server/auth/policy";
@@ -8,6 +9,7 @@ import { requirePage } from "@/server/auth/guards";
 import { formatApprovalLine } from "@/server/domain/ask-review";
 import { formatWindowLabel } from "@/server/domain/slots";
 import { getDeskSlotClaimReview } from "@/server/repositories/claim-review";
+import { getDeskSlotCoverage } from "@/server/repositories/coverage";
 import { getDeskSlotReminder } from "@/server/repositories/reminders";
 
 export const dynamic = "force-dynamic";
@@ -50,14 +52,21 @@ export default async function DeskSlotPage({
 }) {
   const { person, session } = await requirePage(DESK_ROLES);
   const { id } = await params;
-  const [review, reminder] = await Promise.all([
+  const [review, reminder, coverage] = await Promise.all([
     getDeskSlotClaimReview(session, id),
     getDeskSlotReminder(session, id),
+    getDeskSlotCoverage(session, id),
   ]);
 
   if (!review) {
     notFound();
   }
+
+  const showCoverage =
+    coverage !== null &&
+    (coverage.status === "open" ||
+      coverage.status === "expired_unclaimed" ||
+      coverage.calls.length > 0);
 
   const timeZone = review.timeZone;
   const publicationLine = formatApprovalLine({
@@ -145,6 +154,10 @@ export default async function DeskSlotPage({
       </section>
 
       <ClaimReviewSection review={review} />
+
+      {showCoverage && coverage ? (
+        <CoverageSection coverage={coverage} />
+      ) : null}
 
       {reminder ? <ReminderSection reminder={reminder} /> : null}
 

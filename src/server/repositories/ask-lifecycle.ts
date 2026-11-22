@@ -21,7 +21,7 @@ import type { AppDatabase } from "./coordinator";
  * fact, not a message.
  */
 
-export type AskClosureCause = "slot_done" | "session_cancelled";
+export type AskClosureCause = "slot_done" | "session_cancelled" | "slot_expired";
 
 export type AskClosureOutcome = {
   closed: boolean;

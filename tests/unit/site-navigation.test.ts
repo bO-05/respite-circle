@@ -104,6 +104,7 @@ describe("document titles", () => {
     { role: "coordinator", path: "/desk/sessions", label: "Respite Morning sessions" },
     { role: "coordinator", path: "/desk/ask/abc", label: "Ask review" },
     { role: "coordinator", path: "/desk/slot/abc", label: "Slot review" },
+    { role: "coordinator", path: "/desk/failures", label: "Coverage watch" },
     { role: "coordinator", path: "/desk/audit", label: "Decision log" },
     { role: "coordinator", path: "/desk/policy", label: "Church policy" },
     { role: "coordinator", path: "/desk/metrics", label: "Church numbers" },

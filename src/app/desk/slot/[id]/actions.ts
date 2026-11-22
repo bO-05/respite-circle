@@ -13,9 +13,20 @@ import {
   type ReminderActionState,
 } from "@/server/domain/notifications";
 import {
+  COVERAGE_GENERIC_FAILURE,
+  COVERAGE_SESSION_ENDED,
+  type CoverageActionField,
+  type CoverageActionState,
+} from "@/server/domain/coverage";
+import {
   approveClaim,
   revokeClaim,
 } from "@/server/repositories/claim-review";
+import {
+  expireSlotUnclaimed,
+  recordCoverageCall,
+  reofferSlot,
+} from "@/server/repositories/coverage";
 import { writeReminder } from "@/server/repositories/reminders";
 
 /**
@@ -118,6 +129,107 @@ export async function revokeClaimAction(
     return successState(result.message);
   } catch {
     return errorState(CLAIM_REVIEW_GENERIC_FAILURE);
+  }
+}
+
+/**
+ * The coverage watch's three actions: record a call, offer the time again, and
+ * close it without a claim.
+ *
+ * Each re-derives the desk session, then the repository re-locks the slot and
+ * re-checks the state and the live outbox count. None of them writes a
+ * notification row. An expiry with any message on the family's page comes back
+ * as an error state, not a quiet success.
+ */
+
+function coverageError(
+  message: string,
+  field: CoverageActionField = "form",
+): CoverageActionState {
+  return { status: "error", message, field };
+}
+
+function refreshAfterCoverage(slotId: string): void {
+  revalidatePath(`/desk/slot/${slotId}`);
+  revalidatePath("/desk/failures");
+  revalidatePath("/desk");
+  revalidatePath("/care");
+  revalidatePath("/circle");
+  revalidatePath("/my-claims");
+}
+
+export async function recordCoverageCallAction(
+  _previous: CoverageActionState,
+  formData: FormData,
+): Promise<CoverageActionState> {
+  const authorized = await deskSession();
+  if (!authorized) return coverageError(COVERAGE_SESSION_ENDED);
+
+  const slotId = text(formData, "slotId").trim();
+  if (!UUID_PATTERN.test(slotId)) {
+    return coverageError("That time is not available.");
+  }
+
+  try {
+    const result = await recordCoverageCall(authorized.session, slotId, {
+      outcome: text(formData, "outcome"),
+      note: text(formData, "note"),
+    });
+
+    if (!result.ok) {
+      return coverageError(result.message, result.field ?? "form");
+    }
+
+    refreshAfterCoverage(slotId);
+    return { status: "success", message: result.message };
+  } catch {
+    return coverageError(COVERAGE_GENERIC_FAILURE);
+  }
+}
+
+export async function reofferSlotAction(
+  _previous: CoverageActionState,
+  formData: FormData,
+): Promise<CoverageActionState> {
+  const authorized = await deskSession();
+  if (!authorized) return coverageError(COVERAGE_SESSION_ENDED);
+
+  const slotId = text(formData, "slotId").trim();
+  if (!UUID_PATTERN.test(slotId)) {
+    return coverageError("That time is not available.");
+  }
+
+  try {
+    const result = await reofferSlot(authorized.session, slotId);
+    if (!result.ok) return coverageError(result.message);
+
+    refreshAfterCoverage(slotId);
+    return { status: "success", message: result.message };
+  } catch {
+    return coverageError(COVERAGE_GENERIC_FAILURE);
+  }
+}
+
+export async function expireSlotUnclaimedAction(
+  _previous: CoverageActionState,
+  formData: FormData,
+): Promise<CoverageActionState> {
+  const authorized = await deskSession();
+  if (!authorized) return coverageError(COVERAGE_SESSION_ENDED);
+
+  const slotId = text(formData, "slotId").trim();
+  if (!UUID_PATTERN.test(slotId)) {
+    return coverageError("That time is not available.");
+  }
+
+  try {
+    const result = await expireSlotUnclaimed(authorized.session, slotId);
+    if (!result.ok) return coverageError(result.message);
+
+    refreshAfterCoverage(slotId);
+    return { status: "success", message: result.message };
+  } catch {
+    return coverageError(COVERAGE_GENERIC_FAILURE);
   }
 }
 

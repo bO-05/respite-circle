@@ -15,7 +15,9 @@ import {
   type DeskQueueItem,
 } from "@/server/repositories/coordinator";
 import { listPendingClaims } from "@/server/repositories/claim-review";
+import { coverageMessageCountLine } from "@/server/domain/coverage";
 import { formatWindowLabel } from "@/server/domain/slots";
+import { listCoverageWatch } from "@/server/repositories/coverage";
 import { getDeskSessionOverview } from "@/server/repositories/sessions";
 
 export const dynamic = "force-dynamic";
@@ -82,10 +84,11 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
 
 export default async function DeskPage() {
   const { person, session } = await requirePage(DESK_ROLES);
-  const [asks, overview, pendingClaims] = await Promise.all([
+  const [asks, overview, pendingClaims, coverageWatch] = await Promise.all([
     listDeskAsks(session),
     getDeskSessionOverview(session),
     listPendingClaims(session),
+    listCoverageWatch(session),
   ]);
   const groups = groupDeskQueue(asks);
   // One server clock for the whole page: every row agrees, and the value is
@@ -100,6 +103,70 @@ export default async function DeskPage() {
       lead="A person reads every ask before a neighbour sees a time. Safety and personal-care asks stay pinned in their own groups."
     >
       <SessionCalendarStrip overview={overview} />
+
+      {coverageWatch.length > 0 ? (
+        <section
+          data-testid="desk-coverage-watch"
+          aria-labelledby="desk-coverage-watch-heading"
+          className="flex flex-col gap-3 rounded-lg border border-amber bg-amber-soft p-5"
+        >
+          <div>
+            <h2
+              id="desk-coverage-watch-heading"
+              className="font-serif text-2xl text-ink"
+            >
+              Coverage watch
+            </h2>
+            <p className="mt-1 max-w-prose text-base leading-relaxed text-ink">
+              No neighbour has taken these times yet. A person calls; the app
+              sends nothing.
+            </p>
+          </div>
+
+          <ul className="flex flex-col gap-3">
+            {coverageWatch.map((item) => (
+              <li
+                key={item.slotId}
+                data-testid="desk-coverage-row"
+                data-slot-id={item.slotId}
+                data-messages={item.caregiverOutboxCount}
+                className="rounded-md border border-line bg-surface p-4"
+              >
+                <a
+                  href={`/desk/slot/${item.slotId}`}
+                  className="inline-flex min-h-11 items-center text-lg font-semibold text-ink underline decoration-accent underline-offset-4"
+                >
+                  {item.caregiverFirstName} — {item.label}
+                </a>
+                <p className="mt-1 text-base text-ink-muted">
+                  {formatWindowLabel(
+                    item.windowStart,
+                    item.windowEnd,
+                    item.timeZone,
+                  )}
+                </p>
+                <p className="mt-1 text-base text-ink-muted">
+                  For {item.careRecipientFirstName}. Open for{" "}
+                  {item.openForLabel}.
+                </p>
+                <p
+                  data-testid="desk-coverage-row-count"
+                  className="mt-2 text-base font-semibold text-ink"
+                >
+                  {coverageMessageCountLine(item.caregiverOutboxCount)}
+                </p>
+              </li>
+            ))}
+          </ul>
+
+          <Link
+            href="/desk/failures"
+            className="inline-flex min-h-11 w-fit items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            Open the coverage watch
+          </Link>
+        </section>
+      ) : null}
 
       {pendingClaims.length > 0 ? (
         <section
