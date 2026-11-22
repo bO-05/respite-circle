@@ -12,6 +12,7 @@ import {
 import { formatWindowLabel } from "@/server/domain/slots";
 import { listCaregiverNotes } from "@/server/repositories/ask-review";
 import { listCaregiverConfirmations } from "@/server/repositories/claim-review";
+import { listCaregiverReminders } from "@/server/repositories/reminders";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,12 @@ export const dynamic = "force-dynamic";
  * The caregiver's home.
  *
  * A covered time arrives here as exactly one message, written from the church's
- * own template with the volunteer's first name and the time. There is no model
- * prose: the row stores the sentence a person approved, and this page renders
- * it unchanged. A time still waiting for a coordinator appears nowhere here,
- * and nothing is ever counted, timed, chased, or shown as unfilled.
+ * own template with the volunteer's first name and the time. A reminder before
+ * the time is the only second message, and it appears here exactly as it was
+ * stored. There is no model prose: every row holds the sentence a person
+ * approved, and this page renders it unchanged. A time still waiting for a
+ * coordinator appears nowhere here, and nothing is ever counted, timed,
+ * chased, or shown as unfilled.
  *
  * When a coordinator sends an ask back, its note appears here too, exactly as
  * it was written.
@@ -33,9 +36,10 @@ export default async function CarePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { person, session } = await requirePage(CAREGIVER_ROLES);
-  const [notes, confirmations, query] = await Promise.all([
+  const [notes, confirmations, reminders, query] = await Promise.all([
     listCaregiverNotes(session),
     listCaregiverConfirmations(session),
+    listCaregiverReminders(session),
     searchParams,
   ]);
 
@@ -154,6 +158,69 @@ export default async function CarePage({
           </p>
         </section>
       )}
+
+      {reminders.length > 0 ? (
+        <section
+          data-testid="care-reminders"
+          aria-labelledby="care-reminders-heading"
+          className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+        >
+          <div>
+            <h2
+              id="care-reminders-heading"
+              className="font-serif text-2xl text-ink"
+            >
+              Reminders you received
+            </h2>
+            <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+              One reminder before a covered time, in the church&apos;s own
+              words. These are kept exactly as they were written. Nothing here
+              is generated, and nothing else is sent.
+            </p>
+          </div>
+
+          <ul className="flex flex-col gap-4">
+            {reminders.map((reminder) => (
+              <li
+                key={reminder.id}
+                data-testid="care-reminder"
+                data-slot-id={reminder.slotId}
+                data-kind={reminder.kind}
+                className="rounded-md border border-line bg-paper p-4"
+              >
+                <p
+                  data-testid="care-reminder-when"
+                  className="text-xl leading-relaxed text-ink"
+                >
+                  {formatWindowLabel(
+                    reminder.windowStart,
+                    reminder.windowEnd,
+                    reminder.timeZone,
+                  )}
+                </p>
+                <p className="mt-1 text-base text-ink-muted">
+                  {reminder.label}
+                </p>
+                <blockquote
+                  data-testid="care-reminder-body"
+                  className="mt-3 max-w-prose whitespace-pre-wrap break-words border-l-4 border-amber bg-amber-soft px-4 py-3 text-lg leading-relaxed text-ink"
+                >
+                  {reminder.body}
+                </blockquote>
+                <p className="mt-3 text-base text-ink-muted">
+                  Received in the app on{" "}
+                  {formatWindowLabel(
+                    reminder.createdAt,
+                    null,
+                    reminder.timeZone,
+                  )}
+                  .
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {notes.length > 0 ? (
         <section

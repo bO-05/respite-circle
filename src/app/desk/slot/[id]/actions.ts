@@ -10,9 +10,13 @@ import {
   type ClaimReviewActionState,
 } from "@/server/domain/claim-review";
 import {
+  type ReminderActionState,
+} from "@/server/domain/notifications";
+import {
   approveClaim,
   revokeClaim,
 } from "@/server/repositories/claim-review";
+import { writeReminder } from "@/server/repositories/reminders";
 
 /**
  * The two claim review actions.
@@ -114,5 +118,45 @@ export async function revokeClaimAction(
     return successState(result.message);
   } catch {
     return errorState(CLAIM_REVIEW_GENERIC_FAILURE);
+  }
+}
+
+/**
+ * Write the one reminder for a covered time.
+ *
+ * The page only shows the control when the reminder window is open, but the
+ * control is never the enforcement: the repository re-derives the desk role,
+ * locks the slot, and re-checks the covered state, the window, the confirmation
+ * and the existing row. A stale tab gets a calm value back, not a second
+ * message. The exact sentence is rendered server-side; nothing typed in the
+ * browser can reach the outbox.
+ */
+export async function writeReminderAction(
+  _previous: ReminderActionState,
+  formData: FormData,
+): Promise<ReminderActionState> {
+  const authorized = await deskSession();
+  if (!authorized) {
+    return { status: "error", message: CLAIM_REVIEW_SESSION_ENDED };
+  }
+
+  const slotId = text(formData, "slotId").trim();
+  if (!UUID_PATTERN.test(slotId)) {
+    return { status: "error", message: "That time is not available." };
+  }
+
+  try {
+    const result = await writeReminder(authorized.session, slotId);
+    if (!result.ok) {
+      return { status: "error", message: result.message };
+    }
+
+    revalidatePath(`/desk/slot/${result.slotId}`);
+    revalidatePath("/desk");
+    revalidatePath("/care");
+
+    return { status: "success", message: result.message };
+  } catch {
+    return { status: "error", message: CLAIM_REVIEW_GENERIC_FAILURE };
   }
 }
