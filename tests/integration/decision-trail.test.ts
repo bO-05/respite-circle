@@ -334,26 +334,21 @@ describe("decision trail reads", () => {
     expect(created.ok).toBe(true);
     if (!created.ok) return;
 
-    await t.db.insert(slot).values([
-      {
-        askId: created.askId,
-        churchId: seedIds.church,
-        sessionId: seedIds.sessions[0],
-        kind: "companion",
-        tier: "public_event",
-        label: "Companion at Respite Morning",
-        status: "draft",
-        gated: false,
-      },
-      {
-        askId: created.askId,
-        churchId: seedIds.church,
-        kind: "home",
-        tier: "in_home",
-        label: "Saturday visit at home",
-        status: "draft",
-        gated: true,
-      },
+    // Construction runs as part of submission: two drafts, both invisible.
+    const drafts = await t.db
+      .select({
+        kind: slot.kind,
+        ruleRef: slot.ruleRef,
+        status: slot.status,
+      })
+      .from(slot)
+      .where(eq(slot.askId, created.askId));
+
+    expect(drafts).toHaveLength(2);
+    expect(drafts.every((row) => row.status === "draft")).toBe(true);
+    expect(drafts.map((row) => row.ruleRef).sort()).toEqual([
+      "q1_companion",
+      "q6_home",
     ]);
 
     const receipt = await getCaregiverAsk(MARTA, created.askId, t.db);

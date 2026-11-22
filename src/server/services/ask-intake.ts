@@ -16,6 +16,7 @@ import {
 import type { AppDatabase } from "@/server/repositories/coordinator";
 import { getPolicyInForce } from "@/server/repositories/policy";
 import { decideForAsk } from "./decide-for-ask";
+import { constructDraftSlots } from "./slot-construction";
 import type { DecisionProvider, EnvLike } from "./providers";
 
 /**
@@ -44,6 +45,9 @@ export type SubmitAskSuccess = {
   status: AskStatus;
   decisionsRan: boolean;
   decisionsPersisted: boolean;
+  /** True when this submission wrote the ask's draft times for the first time. */
+  draftsProposed?: boolean;
+  draftCount?: number;
 };
 
 export type SubmitAskFailure = {
@@ -82,6 +86,31 @@ function failureFromError(error: AskIntakeError): SubmitAskFailure {
     return failure("no_recipient", error.message, 409);
   }
   return failure(error.code, error.message, 400);
+}
+
+/**
+ * Draft construction is plain code and never blocks the caregiver's receipt.
+ * A failure here leaves the ask in the coordinator queue, where a person can
+ * propose times by hand.
+ */
+async function proposeDrafts(
+  askId: string,
+  churchId: string,
+  database: AppDatabase,
+): Promise<{ draftsProposed: boolean; draftCount: number }> {
+  try {
+    const construction = await constructDraftSlots({
+      askId,
+      churchId,
+      database,
+    });
+    return {
+      draftsProposed: construction.created,
+      draftCount: construction.proposals,
+    };
+  } catch {
+    return { draftsProposed: false, draftCount: 0 };
+  }
 }
 
 /** Ask ids are UUIDs. A hand-edited id is refused before a query can error. */
@@ -172,6 +201,12 @@ export async function submitAsk(
     const nextStatus =
       canMove && run.persisted ? run.routing.status : revised.status;
 
+    // New wording gets new answers; a draft set is built from the first set
+    // only. Anything the coordinator has already edited is never regenerated.
+    const drafts = run.persisted
+      ? await proposeDrafts(revisionOf, input.actor.churchId, database)
+      : { draftsProposed: false, draftCount: 0 };
+
     return {
       ok: true,
       askId: revisionOf,
@@ -179,6 +214,7 @@ export async function submitAsk(
       status: nextStatus,
       decisionsRan: true,
       decisionsPersisted: run.persisted,
+      ...drafts,
     };
   }
 
@@ -208,6 +244,10 @@ export async function submitAsk(
       env: input.env,
     });
 
+    const drafts = run.persisted
+      ? await proposeDrafts(created.askId, input.actor.churchId, database)
+      : { draftsProposed: false, draftCount: 0 };
+
     return {
       ok: true,
       askId: created.askId,
@@ -217,6 +257,7 @@ export async function submitAsk(
       status: run.persisted ? run.routing.status : "waiting_coordinator",
       decisionsRan: true,
       decisionsPersisted: run.persisted,
+      ...drafts,
     };
   } catch {
     // `decide()` is total, so this is a last line of defence: the ask is still

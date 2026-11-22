@@ -38,6 +38,8 @@ export type PolicyVersionInput = {
   familiarFaceDefault?: boolean;
   reminderWindowHours?: number;
   callThresholdHours?: number;
+  /** The volunteer-driver policy is signed; drives become proposable. */
+  transportEnabled?: boolean;
   autoPublishLowRisk?: boolean;
   /** Omit (or pass null) to save an unsigned draft that is not yet in force. */
   signedOffBy?: string | null;
@@ -206,6 +208,7 @@ export async function createPolicyVersion(
           familiarFaceDefault: input.familiarFaceDefault ?? true,
           reminderWindowHours,
           callThresholdHours,
+          transportEnabled: input.transportEnabled ?? false,
           autoPublishLowRisk: input.autoPublishLowRisk ?? false,
           signedOffBy,
           signedOffAt: signedOffBy ? new Date() : null,

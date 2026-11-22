@@ -36,6 +36,13 @@
       "when": 1795306311294,
       "tag": "0004_decision_revision",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795312585958,
+      "tag": "0005_draft_slot_editor",
+      "breakpoints": true
     }
   ]
 }

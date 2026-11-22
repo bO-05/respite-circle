@@ -101,6 +101,19 @@ export const ruleCodeEnum = pgEnum("rule_code", [
 
 export const answerTypeEnum = pgEnum("answer_type", ["yesno", "pick"]);
 
+/**
+ * The rule that produced a draft slot. `manual` is a coordinator addition; the
+ * rest name the typed answer(s) plain code read. Stored as a closed enum so an
+ * unexpected string can never reach a page.
+ */
+export const slotRuleRefEnum = pgEnum("slot_rule_ref", [
+  "q1_companion",
+  "q6_home",
+  "q2_drive",
+  "q3_meal",
+  "manual",
+]);
+
 export const sessionStatusEnum = pgEnum("session_status", [
   "scheduled",
   "completed",
@@ -181,6 +194,13 @@ export const policy = pgTable(
       .default(24),
     /** Hours before a slot window when the coverage watch starts. */
     callThresholdHours: integer("call_threshold_hours").notNull().default(48),
+    /**
+     * True only when the church has signed its volunteer-driver policy. A
+     * drive slot is never proposed or added while this is false; the seed
+     * default is false because transport imports liability the group model
+     * deliberately avoids.
+     */
+    transportEnabled: boolean("transport_enabled").notNull().default(false),
     autoPublishLowRisk: boolean("auto_publish_low_risk")
       .notNull()
       .default(false),
@@ -303,6 +323,15 @@ export const ask = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
       .notNull()
       .defaultNow(),
+    /**
+     * Set once, atomically, when plain code turns the typed answers into draft
+     * slots. It is the idempotence marker: a coordinator who removes every
+     * draft must not see them reappear on the next read.
+     */
+    slotsConstructedAt: timestamp("slots_constructed_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
   },
   (t) => [
     index("ask_church_status_idx").on(t.churchId, t.status),
@@ -511,6 +540,16 @@ export const slot = pgTable(
     }),
     gated: boolean("gated").notNull().default(false),
     orientationNote: text("orientation_note"),
+    /** The rule that produced this draft; `manual` for a coordinator addition. */
+    ruleRef: slotRuleRefEnum("rule_ref").notNull().default("manual"),
+    /**
+     * A hold is a coordinator's deliberate "not yet". A held draft cannot be
+     * published until the reason is cleared; the reason is kept with the row
+     * and every change is written to the append-only audit log.
+     */
+    holdReason: text("hold_reason"),
+    heldAt: timestamp("held_at", { withTimezone: true, mode: "date" }),
+    heldBy: uuid("held_by").references(() => person.id),
     status: slotStatusEnum("status").notNull().default("draft"),
     claimedBy: uuid("claimed_by").references(() => volunteer.personId),
     claimedAt: timestamp("claimed_at", { withTimezone: true, mode: "date" }),

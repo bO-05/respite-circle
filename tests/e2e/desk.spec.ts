@@ -277,18 +277,33 @@ test.describe("coordinator desk queue", () => {
     expect(lockText).toMatch(/No one can edit them from this screen/i);
     expect(lockText).toMatch(/new version/i);
 
-    // No edit affordance at all: no field, no contenteditable, no form, no
-    // edit/save button.
-    await expect(grace.page.locator("textarea")).toHaveCount(0);
+    // No edit affordance for the words: they are not inside a field, a form,
+    // or anything contenteditable. (The same page carries the draft editor's
+    // forms and fields, so this is scoped to the words themselves.)
+    const fieldsAroundWords =
+      await grace.page.getByTestId("desk-verbatim").evaluate((element) => {
+        const offenders: string[] = [];
+        for (
+          let node: Element | null = element;
+          node;
+          node = node.parentElement
+        ) {
+          if (
+            node.matches(
+              "form, input, textarea, select, [contenteditable='true']",
+            )
+          ) {
+            offenders.push(node.tagName.toLowerCase());
+          }
+        }
+        return offenders;
+      });
+    expect(fieldsAroundWords).toEqual([]);
     await expect(
-      grace.page.locator('[contenteditable="true"]'),
+      grace.page.getByTestId("desk-verbatim").getByRole("textbox"),
     ).toHaveCount(0);
-    await expect(grace.page.locator("form")).toHaveCount(0);
     await expect(
-      grace.page.getByRole("button", { name: /edit|save|change|update/i }),
-    ).toHaveCount(0);
-    await expect(
-      grace.page.getByRole("link", { name: /edit|change/i }),
+      grace.page.getByTestId("desk-verbatim").locator("form"),
     ).toHaveCount(0);
 
     await shot(grace.page, "desk-ask-readonly");

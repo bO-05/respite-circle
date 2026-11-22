@@ -33,6 +33,7 @@ const seededPolicy: PolicyContent = {
   familiarFaceDefault: seedPolicy.familiarFaceDefault,
   reminderWindowHours: seedPolicy.reminderWindowHours,
   callThresholdHours: seedPolicy.callThresholdHours,
+  transportEnabled: seedPolicy.transportEnabled,
   autoPublishLowRisk: seedPolicy.autoPublishLowRisk,
   signedOffBy: seedPolicy.signedOffBy,
   signedOffAt: seedPolicy.signedOffAt,

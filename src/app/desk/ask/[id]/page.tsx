@@ -1,10 +1,11 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RolePage } from "@/components/role-page";
+import { DraftSlotSection } from "@/components/draft-slot-section";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { holdReasonFor } from "@/server/domain/desk-queue";
 import { getCoordinatorAskWords } from "@/server/repositories/asks";
+import { getDraftEditorContext } from "@/server/repositories/draft-slots";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,15 @@ export default async function DeskAskPage({
 }) {
   const { person, session } = await requirePage(DESK_ROLES);
   const { id } = await params;
-  const review = await getCoordinatorAskWords(session, id);
 
-  if (!review) {
+  // Two independent scoped reads in parallel: the words, and the drafts. The
+  // Neon round trip is ~325 ms, so the page must not serialise them.
+  const [review, draftContext] = await Promise.all([
+    getCoordinatorAskWords(session, id),
+    getDraftEditorContext(session, id),
+  ]);
+
+  if (!review || !draftContext) {
     notFound();
   }
 
@@ -111,12 +118,7 @@ export default async function DeskAskPage({
         ) : null}
       </section>
 
-      <Link
-        href="/desk"
-        className="inline-flex min-h-11 w-fit items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink"
-      >
-        Back to the desk
-      </Link>
+      <DraftSlotSection context={draftContext} timeZone={draftContext.timeZone} />
     </RolePage>
   );
 }

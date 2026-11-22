@@ -217,10 +217,33 @@ test.describe("caregiver ask intake", () => {
     expect(await grace.page.getByTestId("desk-verbatim").textContent()).toBe(
       HERO_ASK,
     );
-    await expect(grace.page.getByRole("textbox")).toHaveCount(0);
-    await expect(
-      grace.page.getByRole("button", { name: /edit|save|change/i }),
-    ).toHaveCount(0);
+    // The words' own section has no field and no button. The page also carries
+    // the draft editor's forms, so the check is scoped to the words.
+    const wordsSection = grace.page.locator("section", {
+      has: grace.page.getByTestId("desk-verbatim"),
+    });
+    await expect(wordsSection.getByRole("textbox")).toHaveCount(0);
+    await expect(wordsSection.getByRole("button")).toHaveCount(0);
+    const fieldsAroundWords = await grace.page
+      .getByTestId("desk-verbatim")
+      .evaluate((element) => {
+        const offenders: string[] = [];
+        for (
+          let node: Element | null = element;
+          node;
+          node = node.parentElement
+        ) {
+          if (
+            node.matches(
+              "form, input, textarea, select, [contenteditable='true']",
+            )
+          ) {
+            offenders.push(node.tagName.toLowerCase());
+          }
+        }
+        return offenders;
+      });
+    expect(fieldsAroundWords).toEqual([]);
     await grace.context.close();
 
     await context.close();
@@ -297,6 +320,9 @@ test.describe("caregiver ask intake", () => {
 
     const created = await context.request.post("/api/asks", {
       data: { text: HERO_ASK, consent: true },
+      // The first write after a cold Neon compute can take longer than
+      // Playwright's 10 s default; draft construction adds a few round trips.
+      timeout: 45_000,
     });
     expect(created.status()).toBe(201);
     const createdBody = (await created.json()) as { askId: string };
@@ -306,6 +332,7 @@ test.describe("caregiver ask intake", () => {
 
     const revised = await context.request.post("/api/asks", {
       data: { text: edited, consent: true, revisionOf: createdBody.askId },
+      timeout: 45_000,
     });
     expect(revised.status()).toBe(201);
 

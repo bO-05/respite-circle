@@ -352,6 +352,12 @@ export const seedPolicy = {
   familiarFaceDefault: true,
   reminderWindowHours: 24,
   callThresholdHours: 48,
+  /**
+   * Off by default: the group model leaves transport to families, and a drive
+   * imports volunteer-driver liability. A church turns it on only with a signed
+   * driver policy, which is a policy edit and a new immutable version.
+   */
+  transportEnabled: false,
   autoPublishLowRisk: false,
   signedOffBy: "Grace Whitfield",
   signedOffAt: new Date("2026-11-15T15:00:00.000Z"),

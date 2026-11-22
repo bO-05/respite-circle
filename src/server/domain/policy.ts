@@ -36,6 +36,8 @@ export type PolicyContent = {
   familiarFaceDefault: boolean;
   reminderWindowHours: number;
   callThresholdHours: number;
+  /** True only when the church has signed its volunteer-driver policy. */
+  transportEnabled: boolean;
   autoPublishLowRisk: boolean;
   signedOffBy: string | null;
   signedOffAt: Date | null;
