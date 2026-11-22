@@ -64,7 +64,14 @@ describe("package configuration", () => {
   it("typechecks with next typegen and tsc, never next lint", () => {
     expect(pkg.scripts?.typecheck).toContain("next typegen");
     expect(pkg.scripts?.typecheck).toContain("tsc --noEmit");
-    expect(pkg.scripts?.lint).toBe("eslint . --max-warnings=0");
+    // ESLint CLI first, then the banned-claim copy lint; `next lint` is gone.
+    expect(pkg.scripts?.lint).toContain("eslint . --max-warnings=0");
+    expect(pkg.scripts?.lint).toContain("lint-copy.ts");
+    expect(pkg.scripts?.lint).not.toContain("next lint");
+  });
+
+  it("fails the build on a banned claim", () => {
+    expect(pkg.scripts?.prebuild).toContain("lint-copy.ts");
   });
 
   it.each([

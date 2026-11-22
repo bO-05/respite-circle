@@ -7,10 +7,12 @@
   },
   "scripts": {
     "dev": "next dev -p 3130",
+    "prebuild": "tsx scripts/lint-copy.ts",
     "build": "next build",
     "start": "next start -p 3130",
     "typecheck": "next typegen && tsc --noEmit",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "eslint . --max-warnings=0 && tsx scripts/lint-copy.ts",
+    "lint:copy": "tsx scripts/lint-copy.ts",
     "test": "vitest run --pool=forks --maxWorkers=2 && vitest run --config vitest.integration.config.ts --pool=forks --maxWorkers=1",
     "test:unit": "vitest run --config vitest.unit.config.ts --pool=forks --maxWorkers=2",
     "test:integration": "vitest run --config vitest.integration.config.ts --pool=forks --maxWorkers=1",

@@ -84,7 +84,7 @@ test("every page carries a skip link, one h1, landmarks, and the stamp", async (
   ).toBe("main");
 
   await expect(guestPage.getByRole("banner")).toBeVisible();
-  await expect(guestPage.getByRole("navigation")).toBeVisible();
+  await expect(guestPage.getByRole("navigation", { name: "Main" })).toBeVisible();
   await expect(guestPage.getByRole("main")).toBeVisible();
   await expect(guestPage.getByRole("contentinfo")).toBeVisible();
   await expect(guestPage.getByRole("heading", { level: 1 })).toHaveCount(1);
@@ -94,6 +94,8 @@ test("every page carries a skip link, one h1, landmarks, and the stamp", async (
     { path: "/enter" },
     { path: "/demo" },
     { path: "/promises" },
+    { path: "/how-it-works" },
+    { path: "/never" },
     { path: "/this-page-does-not-exist" },
     { path: "/ask", token: seedAccessTokens.marta },
     { path: "/care", token: seedAccessTokens.marta },
@@ -249,7 +251,13 @@ test("titles are unique per route", async ({ browser, page: guestPage }) => {
   }
   expect(new Set(titles).size).toBe(titles.length);
 
-  for (const publicPath of ["/", "/enter", "/demo"]) {
+  for (const publicPath of [
+    "/",
+    "/enter",
+    "/demo",
+    "/how-it-works",
+    "/never",
+  ]) {
     await guestPage.goto(publicPath);
     titles.push(await guestPage.title());
   }

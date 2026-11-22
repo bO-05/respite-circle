@@ -1,20 +1,29 @@
 import type { ReactNode } from "react";
 import { PageMain } from "./page-main";
 
-/** Public, no-session pages: landing support, entry help, and demo access. */
+/**
+ * Public, no-session pages: landing support, entry help, and demo access.
+ *
+ * `wide` is for the trust page only: four trust matrices cannot be read in a
+ * 70-character column, and each matrix still keeps a reading measure per cell.
+ */
 export function PublicPage({
   eyebrow,
   title,
   lead,
+  width = "default",
   children,
 }: {
   eyebrow?: string;
   title: string;
   lead?: string;
+  width?: "default" | "wide";
   children?: ReactNode;
 }) {
   return (
-    <PageMain className="py-16">
+    <PageMain
+      className={width === "wide" ? "max-w-5xl py-16" : "py-16"}
+    >
       {eyebrow ? (
         <p className="text-base font-semibold uppercase tracking-wide text-accent">
           {eyebrow}

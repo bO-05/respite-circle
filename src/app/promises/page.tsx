@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PublicPage } from "@/components/public-page";
 import { getPromisesForPublicPage } from "@/server/repositories/policy";
 
@@ -64,6 +65,42 @@ export default async function PromisesPage() {
           before they are published.
         </p>
       )}
+
+      <section
+        aria-labelledby="kept-heading"
+        className="rounded-lg border border-line bg-surface p-5"
+      >
+        <h2
+          id="kept-heading"
+          className="font-serif text-2xl leading-snug text-ink"
+        >
+          How these promises are kept
+        </h2>
+        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+          They are part of the church&apos;s policy. A named coordinator can
+          sign a new version, and every earlier version stays exactly as it was
+          signed. Each ask records the version that was in force when it
+          arrived, so changing a promise cannot change a promise already made to
+          a family.
+        </p>
+        <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
+          The tables behind the promises are on{" "}
+          <Link
+            href="/how-it-works"
+            className="font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            How it works
+          </Link>
+          , and the eight refusals are on{" "}
+          <Link
+            href="/never"
+            className="font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            What we never do
+          </Link>
+          .
+        </p>
+      </section>
     </PublicPage>
   );
 }

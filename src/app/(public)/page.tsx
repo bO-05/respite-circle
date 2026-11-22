@@ -130,12 +130,26 @@ export default function HomePage() {
           The computer sees fields and writes nothing. A person decides, and a
           person calls.
         </p>
-        <Link
-          href="/promises"
-          className="mt-4 inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
-        >
-          Read what we promise
-        </Link>
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+          <Link
+            href="/how-it-works"
+            className="inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            How it works
+          </Link>
+          <Link
+            href="/never"
+            className="inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            What we never do
+          </Link>
+          <Link
+            href="/promises"
+            className="inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            Read what we promise
+          </Link>
+        </div>
       </section>
     </PageMain>
   );

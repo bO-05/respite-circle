@@ -4,7 +4,7 @@
  * `/api/health` performs exactly one `SELECT 1`. Neon suspends an idle compute
  * and the first query after a suspend measured 5.4-5.6 s on this project,
  * against 264-358 ms warm. A cold wake is slow, not broken, so the budget sits
- * above the six-second floor and below the platform's function ceiling.
+ * above the six-second floor and below the host's function ceiling.
  */
 export const HEALTH_DB_TIMEOUT_MS = 8_000;
 
