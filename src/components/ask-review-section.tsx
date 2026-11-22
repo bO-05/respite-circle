@@ -165,6 +165,14 @@ export function AskReviewSection({
                       {line}
                     </p>
                   ) : null}
+                  <Link
+                    href={`/desk/slot/${published.id}`}
+                    data-testid="published-slot-link"
+                    className="mt-3 inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+                  >
+                    Review this time and any claim
+                    <span className="sr-only"> — {published.label}</span>
+                  </Link>
                 </li>
               );
             })}

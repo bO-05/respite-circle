@@ -155,12 +155,25 @@ test.describe.serial("a volunteer's own claims", () => {
     }
     await ruth.context.close();
 
-    // Grace confirms the home visit (the approval screen belongs to the next
-    // feature), and its window is in the past so the done action is due.
+    // Grace confirms the home claim through the real desk action, then the
+    // fixture moves its window into the past so the done action is due.
+    const graceHome = await signIn(browser, seedAccessTokens.grace);
+    await graceHome.page.goto(`/desk/slot/${homeId}`);
+    await expect(graceHome.page.getByTestId("claim-review")).toHaveAttribute(
+      "data-status",
+      "claimed",
+    );
+    await graceHome.page.getByTestId("approve-claim").click();
+    await expect(graceHome.page.getByTestId("claim-review")).toHaveAttribute(
+      "data-status",
+      "covered",
+      { timeout: 30_000 },
+    );
+    await graceHome.context.close();
+
     await db.client`
       UPDATE slot
-         SET status = 'covered',
-             window_start = ${"2026-11-14T15:00:00.000Z"}::timestamptz,
+         SET window_start = ${"2026-11-14T15:00:00.000Z"}::timestamptz,
              window_end = ${"2026-11-14T17:00:00.000Z"}::timestamptz
        WHERE id = ${homeId}
     `;
@@ -212,6 +225,10 @@ test.describe.serial("a volunteer's own claims", () => {
 
   test.afterAll(async () => {
     for (const askId of createdAskIds) {
+      await db.client`
+        DELETE FROM notification
+         WHERE slot_id IN (SELECT id FROM slot WHERE ask_id = ${askId})
+      `;
       await db.client`
         DELETE FROM slot_candidate
          WHERE slot_id IN (SELECT id FROM slot WHERE ask_id = ${askId})
@@ -325,9 +342,20 @@ test.describe.serial("a volunteer's own claims", () => {
   test("reveals the note to the claimer alone after approval", async ({
     browser,
   }) => {
-    await db.client`
-      UPDATE slot SET status = 'covered' WHERE id = ${companionId}
-    `;
+    // The coordinator approval is the real action, not a SQL fixture.
+    const graceApproves = await signIn(browser, seedAccessTokens.grace);
+    await graceApproves.page.goto(`/desk/slot/${companionId}`);
+    await expect(
+      graceApproves.page.getByTestId("claim-review"),
+    ).toHaveAttribute("data-status", "claimed");
+    await graceApproves.page.getByTestId("approve-claim").click();
+    await expect(
+      graceApproves.page.getByTestId("claim-review"),
+    ).toHaveAttribute("data-status", "covered", { timeout: 30_000 });
+    await expect(
+      graceApproves.page.getByTestId("confirmation-body"),
+    ).toContainText("Ruth");
+    await graceApproves.context.close();
 
     const ruth = await signIn(browser, seedAccessTokens.ruth);
     const response = await ruth.page.goto(`/my-claims/${companionId}`);

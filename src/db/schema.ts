@@ -574,8 +574,22 @@ export const slot = pgTable(
     status: slotStatusEnum("status").notNull().default("draft"),
     claimedBy: uuid("claimed_by").references(() => volunteer.personId),
     claimedAt: timestamp("claimed_at", { withTimezone: true, mode: "date" }),
+    /**
+     * Publication approval: the desk published this time to the board.
+     * Never reused for a claim.
+     */
     approvedBy: uuid("approved_by").references(() => person.id),
     approvedAt: timestamp("approved_at", { withTimezone: true, mode: "date" }),
+    /**
+     * Claim confirmation: a second, later human decision that covers the
+     * neighbour who said yes. Distinct columns on purpose, so confirming a
+     * claim never rewrites the publication trail the board shows.
+     */
+    claimConfirmedBy: uuid("claim_confirmed_by").references(() => person.id),
+    claimConfirmedAt: timestamp("claim_confirmed_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
       .defaultNow(),

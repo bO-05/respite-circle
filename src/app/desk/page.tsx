@@ -14,6 +14,8 @@ import {
   listDeskAsks,
   type DeskQueueItem,
 } from "@/server/repositories/coordinator";
+import { listPendingClaims } from "@/server/repositories/claim-review";
+import { formatWindowLabel } from "@/server/domain/slots";
 import { getDeskSessionOverview } from "@/server/repositories/sessions";
 
 export const dynamic = "force-dynamic";
@@ -80,9 +82,10 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
 
 export default async function DeskPage() {
   const { person, session } = await requirePage(DESK_ROLES);
-  const [asks, overview] = await Promise.all([
+  const [asks, overview, pendingClaims] = await Promise.all([
     listDeskAsks(session),
     getDeskSessionOverview(session),
+    listPendingClaims(session),
   ]);
   const groups = groupDeskQueue(asks);
   // One server clock for the whole page: every row agrees, and the value is
@@ -97,6 +100,64 @@ export default async function DeskPage() {
       lead="A person reads every ask before a neighbour sees a time. Safety and personal-care asks stay pinned in their own groups."
     >
       <SessionCalendarStrip overview={overview} />
+
+      {pendingClaims.length > 0 ? (
+        <section
+          data-testid="desk-pending-claims"
+          aria-labelledby="desk-pending-claims-heading"
+          className="flex flex-col gap-3"
+        >
+          <div>
+            <h2
+              id="desk-pending-claims-heading"
+              className="font-serif text-2xl text-ink"
+            >
+              Claims waiting for your confirmation
+            </h2>
+            <p className="mt-1 max-w-prose text-base leading-relaxed text-ink-muted">
+              A neighbour has said yes to these times. Confirming sends the
+              family one message from the church&apos;s own template. Taking a
+              claim back sends nothing.
+            </p>
+          </div>
+
+          <ul className="flex flex-col gap-3">
+            {pendingClaims.map((claim) => (
+              <li
+                key={claim.slotId}
+                data-testid="desk-pending-claim"
+                data-slot-id={claim.slotId}
+                className="rounded-lg border border-line bg-surface p-4"
+              >
+                <a
+                  href={`/desk/slot/${claim.slotId}`}
+                  className="inline-flex min-h-11 items-center text-lg font-semibold text-ink underline decoration-accent underline-offset-4"
+                >
+                  {claim.volunteerFirstName ?? "A neighbour"} — {claim.label}
+                </a>
+                <p className="mt-1 text-base text-ink-muted">
+                  {formatWindowLabel(
+                    claim.windowStart,
+                    claim.windowEnd,
+                    claim.timeZone,
+                  )}
+                </p>
+                <p className="mt-1 text-base text-ink-muted">
+                  For {claim.careRecipientFirstName} (family:{" "}
+                  {claim.caregiverFirstName})
+                </p>
+                <p
+                  data-testid="desk-pending-claim-time"
+                  className="mt-2 text-base text-ink"
+                >
+                  Claimed{" "}
+                  {formatWindowLabel(claim.claimedAt, null, claim.timeZone)}.
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {asks.length === 0 ? (
         <section
