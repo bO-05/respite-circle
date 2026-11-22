@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   canCheckIn,
   canCheckOut,
@@ -133,6 +134,33 @@ export function MyClaimDonePanel({
   claim: MyClaimDetail;
   now: Date;
 }) {
+  const closureHref = `/claim/${claim.id}/close`;
+
+  if (claim.status === "done") {
+    return (
+      <section
+        data-testid="claim-closed"
+        aria-labelledby="closed-heading"
+        className="rounded-lg border border-line bg-surface p-5"
+      >
+        <h2 id="closed-heading" className="font-serif text-2xl text-ink">
+          This time is closed
+        </h2>
+        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+          Thank you for saying yes. The family can leave a thank-you or ask
+          again — both are theirs to choose. Nothing else is needed from you.
+        </p>
+        <Link
+          href={closureHref}
+          data-testid="claim-closure-link"
+          className="mt-4 inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-accent bg-accent px-5 py-2 text-lg font-semibold text-accent-foreground"
+        >
+          See the close of this time
+        </Link>
+      </section>
+    );
+  }
+
   if (claim.status !== "covered") return null;
 
   const done = canMarkDone(claim, now, claim.coordinatorFirstName);
@@ -172,6 +200,14 @@ export function MyClaimDonePanel({
           {done.message}
         </p>
       )}
+
+      <Link
+        href={closureHref}
+        data-testid="claim-closure-link"
+        className="mt-4 inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+      >
+        Close this time
+      </Link>
     </section>
   );
 }

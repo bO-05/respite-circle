@@ -8,6 +8,7 @@ import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { receiptSentence } from "@/server/domain/ask-intake";
+import { askAgainLinkLabel } from "@/server/domain/closure";
 import { buildTrailRows } from "@/server/domain/decision-trail";
 import { getCaregiverAsk, type AskStatus } from "@/server/repositories/asks";
 import { getDecisionTrailForRevision } from "@/server/repositories/decision-trail";
@@ -115,6 +116,38 @@ export default async function AskReceiptPage({
         status={receipt.status}
         coordinatorFirstName={name}
       />
+
+      {receipt.status === "closed" ? (
+        <section
+          data-testid="ask-closed"
+          aria-labelledby="ask-closed-heading"
+          className="rounded-lg border border-line bg-surface p-5"
+        >
+          <h2
+            id="ask-closed-heading"
+            className="font-serif text-2xl text-ink"
+          >
+            This ask is closed
+          </h2>
+          <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
+            This ask is closed. Nothing else will be sent to you or to a
+            neighbour.
+          </p>
+          <div className="mt-4 flex flex-col gap-2">
+            <p className="max-w-prose text-base leading-relaxed text-ink-muted">
+              If another week is hard, you can ask again. It starts with an
+              empty page — your earlier words stay exactly as they are.
+            </p>
+            <Link
+              href="/ask?again=1"
+              data-testid="ask-again-link"
+              className="inline-flex min-h-11 min-w-11 w-fit items-center justify-center rounded-md border border-accent bg-accent px-5 py-2 text-lg font-semibold text-accent-foreground"
+            >
+              {askAgainLinkLabel()}
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {receipt.status === "sent_back" && receipt.sendBackNote ? (
         <section

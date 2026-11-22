@@ -31,6 +31,7 @@ import {
   type VisitFacts,
   type VisitRefusalCode,
 } from "@/server/domain/my-claims";
+import { closeAskIfFinished } from "./ask-lifecycle";
 import type { AppDatabase } from "./coordinator";
 
 /**
@@ -81,7 +82,7 @@ export type MyClaimDetail = MyClaimSummary & {
   coordinatorFirstName: string | null;
 };
 
-async function readChurchTimeZone(
+export async function readChurchTimeZone(
   churchId: string,
   database: AppDatabase,
 ): Promise<string | null> {
@@ -94,7 +95,7 @@ async function readChurchTimeZone(
   return rows[0]?.timeZone ?? null;
 }
 
-async function readCoordinatorFirstName(
+export async function readCoordinatorFirstName(
   churchId: string,
   database: AppDatabase,
 ): Promise<string | null> {
@@ -428,6 +429,7 @@ export async function markClaimDone(
     const [target] = await tx
       .select({
         id: slot.id,
+        askId: slot.askId,
         kind: slot.kind,
         status: slot.status,
         windowStart: slot.windowStart,
@@ -484,10 +486,27 @@ export async function markClaimDone(
       };
     }
 
+    // The ask closes in this same transaction when this was its last live
+    // time. The closure helper locks the ask row, so two volunteers closing
+    // the last two times cannot both miss it; `slot_done` records what
+    // happened so the audit trail names the cause without a second join.
+    const closure = await closeAskIfFinished(
+      tx,
+      {
+        churchId: actor.churchId,
+        askId: target.askId,
+        actor,
+        cause: "slot_done",
+      },
+      now,
+    );
+
     await auditVisit(tx, actor, slotId, "slot_done", {
       at: now.toISOString(),
       kind: target.kind,
       previousStatus: "covered",
+      askId: target.askId,
+      askClosed: closure.closed,
     }, now);
 
     return {

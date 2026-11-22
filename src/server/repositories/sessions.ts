@@ -27,6 +27,7 @@ import {
   type TemplateSchedule,
 } from "@/server/domain/session-calendar";
 import type { CalendarGuard, SessionOption } from "@/server/domain/slots";
+import { closeAskIfFinished } from "./ask-lifecycle";
 import type { AppDatabase } from "./coordinator";
 
 /**
@@ -451,6 +452,23 @@ export async function cancelSessionForCoordinator(
         },
       })),
     ]);
+
+    // A cancellation can be the last thing keeping an ask open: once its last
+    // live time is cancelled, the ask closes in this same transaction. The
+    // family is still sent nothing — the coordinator's call is the message.
+    const askIds = [...new Set(slots.map((entry) => entry.askId))];
+    for (const askId of askIds) {
+      await closeAskIfFinished(
+        tx,
+        {
+          churchId: actor.churchId,
+          askId,
+          actor,
+          cause: "session_cancelled",
+        },
+        now,
+      );
+    }
 
     const label = formatSessionDate(locked.startsAt, timeZone);
     return {

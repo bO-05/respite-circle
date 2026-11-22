@@ -10,6 +10,9 @@ import { markClaimDone } from "@/server/repositories/my-claims";
  * after the window, not already done), and writes the audit row in the same
  * transaction. The route only translates the closed outcome into a redirect or
  * JSON; it never decides eligibility from the request.
+ *
+ * A form posted from the closure page comes back to that page; the older claim
+ * detail form still returns to the claim. Both are the same write path.
  */
 
 export const dynamic = "force-dynamic";
@@ -28,11 +31,20 @@ function wantsHtml(request: Request): boolean {
   return (request.headers.get("accept") ?? "").includes("text/html");
 }
 
-function redirectToClaim(slotId: string, code: string): Response {
+function redirectToClaim(
+  slotId: string,
+  code: string,
+  from: string | null,
+): Response {
+  const path =
+    from === "claim-close"
+      ? `/claim/${encodeURIComponent(slotId)}/close`
+      : `/my-claims/${encodeURIComponent(slotId)}`;
+
   return new Response(null, {
     status: 303,
     headers: {
-      location: `/my-claims/${encodeURIComponent(slotId)}?done=${code}`,
+      location: `${path}?done=${code}`,
     },
   });
 }
@@ -50,7 +62,8 @@ export async function POST(
     const result = await markClaimDone(auth.session, id);
 
     if (wantsHtml(request)) {
-      return redirectToClaim(id, result.code);
+      const from = new URL(request.url).searchParams.get("from");
+      return redirectToClaim(id, result.code, from);
     }
 
     if (result.ok) {

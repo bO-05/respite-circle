@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db as appDb } from "@/db/client";
 import {
@@ -29,6 +29,7 @@ import {
 import { renderConfirmation } from "@/server/domain/notifications";
 import type {
   AppDatabase,
+  DeskAskStatus,
   DeskSlotKind,
   DeskSlotStatus,
 } from "./coordinator";
@@ -102,6 +103,7 @@ export type PendingClaim = {
 export type CaregiverConfirmation = {
   id: string;
   slotId: string;
+  askId: string;
   body: string;
   templateCode: string;
   createdAt: Date;
@@ -111,6 +113,12 @@ export type CaregiverConfirmation = {
   windowEnd: Date | null;
   volunteerFirstName: string | null;
   timeZone: string;
+  /** The time's life, so the page knows when the closure is the next step. */
+  slotStatus: DeskSlotStatus;
+  /** The ask's derived life; `closed` when every published time finished. */
+  askStatus: DeskAskStatus;
+  /** The family's own optional words, present only when they left some. */
+  thankYou: string | null;
 };
 
 export const CLAIM_REVIEW_AUDIT_ACTIONS = {
@@ -282,8 +290,13 @@ export async function listPendingClaims(
 
 /**
  * The caregiver's own confirmations. The ownership predicate is
- * `caregiver_id = actor.personId`; another family's row is never selected, and
- * the read never widens to the ask or its words.
+ * `notification.caregiver_id = actor.personId`; another family's row is never
+ * selected, and the read never selects the ask's words.
+ *
+ * Each row also carries the time's status and the ask's derived status, so the
+ * page can offer the optional thank-you and the fresh ask only after a time is
+ * actually done. The family's thank-you, when present, is one append-only audit
+ * row read by the same ownership scope.
  */
 export async function listCaregiverConfirmations(
   actor: Actor,
@@ -297,6 +310,7 @@ export async function listCaregiverConfirmations(
     .select({
       id: notification.id,
       slotId: notification.slotId,
+      askId: slot.askId,
       body: notification.body,
       templateCode: notification.templateCode,
       createdAt: notification.createdAt,
@@ -304,11 +318,14 @@ export async function listCaregiverConfirmations(
       label: slot.label,
       windowStart: slot.windowStart,
       windowEnd: slot.windowEnd,
+      slotStatus: slot.status,
+      askStatus: ask.status,
       volunteerFirstName: claimer.firstName,
       timeZone: church.timezone,
     })
     .from(notification)
     .innerJoin(slot, eq(slot.id, notification.slotId))
+    .innerJoin(ask, eq(ask.id, slot.askId))
     .innerJoin(church, eq(church.id, notification.churchId))
     .leftJoin(claimer, eq(claimer.id, slot.claimedBy))
     .where(
@@ -316,13 +333,48 @@ export async function listCaregiverConfirmations(
         eq(notification.churchId, actor.churchId),
         eq(notification.caregiverId, actor.personId),
         eq(notification.kind, "confirmation"),
+        eq(slot.churchId, actor.churchId),
+        eq(ask.churchId, actor.churchId),
       ),
     )
     .orderBy(desc(notification.createdAt), desc(notification.id));
 
+  if (rows.length === 0) return [];
+
+  const thanks = await database
+    .select({ entityId: auditEvent.entityId, detail: auditEvent.detail })
+    .from(auditEvent)
+    .where(
+      and(
+        eq(auditEvent.churchId, actor.churchId),
+        eq(auditEvent.action, "slot_thanked"),
+        eq(auditEvent.entity, "slot"),
+        inArray(
+          auditEvent.entityId,
+          rows.map((row) => row.slotId),
+        ),
+      ),
+    )
+    .orderBy(asc(auditEvent.createdAt));
+
+  const thankYouBySlot = new Map<string, string>();
+  for (const row of thanks) {
+    const note = row.detail?.note;
+    if (
+      typeof row.entityId === "string" &&
+      typeof note === "string" &&
+      note.length > 0
+    ) {
+      thankYouBySlot.set(row.entityId, note);
+    }
+  }
+
   return rows.map((row) => ({
     ...row,
     kind: row.kind as DeskSlotKind,
+    slotStatus: row.slotStatus as DeskSlotStatus,
+    askStatus: row.askStatus as DeskAskStatus,
+    thankYou: thankYouBySlot.get(row.slotId) ?? null,
   }));
 }
 

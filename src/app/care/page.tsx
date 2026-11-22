@@ -1,7 +1,14 @@
 import Link from "next/link";
+import { CareClosure } from "@/components/care-closure";
+import { ClaimFlash } from "@/components/my-claim-flash";
 import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
+import {
+  careThanksFlashMessage,
+  careThanksFlashTone,
+  isCareThanksFlashCode,
+} from "@/server/domain/closure";
 import { formatWindowLabel } from "@/server/domain/slots";
 import { listCaregiverNotes } from "@/server/repositories/ask-review";
 import { listCaregiverConfirmations } from "@/server/repositories/claim-review";
@@ -20,12 +27,20 @@ export const dynamic = "force-dynamic";
  * When a coordinator sends an ask back, its note appears here too, exactly as
  * it was written.
  */
-export default async function CarePage() {
+export default async function CarePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { person, session } = await requirePage(CAREGIVER_ROLES);
-  const [notes, confirmations] = await Promise.all([
+  const [notes, confirmations, query] = await Promise.all([
     listCaregiverNotes(session),
     listCaregiverConfirmations(session),
+    searchParams,
   ]);
+
+  const thanksParam = typeof query.thanks === "string" ? query.thanks : null;
+  const thanksCode = isCareThanksFlashCode(thanksParam) ? thanksParam : null;
 
   return (
     <RolePage
@@ -34,6 +49,15 @@ export default async function CarePage() {
       title="What's covered for your family"
       lead="The times a neighbour has taken, and the words the church has sent you."
     >
+      {thanksCode ? (
+        <div data-testid="care-thanks-flash">
+          <ClaimFlash
+            message={careThanksFlashMessage(thanksCode, null)}
+            tone={careThanksFlashTone(thanksCode)}
+          />
+        </div>
+      ) : null}
+
       {confirmations.length > 0 ? (
         <section
           data-testid="care-confirmations"
@@ -45,11 +69,11 @@ export default async function CarePage() {
               id="care-covered-heading"
               className="font-serif text-2xl text-ink"
             >
-              Times that are covered
+              Times a neighbour has taken
             </h2>
             <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-              These are the church&apos;s own words, one message for each
-              covered time.
+              These are the church&apos;s own words, one message for each time
+              a neighbour took.
             </p>
           </div>
 
@@ -60,6 +84,7 @@ export default async function CarePage() {
                 data-testid="care-confirmation"
                 data-slot-id={confirmation.slotId}
                 data-kind={confirmation.kind}
+                data-slot-status={confirmation.slotStatus}
                 className="rounded-md border border-line bg-paper p-4"
               >
                 <p
@@ -93,6 +118,23 @@ export default async function CarePage() {
                   )}
                   .
                 </p>
+
+                {confirmation.askStatus === "closed" ? (
+                  <p
+                    data-testid="care-ask-closed"
+                    className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted"
+                  >
+                    This ask is closed. Nothing else will be sent.
+                  </p>
+                ) : null}
+
+                {confirmation.slotStatus === "done" ? (
+                  <CareClosure
+                    slotId={confirmation.slotId}
+                    volunteerFirstName={confirmation.volunteerFirstName}
+                    thankYou={confirmation.thankYou}
+                  />
+                ) : null}
               </li>
             ))}
           </ul>
