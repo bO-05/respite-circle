@@ -41,7 +41,10 @@ npm run test:e2e
 ```
 
 Playwright builds and starts the app itself, so `npm run test:e2e` needs port
-3130 free.
+3130 free. The suite applies the committed migrations to the isolated
+`respite_circle_e2e` database and reseeds it before the first spec, so it never
+reads or writes the demo data. It refuses to start unless `E2E_DATABASE_URL`,
+`E2E_DATABASE_URL_UNPOOLED`, and a `respite_circle_e2e` target are all present.
 
 ## Environment
 
