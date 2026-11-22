@@ -344,6 +344,15 @@ export const decision = pgTable(
     askId: uuid("ask_id")
       .notNull()
       .references(() => ask.id),
+    /**
+     * The exact wording these answers were given. A caregiver revision appends a
+     * new `ask_revision` and re-runs the nine questions; the trail reads only the
+     * rows for the latest revision, so an answer can never describe words that
+     * have since been replaced.
+     */
+    askRevisionId: uuid("ask_revision_id")
+      .notNull()
+      .references(() => askRevision.id),
     policyVersionId: uuid("policy_version_id")
       .notNull()
       .references(() => policy.id),
@@ -364,6 +373,7 @@ export const decision = pgTable(
   },
   (t) => [
     index("decision_ask_idx").on(t.askId),
+    index("decision_revision_idx").on(t.askRevisionId),
     check(
       "decision_confidence_range",
       sql`${t.confidence} >= 0 AND ${t.confidence} <= 1`,

@@ -1,20 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  AskHoldBanner,
+  DecisionTrail,
+} from "@/components/decision-trail";
 import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { receiptSentence } from "@/server/domain/ask-intake";
+import { buildTrailRows } from "@/server/domain/decision-trail";
 import { getCaregiverAsk, type AskStatus } from "@/server/repositories/asks";
+import { getDecisionTrailForRevision } from "@/server/repositories/decision-trail";
 
 export const dynamic = "force-dynamic";
 
 /**
- * The caregiver's receipt.
+ * The caregiver's receipt, extended with the decision trail.
  *
- * It shows the stored words character-for-character in a block that has no
- * editable control, names the person who reads them first, and states exactly
- * what happens next. The decision trail feature extends this page below the
- * receipt; it must not add an edit path to these words.
+ * The receipt the caregiver already knows stays first: the status pill, the
+ * exact words, and the sentence naming the person who reads them are
+ * unchanged. Below them the page shows the nine typed answers for the *latest*
+ * revision only, plus the model metadata, the policy version, and the digest.
+ * There is no model prose anywhere on this page, and no edit control for the
+ * words.
  */
 
 type StatusCopy = { label: string; tone: "amber" | "green" | "ink" };
@@ -65,6 +73,17 @@ export default async function AskReceiptPage({
     notFound();
   }
 
+  // The trail is scoped to the exact revision the receipt is showing. An
+  // earlier revision's answers are never read into this page.
+  const trail = receipt.latestRevisionId
+    ? await getDecisionTrailForRevision(session, {
+        askId: receipt.id,
+        revisionId: receipt.latestRevisionId,
+      })
+    : null;
+
+  const trailRows = trail ? buildTrailRows(trail.decisions) : [];
+
   const name = receipt.coordinatorFirstName;
   const status = statusCopy(receipt.status, name);
   const reader = name ?? "your coordinator";
@@ -83,6 +102,11 @@ export default async function AskReceiptPage({
         {status.label}
       </p>
 
+      <AskHoldBanner
+        status={receipt.status}
+        coordinatorFirstName={name}
+      />
+
       <section
         aria-labelledby="your-words"
         className="rounded-lg border border-line bg-surface p-5"
@@ -90,11 +114,21 @@ export default async function AskReceiptPage({
         <h2 id="your-words" className="font-serif text-2xl text-ink">
           Your words, exactly as you wrote them
         </h2>
-        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-          {reader} will read this, and nobody else sees it unless{" "}
-          {name ? "she approves" : "they approve"} a specific time. These are
-          your first words, kept exactly as you sent them. Nobody can edit them.
-        </p>
+        {receipt.revisionCount > 1 ? (
+          <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+            {reader} will read this, and nobody else sees it unless{" "}
+            {name ? "she approves" : "they approve"} a specific time. These are
+            your latest words, kept exactly as you sent them. Your first version
+            is still kept, word for word. Nobody can edit either.
+          </p>
+        ) : (
+          <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+            {reader} will read this, and nobody else sees it unless{" "}
+            {name ? "she approves" : "they approve"} a specific time. These are
+            your first words, kept exactly as you sent them. Nobody can edit
+            them.
+          </p>
+        )}
         <blockquote
           data-testid="caregiver-verbatim"
           className="mt-4 max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-accent-soft px-5 py-4 text-xl leading-relaxed text-ink"
@@ -131,6 +165,17 @@ export default async function AskReceiptPage({
           </li>
         </ol>
       </section>
+
+      <DecisionTrail
+        rows={trailRows}
+        run={trail?.run ?? null}
+        policyVersion={trail?.policyVersion ?? receipt.policyVersion}
+        digest={receipt.latestRevisionDigest}
+        revisionNumber={receipt.revisionCount}
+        revisionCount={receipt.revisionCount}
+        draftKinds={trail?.draftKinds ?? []}
+        publishedCount={trail?.publishedCount ?? 0}
+      />
 
       <p className="max-w-prose text-base leading-relaxed text-ink-muted">
         You do not need a password or an account for this page. Your one link is

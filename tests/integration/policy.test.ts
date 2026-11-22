@@ -10,7 +10,7 @@ import {
   seedPolicy,
   seedSafeguardingPromises,
 } from "../../src/db/seed-data";
-import { ask, decision } from "../../src/db/schema";
+import { ask, askRevision, decision } from "../../src/db/schema";
 import { AuthError, type Actor } from "../../src/server/auth/policy";
 import {
   createPolicyVersion,
@@ -172,8 +172,19 @@ describe("versioned policy content", () => {
       })
       .returning({ id: ask.id });
 
+    const [revision] = await t.db
+      .insert(askRevision)
+      .values({
+        askId: createdAsk.id,
+        verbatimText:
+          "I haven't had a Saturday morning to myself since March.",
+        digest: "d".repeat(64),
+      })
+      .returning({ id: askRevision.id });
+
     await t.db.insert(decision).values({
       askId: createdAsk.id,
+      askRevisionId: revision.id,
       policyVersionId: inForce!.id,
       questionId: "Q1",
       questionText: seedQuestionSet[0].text,

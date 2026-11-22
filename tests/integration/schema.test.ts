@@ -127,11 +127,14 @@ describe("database schema invariants", () => {
     await insertBaseFixtures(t.db);
     await insertAsk(t.db);
 
-    await t.db.insert(askRevision).values({
-      askId: FIXTURE.askId,
-      verbatimText: "An edited version of the ask.",
-      digest: "a".repeat(64),
-    });
+    const [revision] = await t.db
+      .insert(askRevision)
+      .values({
+        askId: FIXTURE.askId,
+        verbatimText: "An edited version of the ask.",
+        digest: "a".repeat(64),
+      })
+      .returning({ id: askRevision.id });
     await expectRejection(
       () => t.client`UPDATE ask_revision SET verbatim_text = 'changed'`,
       /append-only/,
@@ -143,6 +146,7 @@ describe("database schema invariants", () => {
 
     await t.db.insert(decision).values({
       askId: FIXTURE.askId,
+      askRevisionId: revision.id,
       policyVersionId: FIXTURE.policyId,
       questionId: "Q1",
       questionText: "Would sitting with them help?",

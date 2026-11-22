@@ -109,6 +109,9 @@ describe("ask intake writes", () => {
       .where(eq(decision.askId, result.askId));
 
     expect(decisions).toHaveLength(9);
+    expect(
+      decisions.every((row) => row.askRevisionId === result.revisionId),
+    ).toBe(true);
     expect(decisions.map((d) => d.questionId).sort()).toEqual([
       "Q1",
       "Q2",

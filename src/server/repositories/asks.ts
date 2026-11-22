@@ -7,6 +7,7 @@ import {
   auditEvent,
   careRecipient,
   person,
+  policy,
 } from "@/db/schema";
 import {
   CAREGIVER_ROLES,
@@ -61,9 +62,14 @@ export type CaregiverAskView = {
   createdAt: Date;
   /** The most recent revision: what the caregiver can read back today. */
   text: string;
+  /** The wording the decision trail must answer for. */
+  latestRevisionId: string | null;
+  latestRevisionDigest: string | null;
   revisionCount: number;
   careRecipientFirstName: string;
   coordinatorFirstName: string | null;
+  /** The church's policy in force when the ask was first submitted. */
+  policyVersion: number;
 };
 
 export type DeskAskWords = {
@@ -282,12 +288,16 @@ export async function appendAskRevision(
 async function readRevisions(
   askId: string,
   database: AppDatabase,
-): Promise<Array<{ id: string; verbatimText: string }>> {
+): Promise<Array<{ id: string; verbatimText: string; digest: string }>> {
   return database
-    .select({ id: askRevision.id, verbatimText: askRevision.verbatimText })
+    .select({
+      id: askRevision.id,
+      verbatimText: askRevision.verbatimText,
+      digest: askRevision.digest,
+    })
     .from(askRevision)
     .where(eq(askRevision.askId, askId))
-    .orderBy(asc(askRevision.createdAt));
+    .orderBy(asc(askRevision.createdAt), asc(askRevision.id));
 }
 
 /** The caregiver's own receipt: only the caregiver whose session it is. */
@@ -305,9 +315,11 @@ export async function getCaregiverAsk(
       createdAt: ask.createdAt,
       originalText: ask.verbatimText,
       careRecipientFirstName: careRecipient.firstName,
+      policyVersion: policy.version,
     })
     .from(ask)
     .innerJoin(careRecipient, eq(careRecipient.id, ask.careRecipientId))
+    .innerJoin(policy, eq(policy.id, ask.policyVersionId))
     .where(
       and(
         eq(ask.id, askId),
@@ -332,9 +344,12 @@ export async function getCaregiverAsk(
     status: row.status,
     createdAt: row.createdAt,
     text: latest?.verbatimText ?? row.originalText,
+    latestRevisionId: latest?.id ?? null,
+    latestRevisionDigest: latest?.digest ?? null,
     revisionCount: revisions.length,
     careRecipientFirstName: row.careRecipientFirstName,
     coordinatorFirstName,
+    policyVersion: row.policyVersion,
   };
 }
 

@@ -3,9 +3,10 @@ import { and, eq, sql as rawSql } from "drizzle-orm";
 import { truncateAll } from "../../src/db/reset";
 import { seedDatabase } from "../../src/db/seed";
 import { seedIds, seedQuestionSet } from "../../src/db/seed-data";
-import { ask, auditEvent, slot } from "../../src/db/schema";
+import { ask, askRevision, auditEvent, slot } from "../../src/db/schema";
 import {
   computeDecisionDigest,
+  sha256Hex,
   type QuestionId,
   type TypedAnswer,
 } from "../../src/server/services/decision-contract";
@@ -23,7 +24,7 @@ const HERO_ASK =
 async function insertAsk(
   t: TestDatabase,
   verbatimText: string,
-): Promise<string> {
+): Promise<{ askId: string; revisionId: string }> {
   const [row] = await t.db
     .insert(ask)
     .values({
@@ -36,17 +37,29 @@ async function insertAsk(
     })
     .returning({ id: ask.id });
 
-  return row.id;
+  const [revision] = await t.db
+    .insert(askRevision)
+    .values({
+      askId: row.id,
+      verbatimText,
+      digest: sha256Hex(verbatimText),
+      supersedesId: null,
+    })
+    .returning({ id: askRevision.id });
+
+  return { askId: row.id, revisionId: revision.id };
 }
 
 function runFor(
   t: TestDatabase,
   askId: string,
+  revisionId: string,
   provider: DecisionProvider,
   askText: string = HERO_ASK,
 ) {
   return decideForAsk({
     askId,
+    revisionId,
     churchId: seedIds.church,
     askText,
     policy: { id: seedIds.policyV1, questionSet: seedQuestionSet },
@@ -80,8 +93,8 @@ describe("decision persistence and audit", () => {
   });
 
   it("writes nine decision rows with recomputable SHA-256 digests and one audit event", async () => {
-    const askId = await insertAsk(t, HERO_ASK);
-    const run = await runFor(t, askId, createDeterministicProvider());
+    const { askId, revisionId } = await insertAsk(t, HERO_ASK);
+    const run = await runFor(t, askId, revisionId, createDeterministicProvider());
 
     expect(run.persisted).toBe(true);
     expect(run.decisionIds).toHaveLength(9);
@@ -103,6 +116,7 @@ describe("decision persistence and audit", () => {
 
     for (const row of rows) {
       expect(row.digest).toMatch(/^[0-9a-f]{64}$/);
+      expect(row.askRevisionId).toBe(revisionId);
       expect(row.provider).toBe("deterministic");
       expect(row.model).toBe("rule-engine-v1");
       expect(row.policyVersionId).toBe(seedIds.policyV1);
@@ -153,6 +167,7 @@ describe("decision persistence and audit", () => {
     expect(audit.churchId).toBe(seedIds.church);
     expect(audit.detail).toMatchObject({
       inputDigest: run.digest,
+      revisionId,
       provider: "deterministic",
       model: "rule-engine-v1",
       policyVersionId: seedIds.policyV1,
@@ -174,8 +189,8 @@ describe("decision persistence and audit", () => {
   });
 
   it("never copies the caregiver's words into a decision row or the audit detail", async () => {
-    const askId = await insertAsk(t, HERO_ASK);
-    await runFor(t, askId, createDeterministicProvider());
+    const { askId, revisionId } = await insertAsk(t, HERO_ASK);
+    await runFor(t, askId, revisionId, createDeterministicProvider());
 
     const words = ["hymns", "March", "naps", "Elena", "morning to myself"];
 
@@ -207,8 +222,8 @@ describe("decision persistence and audit", () => {
   });
 
   it("completes on the deterministic baseline when the provider fails after retries", async () => {
-    const askId = await insertAsk(t, HERO_ASK);
-    const run = await runFor(t, askId, failingProvider);
+    const { askId, revisionId } = await insertAsk(t, HERO_ASK);
+    const run = await runFor(t, askId, revisionId, failingProvider);
 
     expect(run.provider).toBe("deterministic");
     expect(run.engine).toBe("deterministic");
@@ -232,10 +247,11 @@ describe("decision persistence and audit", () => {
   it("routes a non-English ask to the coordinator, records abstentions, and creates no slots", async () => {
     const spanish =
       "Mi mamá necesita ayuda el sábado. No puede estar sola y yo trabajo todo el día.";
-    const askId = await insertAsk(t, spanish);
+    const { askId, revisionId } = await insertAsk(t, spanish);
 
     const run = await decideForAsk({
       askId,
+      revisionId,
       churchId: seedIds.church,
       askText: spanish,
       policy: { id: seedIds.policyV1, questionSet: seedQuestionSet },
@@ -279,48 +295,50 @@ describe("decision persistence and audit", () => {
   it("moves a safety ask to safety_hold and a personal-care ask to care_hold", async () => {
     const safetyText =
       "She fell last week and I am scared she will wander out of the house.";
-    const safetyAskId = await insertAsk(t, safetyText);
+    const safetyAsk = await insertAsk(t, safetyText);
     const safetyRun = await runFor(
       t,
-      safetyAskId,
+      safetyAsk.askId,
+      safetyAsk.revisionId,
       createDeterministicProvider(),
       safetyText,
     );
     expect(safetyRun.routing.status).toBe("safety_hold");
     expect(safetyRun.routing.slotConstructionAllowed).toBe(false);
 
-    const [safetyAsk] = await t.db
+    const [safetyRow] = await t.db
       .select({ status: ask.status })
       .from(ask)
-      .where(eq(ask.id, safetyAskId));
-    expect(safetyAsk.status).toBe("safety_hold");
+      .where(eq(ask.id, safetyAsk.askId));
+    expect(safetyRow.status).toBe("safety_hold");
 
     const careText = "I need help with bathing and remembering her medication.";
-    const careAskId = await insertAsk(t, careText);
+    const careAsk = await insertAsk(t, careText);
     const careRun = await runFor(
       t,
-      careAskId,
+      careAsk.askId,
+      careAsk.revisionId,
       createDeterministicProvider(),
       careText,
     );
     expect(careRun.routing.status).toBe("care_hold");
     expect(careRun.routing.slotConstructionAllowed).toBe(false);
 
-    const [careAsk] = await t.db
+    const [careRow] = await t.db
       .select({ status: ask.status })
       .from(ask)
-      .where(eq(ask.id, careAskId));
-    expect(careAsk.status).toBe("care_hold");
+      .where(eq(ask.id, careAsk.askId));
+    expect(careRow.status).toBe("care_hold");
 
     const [slotCount] = await t.db
       .select({ count: rawSql<number>`count(*)::int` })
       .from(slot)
-      .where(eq(slot.askId, safetyAskId));
+      .where(eq(slot.askId, safetyAsk.askId));
     expect(slotCount.count).toBe(0);
   });
 
   it("never moves an already-held ask back to the open queue", async () => {
-    const askId = await insertAsk(t, HERO_ASK);
+    const { askId, revisionId } = await insertAsk(t, HERO_ASK);
     await t.db
       .update(ask)
       .set({ status: "safety_hold" })
@@ -328,7 +346,7 @@ describe("decision persistence and audit", () => {
 
     // The hero text is clear, so a fresh run would route to the queue — but a
     // hold is sticky and only a human closes it.
-    await runFor(t, askId, createDeterministicProvider());
+    await runFor(t, askId, revisionId, createDeterministicProvider());
 
     const [updated] = await t.db
       .select({ status: ask.status })

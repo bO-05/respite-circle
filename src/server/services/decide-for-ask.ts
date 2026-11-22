@@ -19,6 +19,12 @@ import type { DecisionProvider, EnvLike } from "./providers";
 
 export type DecideForAskInput = {
   askId: string;
+  /**
+   * The exact `ask_revision` these answers are about. A revision re-runs the
+   * nine questions and books the new row here, so the trail can filter to the
+   * wording it actually answered.
+   */
+  revisionId: string;
   churchId: string;
   askText: string;
   policy: {
@@ -87,6 +93,7 @@ export async function decideForAsk(
           .insert(decision)
           .values({
             askId: input.askId,
+            askRevisionId: input.revisionId,
             policyVersionId: input.policy.id,
             questionId: outcome.questionId,
             questionText: outcome.questionText,
@@ -116,6 +123,7 @@ export async function decideForAsk(
           entityId: input.askId,
           detail: {
             inputDigest: run.digest,
+            revisionId: input.revisionId,
             provider: run.provider,
             model: run.model,
             engine: run.engine,

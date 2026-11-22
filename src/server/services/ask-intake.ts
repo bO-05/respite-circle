@@ -30,8 +30,9 @@ import type { DecisionProvider, EnvLike } from "./providers";
  * 4. answer the caregiver with what the database actually holds.
  *
  * A revision (`revisionOf`) appends a new `ask_revision` row and does not
- * rewrite the ask. It does not re-run decisions in this feature; the desk reads
- * the latest words.
+ * rewrite the ask. It is new wording, so the nine typed questions are run
+ * again against it; every decision row records the revision it answered, and
+ * the trail reads only the latest one.
  */
 
 export type SubmitAskFailureCode = AskWriteErrorCode | "no_policy";
@@ -104,28 +105,8 @@ export async function submitAsk(
   const revisionOf =
     typeof input.revisionOf === "string" ? input.revisionOf.trim() : "";
 
-  if (revisionOf.length > 0) {
-    if (!UUID_PATTERN.test(revisionOf)) {
-      return failure("not_found", "That ask is not available.", 404);
-    }
-    try {
-      const revised = await appendAskRevision(
-        input.actor,
-        { askId: revisionOf, text: validation.text },
-        database,
-      );
-      return {
-        ok: true,
-        askId: revisionOf,
-        revisionId: revised.revisionId,
-        status: revised.status,
-        decisionsRan: false,
-        decisionsPersisted: false,
-      };
-    } catch (error) {
-      if (error instanceof AskIntakeError) return failureFromError(error);
-      throw error;
-    }
+  if (revisionOf.length > 0 && !UUID_PATTERN.test(revisionOf)) {
+    return failure("not_found", "That ask is not available.", 404);
   }
 
   const policy = await getPolicyInForce(input.actor.churchId, database);
@@ -135,6 +116,70 @@ export async function submitAsk(
       "The church's promises are not signed yet, so a person will take this down by hand. Please call the church office.",
       503,
     );
+  }
+
+  const policyForRun: { id: string; questionSet: readonly PolicyQuestion[] } =
+    {
+      id: policy.id,
+      questionSet: policy.questionSet,
+    };
+
+  if (revisionOf.length > 0) {
+    let revised;
+    try {
+      revised = await appendAskRevision(
+        input.actor,
+        { askId: revisionOf, text: validation.text },
+        database,
+      );
+    } catch (error) {
+      if (error instanceof AskIntakeError) return failureFromError(error);
+      throw error;
+    }
+
+    // A revision is new wording, so every typed answer must be produced again.
+    // The old rows stay append-only; this run is booked against the new
+    // revision and is the only trail the caregiver's page may show.
+    let run;
+    try {
+      run = await decideForAsk({
+        askId: revisionOf,
+        revisionId: revised.revisionId,
+        churchId: input.actor.churchId,
+        askText: validation.text,
+        policy: policyForRun,
+        provider: input.provider,
+        timeoutMs: input.timeoutMs,
+        actorId: input.actor.personId,
+        database,
+        env: input.env,
+      });
+    } catch {
+      return {
+        ok: true,
+        askId: revisionOf,
+        revisionId: revised.revisionId,
+        status: revised.status,
+        decisionsRan: false,
+        decisionsPersisted: false,
+      };
+    }
+
+    // `decideForAsk` only moves an ask that is still in the queue. An approved,
+    // closed, or held ask keeps its human-owned status while the new answers
+    // are recorded for the coordinator to read.
+    const canMove = revised.status === "draft" || revised.status === "waiting_coordinator";
+    const nextStatus =
+      canMove && run.persisted ? run.routing.status : revised.status;
+
+    return {
+      ok: true,
+      askId: revisionOf,
+      revisionId: revised.revisionId,
+      status: nextStatus,
+      decisionsRan: true,
+      decisionsPersisted: run.persisted,
+    };
   }
 
   let created;
@@ -149,15 +194,10 @@ export async function submitAsk(
     throw error;
   }
 
-  const policyForRun: { id: string; questionSet: readonly PolicyQuestion[] } =
-    {
-      id: policy.id,
-      questionSet: policy.questionSet,
-    };
-
   try {
     const run = await decideForAsk({
       askId: created.askId,
+      revisionId: created.revisionId,
       churchId: input.actor.churchId,
       askText: validation.text,
       policy: policyForRun,
