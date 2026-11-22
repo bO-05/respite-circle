@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { RolePage } from "@/components/role-page";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
+import { holdReasonFor } from "@/server/domain/desk-queue";
 import { getCoordinatorAskWords } from "@/server/repositories/asks";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,8 @@ const STATUS_LABEL: Record<string, string> = {
  * The caregiver's words are shown character-for-character, in a block with no
  * textarea, no contenteditable, and no form action. The database trigger backs
  * that up: an UPDATE to `ask.verbatim_text` is rejected, and every later edit
- * is a separate append-only revision.
+ * is a separate append-only revision. The lock note names that guarantee so a
+ * coordinator never goes looking for an edit control that does not exist.
  */
 export default async function DeskAskPage({
   params,
@@ -33,6 +35,8 @@ export default async function DeskAskPage({
   if (!review) {
     notFound();
   }
+
+  const holdReason = holdReasonFor(review.status);
 
   return (
     <RolePage
@@ -68,6 +72,15 @@ export default async function DeskAskPage({
         </div>
       </dl>
 
+      {holdReason ? (
+        <p
+          data-testid="desk-detail-hold"
+          className="rounded-md border border-accent-soft bg-accent-soft px-4 py-3 text-lg leading-relaxed text-ink"
+        >
+          {holdReason}
+        </p>
+      ) : null}
+
       <section
         aria-labelledby="caregiver-words"
         className="rounded-lg border border-line bg-surface p-5"
@@ -75,10 +88,14 @@ export default async function DeskAskPage({
         <h2 id="caregiver-words" className="font-serif text-2xl text-ink">
           The family&apos;s own words
         </h2>
-        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-          These are the words the family sent. They are read-only for every
-          role, including yours. A later edit becomes a new version; the first
-          words stay exactly as they arrived.
+        <p
+          data-testid="verbatim-lock"
+          className="mt-2 max-w-prose text-base leading-relaxed text-ink"
+        >
+          <span className="font-semibold">Locked.</span> These words are stored
+          exactly as they arrived. No one can edit them from this screen — not a
+          coordinator, not a deputy. If the family sends new words, they are
+          added as a new version and these stay as they were.
         </p>
         <blockquote
           data-testid="desk-verbatim"
