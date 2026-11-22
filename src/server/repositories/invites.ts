@@ -260,7 +260,13 @@ export async function createInvite(
     // the caregiver role are in the predicate, so no application check can be
     // skipped and no foreign person can be named. The raw `sql` template is
     // parameterised; dates are bound as ISO strings, never as a JS Date.
-    const inserted = await tx.execute<{ id: string; created_at: Date }>(sql`
+    //
+    // Only `id` comes back. The driver hands a bare `RETURNING created_at`
+    // timestamptz back as text even though it is typed as a Date here, and the
+    // HTTP route calls `toISOString()` on it after the row is committed. The
+    // instant we inserted is `now`, so return that Date rather than a string
+    // that would throw after the write and report a false failure.
+    const inserted = await tx.execute<{ id: string }>(sql`
       INSERT INTO invite (church_id, caregiver_id, body, created_by, created_at)
       SELECT p.church_id, p.id, ${parsed.body}, ${actor.personId}::uuid,
              ${now.toISOString()}::timestamptz
@@ -270,7 +276,7 @@ export async function createInvite(
          AND p.church_id = ${actor.churchId}::uuid
          AND p.active = true
          AND p.roles @> ${JSON.stringify(["caregiver"])}::jsonb
-      RETURNING id, created_at
+      RETURNING id
     `);
 
     const row = inserted[0];
@@ -312,7 +318,7 @@ export async function createInvite(
         caregiverLastName: family.lastName,
         careRecipientFirstName: recipient.firstName,
         body: parsed.body,
-        createdAt: row.created_at,
+        createdAt: now,
         authorFirstName: author.firstName,
         authorLastName: author.lastName,
       },

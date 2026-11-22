@@ -212,6 +212,13 @@ describe("the invitation composer", () => {
     expect(outcome.invite.authorFirstName).toBe("Grace");
     expect(outcome.invite.body).toBe(EDITED_BODY);
 
+    // The returned value is what the HTTP route serialises. The raw
+    // `INSERT … RETURNING` hands timestamptz back as text in this driver, so
+    // the repository must return a real Date or `toISOString()` throws after
+    // the row is already committed.
+    expect(outcome.invite.createdAt).toBeInstanceOf(Date);
+    expect(outcome.invite.createdAt.toISOString()).toBe(NOW.toISOString());
+
     const rows = await inviteRows(t);
     expect(rows).toHaveLength(1);
     const [row] = rows;

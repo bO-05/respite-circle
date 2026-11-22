@@ -36,6 +36,8 @@ const TEMPLATE =
 
 const EDITED_BODY = `${TEMPLATE}\n\nParking is by the side door, and I will meet you at 9:40.`;
 
+const API_BODY = `${TEMPLATE}\n\nI will save you a seat by the window.`;
+
 const EVIDENCE_DIR = path.join(
   process.cwd(),
   ".research",
@@ -353,6 +355,60 @@ test.describe("the invitation composer", () => {
 
     await priya.context.close();
     await marta.context.close();
+    await grace.context.close();
+  });
+
+  test("the HTTP write path answers 201 with the stored author and instant", async ({
+    browser,
+  }) => {
+    const notificationsBefore = await notificationCount(db);
+    const grace = await signIn(browser, seedAccessTokens.grace);
+
+    // The browser's server action only carries a message. This path returns
+    // the stored row's instant, so it is the one that proves a completed write
+    // is reported as success rather than a false 503 after the commit.
+    const response = await grace.page.request.post("/api/desk/invite", {
+      form: {
+        caregiverId: seedIds.people.marta,
+        body: API_BODY,
+      },
+    });
+
+    expect(response.status()).toBe(201);
+    const payload = (await response.json()) as {
+      ok: boolean;
+      channel: string;
+      inviteId: string;
+      caregiverId: string;
+      createdAt: string;
+      message: string;
+    };
+    expect(payload.ok).toBe(true);
+    expect(payload.channel).toBe("in_app");
+    expect(payload.caregiverId).toBe(seedIds.people.marta);
+    expect(payload.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(Number.isNaN(Date.parse(payload.createdAt))).toBe(false);
+    expect(payload.message).toMatch(/saved with your name and today's date/i);
+
+    const rows = await db.db
+      .select()
+      .from(invite)
+      .where(eq(invite.id, payload.inviteId));
+    expect(rows).toHaveLength(1);
+    expect(rows[0].body).toBe(API_BODY);
+    expect(rows[0].createdBy).toBe(seedIds.people.grace);
+    expect(rows[0].createdAt).toBeInstanceOf(Date);
+    expect(rows[0].seenAt).toBeNull();
+
+    expect(await notificationCount(db)).toBe(notificationsBefore);
+
+    await grace.page.goto("/desk/invite");
+    await expect(
+      grace.page.locator(
+        `[data-testid="invite-sent-row"][data-invite-id="${payload.inviteId}"] [data-testid="invite-sent-body"]`,
+      ),
+    ).toHaveText(API_BODY);
+
     await grace.context.close();
   });
 
