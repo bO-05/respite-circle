@@ -21,6 +21,7 @@ const ROUTE_GUARDS: Record<string, readonly Role[]> = {
   "/ask": CAREGIVER_ROLES,
   "/care": CAREGIVER_ROLES,
   "/desk": DESK_ROLES,
+  "/desk/sessions": DESK_ROLES,
   "/desk/metrics": DESK_AREA_ROLES,
   "/circle": BOARD_ROLES,
   "/my-claims": CLAIMS_ROLES,
@@ -43,9 +44,10 @@ describe("role navigation", () => {
     ]);
   });
 
-  it("gives the coordinator desk, board, promises, and metrics", () => {
+  it("gives the coordinator desk, sessions, board, promises, and metrics", () => {
     expect(navForRole("coordinator").map((item) => item.label)).toEqual([
       "Desk",
+      "Sessions",
       "Board",
       "Promises",
       "Metrics",
@@ -99,6 +101,7 @@ describe("document titles", () => {
     { role: "volunteer", path: "/my-claims", label: "Your claims" },
     { role: "volunteer", path: "/my-claims/abc", label: "Your claim" },
     { role: "coordinator", path: "/desk", label: "Coordinator desk" },
+    { role: "coordinator", path: "/desk/sessions", label: "Respite Morning sessions" },
     { role: "coordinator", path: "/desk/ask/abc", label: "Ask review" },
     { role: "coordinator", path: "/desk/slot/abc", label: "Slot review" },
     { role: "coordinator", path: "/desk/audit", label: "Decision log" },

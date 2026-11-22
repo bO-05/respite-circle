@@ -23,6 +23,10 @@ import {
   type TypedAnswer,
 } from "@/server/domain/slots";
 import { listSessionOptions } from "@/server/repositories/draft-slots";
+import {
+  calendarGuardFrom,
+  listTemplateSchedules,
+} from "@/server/repositories/sessions";
 import type { AppDatabase } from "@/server/repositories/coordinator";
 import { evaluateCandidatesForSlots } from "@/server/services/candidate-evaluation";
 
@@ -164,11 +168,10 @@ export async function constructDraftSlots(
     abstained: row.abstained,
   }));
 
-  const sessions = await listSessionOptions(
-    input.churchId,
-    database,
-    now,
-  );
+  const [sessions, schedules] = await Promise.all([
+    listSessionOptions(input.churchId, database, now),
+    listTemplateSchedules(input.churchId, database),
+  ]);
 
   const plan = buildDraftSlots({
     answers,
@@ -177,6 +180,9 @@ export async function constructDraftSlots(
     policy: { transportEnabled: askRow.transportEnabled },
     now,
     timeZone: askRow.timeZone,
+    // A companion place for a week with no Respite Morning is refused with
+    // the same dates the desk banner shows.
+    calendar: calendarGuardFrom(schedules, sessions, askRow.timeZone, now),
   });
 
   if (plan.blocked) {
@@ -253,6 +259,7 @@ export async function constructDraftSlots(
         skipped: plan.skipped.map((entry) => ({
           kind: entry.kind,
           reason: entry.reason,
+          message: entry.message,
         })),
         noNeed: plan.proposals.length === 0 && plan.skipped.length === 0,
         policyVersionId: askRow.policyVersionId,

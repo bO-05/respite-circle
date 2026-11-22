@@ -20,6 +20,15 @@
  * recipient's first name (a human-entered field) or a closed label.
  */
 
+import {
+  MONTH_NAMES,
+  WEEKDAY_NAMES,
+  civilWeekday,
+  partsInZone,
+  zonedWallTimeToUtc,
+  type ZonedParts,
+} from "./time-zone";
+
 export const SLOT_KINDS = ["companion", "home", "drive", "meal"] as const;
 export type SlotKind = (typeof SLOT_KINDS)[number];
 
@@ -120,6 +129,16 @@ export type ConstructionPolicy = {
   transportEnabled: boolean;
 };
 
+/**
+ * What the desk should say when the weekly calendar is not planned four weeks
+ * ahead. Built by `src/server/domain/session-calendar.ts`; passed in rather than
+ * recomputed here so the banner and the refusal quote the same dates.
+ */
+export type CalendarGuard = {
+  incomplete: boolean;
+  message: string;
+};
+
 export type ConstructionInput = {
   answers: readonly TypedAnswer[];
   sessions: readonly SessionOption[];
@@ -127,6 +146,7 @@ export type ConstructionInput = {
   policy: ConstructionPolicy;
   now: Date;
   timeZone: string;
+  calendar?: CalendarGuard;
 };
 
 export type SlotProposal = {
@@ -142,7 +162,10 @@ export type SlotProposal = {
   sessionId: string | null;
 };
 
-export type SkipReason = "no_session_capacity" | "no_driver_policy";
+export type SkipReason =
+  | "no_session_capacity"
+  | "no_driver_policy"
+  | "calendar_incomplete";
 
 export type SkippedProposal = {
   kind: SlotKind;
@@ -288,128 +311,6 @@ function blockForAnswers(
   }
 
   return null;
-}
-
-// ---------------------------------------------------------------------------
-// Church-local time
-// ---------------------------------------------------------------------------
-
-const WEEKDAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-] as const;
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-] as const;
-
-type ZonedParts = {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-  minute: number;
-  second: number;
-};
-
-const formatterCache = new Map<string, Intl.DateTimeFormat>();
-
-function formatterFor(timeZone: string): Intl.DateTimeFormat {
-  const cached = formatterCache.get(timeZone);
-  if (cached) return cached;
-
-  const safe = isUsableTimeZone(timeZone) ? timeZone : "UTC";
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: safe,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  formatterCache.set(timeZone, formatter);
-  return formatter;
-}
-
-function isUsableTimeZone(timeZone: string): boolean {
-  if (!timeZone) return false;
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function partsInZone(date: Date, timeZone: string): ZonedParts {
-  const parts = formatterFor(timeZone).formatToParts(date);
-  const values: Record<string, number> = {};
-
-  for (const part of parts) {
-    if (part.type !== "literal") values[part.type] = Number(part.value);
-  }
-
-  return {
-    year: values.year,
-    month: values.month,
-    day: values.day,
-    hour: values.hour === 24 ? 0 : values.hour,
-    minute: values.minute,
-    second: values.second,
-  };
-}
-
-function offsetMsAt(date: Date, timeZone: string): number {
-  const p = partsInZone(date, timeZone);
-  const asIfUtc = Date.UTC(
-    p.year,
-    p.month - 1,
-    p.day,
-    p.hour,
-    p.minute,
-    p.second,
-  );
-  return asIfUtc - Math.floor(date.getTime() / 1_000) * 1_000;
-}
-
-/**
- * Convert a church-local wall time to a UTC instant. The two passes handle a
- * daylight-saving transition: the first guess may land on the other side of it.
- */
-function zonedWallTimeToUtc(
-  year: number,
-  month: number,
-  day: number,
-  hour: number,
-  minute: number,
-  timeZone: string,
-): Date {
-  const wallAsUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
-  const first = wallAsUtc - offsetMsAt(new Date(wallAsUtc), timeZone);
-  const second = wallAsUtc - offsetMsAt(new Date(first), timeZone);
-  return new Date(second);
-}
-
-function civilWeekday(year: number, month: number, day: number): number {
-  return new Date(Date.UTC(year, month - 1, day, 12)).getUTCDay();
 }
 
 const DAY_PART_WINDOWS: Record<
@@ -635,10 +536,16 @@ export const SKIPPED_MESSAGES: Record<SkipReason, string> = {
     "No Respite Morning in the next four weeks has room for another companion place. The coordinator can open another session or offer another time.",
   no_driver_policy:
     "A ride was asked for, but the church has not signed its volunteer-driver policy, so no drive is proposed. The coordinator can talk with the family about transport.",
+  calendar_incomplete:
+    "The next four Tuesdays are not all on the calendar yet, so a companion place cannot be proposed for a week with no Respite Morning. Fill the calendar first.",
 };
 
 export function skippedMessage(reason: string): string {
-  if (reason === "no_session_capacity" || reason === "no_driver_policy") {
+  if (
+    reason === "no_session_capacity" ||
+    reason === "no_driver_policy" ||
+    reason === "calendar_incomplete"
+  ) {
     return SKIPPED_MESSAGES[reason];
   }
   return "This proposal was not made. A person will decide.";
@@ -761,25 +668,36 @@ export function buildDraftSlots(input: ConstructionInput): ConstructionPlan {
   const reheat = reheatPreference(input.answers);
 
   if (sit) {
-    const session = nextCompanionSession(input.sessions, input.now);
-    if (session) {
-      proposals.push({
-        kind: "companion",
-        tier: tierForKind("companion"),
-        label: "Companion place at Respite Morning",
-        windowStart: session.startsAt,
-        windowEnd: session.endsAt,
-        gated: false,
-        orientationNote: companionNote(input.recipientFirstName, familiar),
-        sessionId: session.id,
-        ...proposalBase("q1_companion"),
-      });
-    } else {
+    if (input.calendar?.incomplete) {
+      // A Tuesday place can only be offered for a morning that exists. The
+      // calendar's own message names the missing or cancelled week.
       skipped.push({
         kind: "companion",
-        reason: "no_session_capacity",
-        message: skippedMessage("no_session_capacity"),
+        reason: "calendar_incomplete",
+        message:
+          input.calendar.message || SKIPPED_MESSAGES.calendar_incomplete,
       });
+    } else {
+      const session = nextCompanionSession(input.sessions, input.now);
+      if (session) {
+        proposals.push({
+          kind: "companion",
+          tier: tierForKind("companion"),
+          label: "Companion place at Respite Morning",
+          windowStart: session.startsAt,
+          windowEnd: session.endsAt,
+          gated: false,
+          orientationNote: companionNote(input.recipientFirstName, familiar),
+          sessionId: session.id,
+          ...proposalBase("q1_companion"),
+        });
+      } else {
+        skipped.push({
+          kind: "companion",
+          reason: "no_session_capacity",
+          message: skippedMessage("no_session_capacity"),
+        });
+      }
     }
   }
 
@@ -865,11 +783,57 @@ export type ManualDraftInput = {
   now: Date;
   timeZone: string;
   transportEnabled: boolean;
+  calendar?: CalendarGuard;
 };
 
 export type ManualDraftResult =
   | { ok: true; proposal: SlotProposal }
   | { ok: false; message: string };
+
+const NO_MORNING_MESSAGE =
+  "There is no Respite Morning on the calendar yet, so a companion place cannot be linked. Fill the calendar first.";
+
+/** The refusal when a companion place cannot be linked to a scheduled morning. */
+export function companionRefusalMessage(
+  sessions: readonly SessionOption[],
+): string {
+  const next = sessions
+    .filter((session) => session.status === "scheduled")
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0];
+
+  if (!next) return NO_MORNING_MESSAGE;
+
+  const capacity = Math.max(next.capacity, 0);
+  return `That Respite Morning is full (${capacity} of ${capacity} places taken). A full morning cannot accept another companion place. Cancel or move a place, or offer another time.`;
+}
+
+/**
+ * The morning an edited companion draft should stay on, or the next one with
+ * room when the draft is changing kind. A companion draft already on a morning
+ * keeps its place even when that morning is otherwise full, because its own
+ * place is part of the count.
+ */
+export function companionSessionForEdit(input: {
+  sessions: readonly SessionOption[];
+  now: Date;
+  currentSessionId: string | null;
+  currentKind: SlotKind;
+}): SessionOption | null {
+  const current = input.currentSessionId
+    ? input.sessions.find((entry) => entry.id === input.currentSessionId)
+    : null;
+
+  if (current && current.status === "scheduled") {
+    if (
+      current.usedCompanionPlaces < current.capacity ||
+      input.currentKind === "companion"
+    ) {
+      return current;
+    }
+  }
+
+  return nextCompanionSession(input.sessions, input.now);
+}
 
 /**
  * A coordinator may add a time plain code did not propose. It is still a draft
@@ -897,16 +861,28 @@ export function buildManualDraft(input: ManualDraftInput): ManualDraftResult {
   };
 
   if (input.kind === "companion") {
+    if (input.calendar?.incomplete) {
+      return {
+        ok: false,
+        message:
+          input.calendar.message || SKIPPED_MESSAGES.calendar_incomplete,
+      };
+    }
+
     const session = nextCompanionSession(input.sessions, input.now);
+    if (!session) {
+      return { ok: false, message: companionRefusalMessage(input.sessions) };
+    }
+
     return {
       ok: true,
       proposal: {
         ...base,
         label: KIND_LABEL.companion,
-        windowStart: session?.startsAt ?? null,
-        windowEnd: session?.endsAt ?? null,
+        windowStart: session.startsAt,
+        windowEnd: session.endsAt,
         orientationNote: companionNote(input.recipientFirstName, false),
-        sessionId: session?.id ?? null,
+        sessionId: session.id,
       },
     };
   }

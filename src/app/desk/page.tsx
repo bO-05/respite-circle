@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { RolePage } from "@/components/role-page";
+import { SessionCalendarStrip } from "@/components/session-calendar-strip";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import {
@@ -13,6 +14,7 @@ import {
   listDeskAsks,
   type DeskQueueItem,
 } from "@/server/repositories/coordinator";
+import { getDeskSessionOverview } from "@/server/repositories/sessions";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +80,10 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
 
 export default async function DeskPage() {
   const { person, session } = await requirePage(DESK_ROLES);
-  const asks = await listDeskAsks(session);
+  const [asks, overview] = await Promise.all([
+    listDeskAsks(session),
+    getDeskSessionOverview(session),
+  ]);
   const groups = groupDeskQueue(asks);
   // One server clock for the whole page: every row agrees, and the value is
   // rendered once on the server rather than recomputed during hydration.
@@ -91,6 +96,8 @@ export default async function DeskPage() {
       title="Coordinator desk"
       lead="A person reads every ask before a neighbour sees a time. Safety and personal-care asks stay pinned in their own groups."
     >
+      <SessionCalendarStrip overview={overview} />
+
       {asks.length === 0 ? (
         <section
           data-testid="desk-empty"

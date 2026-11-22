@@ -35,7 +35,15 @@ import {
 
 export type ApproveResult =
   | ApproveOutcome
-  | { ok: false; reason: "not_found" | "not_waiting"; message: string };
+  | {
+      ok: false;
+      reason:
+        | "not_found"
+        | "not_waiting"
+        | "session_full"
+        | "session_unavailable";
+      message: string;
+    };
 
 export async function approveAskForCoordinator(
   actor: Actor,

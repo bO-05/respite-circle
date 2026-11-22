@@ -19,17 +19,25 @@ import {
 } from "@/server/auth/policy";
 import {
   buildManualDraft,
+  companionRefusalMessage,
+  companionSessionForEdit,
   constructionBlockedForStatus,
   isSlotKind,
   skippedMessage,
   validateHoldReason,
   type SessionOption,
+  type SkipReason,
   type SkippedProposal,
   type SlotKind,
   type SlotTier,
   type ValidatedDraftSlot,
 } from "@/server/domain/slots";
 import type { AppDatabase } from "./coordinator";
+import {
+  calendarGuardFrom,
+  listTemplateSchedules,
+  readChurchTimeZone,
+} from "./sessions";
 import { evaluateCandidatesForSlots } from "@/server/services/candidate-evaluation";
 
 /**
@@ -136,7 +144,7 @@ export async function listSessionOptions(
       usedCompanionPlaces: sql<number>`(
         SELECT COUNT(*)::int
           FROM slot AS used
-         WHERE used.session_id = ${session.id}
+         WHERE used.session_id = "session"."id"
            AND used.kind = 'companion'
            AND used.status IN ('draft','open','claimed','covered','done')
       )`,
@@ -161,6 +169,12 @@ type ConstructionDetail = {
   skipped?: unknown;
 };
 
+const SKIP_REASONS = new Set<SkipReason>([
+  "no_session_capacity",
+  "no_driver_policy",
+  "calendar_incomplete",
+]);
+
 function readSkipped(detail: unknown): SkippedProposal[] {
   if (!detail || typeof detail !== "object") return [];
   const raw = (detail as ConstructionDetail).skipped;
@@ -171,11 +185,21 @@ function readSkipped(detail: unknown): SkippedProposal[] {
     if (!entry || typeof entry !== "object") continue;
     const kind = (entry as { kind?: unknown }).kind;
     const reason = (entry as { reason?: unknown }).reason;
+    const message = (entry as { message?: unknown }).message;
     if (!isSlotKind(kind)) continue;
-    if (reason !== "no_session_capacity" && reason !== "no_driver_policy") {
+    if (typeof reason !== "string" || !SKIP_REASONS.has(reason as SkipReason)) {
       continue;
     }
-    skipped.push({ kind, reason, message: skippedMessage(reason) });
+    skipped.push({
+      kind,
+      reason: reason as SkipReason,
+      // The message is stored with the proposal so a cancelled week still
+      // names its date on the desk; older rows fall back to the plain sentence.
+      message:
+        typeof message === "string" && message.length > 0
+          ? message
+          : skippedMessage(reason),
+    });
   }
   return skipped;
 }
@@ -349,6 +373,53 @@ export async function updateDraftSlot(
     return { ok: false, message: DRIVE_POLICY_SENTENCE };
   }
 
+  // A companion place is tied to one Respite Morning. Changing the kind to
+  // companion links the next morning with room (never a full one); changing it
+  // away clears the session link. A companion draft already on a morning keeps
+  // its own place even when that morning is otherwise full.
+  const now = new Date();
+  let sessionId: string | null = null;
+  let windowStart = input.windowStart;
+  let windowEnd = input.windowEnd;
+
+  if (input.kind === "companion") {
+    const [current] = await database
+      .select({ sessionId: slot.sessionId, kind: slot.kind })
+      .from(slot)
+      .where(
+        and(eq(slot.id, input.slotId), eq(slot.churchId, actor.churchId)),
+      )
+      .limit(1);
+
+    if (!current) return { ok: false, message: NOT_EDITABLE_SENTENCE };
+
+    const [sessions, schedules, timeZone] = await Promise.all([
+      listSessionOptions(actor.churchId, database, now),
+      listTemplateSchedules(actor.churchId, database),
+      readChurchTimeZone(actor.churchId, database),
+    ]);
+
+    const guard = calendarGuardFrom(schedules, sessions, timeZone, now);
+    if (guard.incomplete) return { ok: false, message: guard.message };
+
+    const currentKind = isSlotKind(current.kind) ? current.kind : "meal";
+    const target = companionSessionForEdit({
+      sessions,
+      now,
+      currentSessionId: current.sessionId,
+      currentKind,
+    });
+    if (!target) {
+      return { ok: false, message: companionRefusalMessage(sessions) };
+    }
+
+    sessionId = target.id;
+    if (currentKind !== "companion" || current.sessionId !== target.id) {
+      windowStart = target.startsAt;
+      windowEnd = target.endsAt;
+    }
+  }
+
   const result: DraftWriteResult = await database.transaction(async (tx) => {
     const rows = await tx
       .update(slot)
@@ -356,10 +427,11 @@ export async function updateDraftSlot(
         kind: input.kind,
         tier: input.tier,
         label: input.label,
-        windowStart: input.windowStart,
-        windowEnd: input.windowEnd,
+        windowStart,
+        windowEnd,
         gated: input.gated,
         orientationNote: input.orientationNote,
+        sessionId,
       })
       .where(
         and(
@@ -637,6 +709,7 @@ export async function addDraftSlot(
   }
 
   const sessions = await listSessionOptions(actor.churchId, database, now);
+  const schedules = await listTemplateSchedules(actor.churchId, database);
   const manual = buildManualDraft({
     kind: input.kind,
     recipientFirstName: askRow.recipientFirstName,
@@ -644,6 +717,7 @@ export async function addDraftSlot(
     now,
     timeZone: askRow.timeZone,
     transportEnabled: askRow.transportEnabled,
+    calendar: calendarGuardFrom(schedules, sessions, askRow.timeZone, now),
   });
   if (!manual.ok) return { ok: false, message: manual.message };
 

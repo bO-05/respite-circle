@@ -23,7 +23,9 @@
     "db:seed": "npx tsx src/db/seed.ts",
     "db:seed:remote": "npx tsx src/db/seed.ts --remote",
     "db:reset": "npx tsx scripts/reset-demo.ts",
-    "db:verify": "npx tsx scripts/verify-seed.ts"
+    "db:verify": "npx tsx scripts/verify-seed.ts",
+    "sessions:materialise": "npx tsx scripts/materialise-sessions.ts",
+    "sessions:materialise:e2e": "npx tsx scripts/materialise-sessions.ts --e2e"
   },
   "dependencies": {
     "@ai-sdk/mistral": "4.0.89",

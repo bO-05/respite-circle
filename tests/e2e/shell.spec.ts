@@ -128,22 +128,22 @@ test("each role sees only its own navigation", async ({ browser }) => {
     {
       token: seedAccessTokens.marta,
       labels: ["Ask", "Care", "Promises"],
-      absent: ["Desk", "Board", "Metrics", "My claims"],
+      absent: ["Desk", "Sessions", "Board", "Metrics", "My claims"],
     },
     {
       token: seedAccessTokens.grace,
-      labels: ["Desk", "Board", "Promises", "Metrics"],
+      labels: ["Desk", "Sessions", "Board", "Promises", "Metrics"],
       absent: ["Ask", "Care", "My claims"],
     },
     {
       token: seedAccessTokens.daniel,
-      labels: ["Desk", "Board", "Promises", "Metrics"],
+      labels: ["Desk", "Sessions", "Board", "Promises", "Metrics"],
       absent: ["Ask", "Care", "My claims"],
     },
     {
       token: seedAccessTokens.ruth,
       labels: ["Board", "My claims"],
-      absent: ["Desk", "Ask", "Care", "Metrics"],
+      absent: ["Desk", "Sessions", "Ask", "Care", "Metrics"],
     },
   ];
 

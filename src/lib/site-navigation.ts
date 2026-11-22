@@ -37,12 +37,14 @@ export const ROLE_NAV: Record<Role, readonly NavItem[]> = {
   ],
   coordinator: [
     { href: "/desk", label: "Desk" },
+    { href: "/desk/sessions", label: "Sessions" },
     { href: "/circle", label: "Board" },
     { href: "/promises", label: "Promises" },
     { href: "/desk/metrics", label: "Metrics" },
   ],
   deputy: [
     { href: "/desk", label: "Desk" },
+    { href: "/desk/sessions", label: "Sessions" },
     { href: "/circle", label: "Board" },
     { href: "/promises", label: "Promises" },
     { href: "/desk/metrics", label: "Metrics" },
@@ -79,6 +81,7 @@ const VOLUNTEER_TITLES: readonly TitleRule[] = [
 const DESK_TITLES: readonly TitleRule[] = [
   { match: /^\/desk\/ask\/[^/]+$/, label: "Ask review" },
   { match: /^\/desk\/slot\/[^/]+$/, label: "Slot review" },
+  { match: /^\/desk\/sessions$/, label: "Respite Morning sessions" },
   { match: /^\/desk\/audit$/, label: "Decision log" },
   { match: /^\/desk\/policy$/, label: "Church policy" },
   { match: /^\/desk\/metrics$/, label: "Church numbers" },

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db as appDb } from "@/db/client";
 import {
@@ -7,6 +7,7 @@ import {
   auditEvent,
   church,
   person,
+  session,
   slot,
   slotKindEnum,
   slotStatusEnum,
@@ -20,6 +21,7 @@ import {
   validateSendBackNote,
 } from "@/server/domain/ask-review";
 import { canPublishDraft } from "@/server/domain/slots";
+import { formatSessionDate } from "@/server/domain/session-calendar";
 import { sha256Hex } from "@/server/services/decision-contract";
 import type { AppDatabase } from "./coordinator";
 
@@ -212,7 +214,11 @@ export type ApproveOutcome =
     }
   | {
       ok: false;
-      reason: "not_found" | "not_waiting";
+      reason:
+        | "not_found"
+        | "not_waiting"
+        | "session_full"
+        | "session_unavailable";
       message: string;
     };
 
@@ -236,8 +242,9 @@ export async function approveAsk(
 
   return database.transaction(async (tx): Promise<ApproveOutcome> => {
     const [lockedAsk] = await tx
-      .select({ id: ask.id, status: ask.status })
+      .select({ id: ask.id, status: ask.status, timeZone: church.timezone })
       .from(ask)
+      .innerJoin(church, eq(church.id, ask.churchId))
       .where(and(eq(ask.id, askId), eq(ask.churchId, actor.churchId)))
       .limit(1)
       .for("update");
@@ -258,6 +265,7 @@ export async function approveAsk(
         label: slot.label,
         status: slot.status,
         holdReason: slot.holdReason,
+        sessionId: slot.sessionId,
       })
       .from(slot)
       .where(
@@ -272,6 +280,81 @@ export async function approveAsk(
 
     const publishable = drafts.filter((draft) => canPublishDraft(draft).ok);
     const held = drafts.filter((draft) => !canPublishDraft(draft).ok);
+
+    // A full morning cannot accept another companion place. Publishing is the
+    // last gate: a draft that would overbook its session refuses the whole
+    // approval, before the ask moves or any slot becomes visible.
+    const companions = publishable.filter(
+      (draft) => draft.kind === "companion",
+    );
+    if (companions.length > 0) {
+      if (companions.some((draft) => !draft.sessionId)) {
+        return {
+          ok: false,
+          reason: "session_unavailable",
+          message:
+            "A companion place has no Respite Morning on the calendar. Link it to a Tuesday before approving. Nothing was published.",
+        };
+      }
+
+      const sessionIds = [
+        ...new Set(companions.map((draft) => draft.sessionId as string)),
+      ];
+      const sessionRows = await tx
+        .select({
+          id: session.id,
+          startsAt: session.startsAt,
+          capacity: session.capacity,
+          status: session.status,
+          usedCompanionPlaces: sql<number>`(
+            SELECT COUNT(*)::int
+              FROM slot AS used
+             WHERE used.session_id = "session"."id"
+               AND used.kind = 'companion'
+               AND used.status IN ('draft','open','claimed','covered','done')
+          )`,
+        })
+        .from(session)
+        .where(
+          and(
+            eq(session.churchId, actor.churchId),
+            inArray(session.id, sessionIds),
+          ),
+        )
+        .for("update");
+
+      const byId = new Map(sessionRows.map((row) => [row.id, row]));
+
+      for (const draft of companions) {
+        const row = byId.get(draft.sessionId as string);
+        if (!row) {
+          return {
+            ok: false,
+            reason: "session_unavailable",
+            message:
+              "A companion place is linked to a Respite Morning that is no longer on the calendar. Move it before approving. Nothing was published.",
+          };
+        }
+
+        const label = formatSessionDate(row.startsAt, lockedAsk.timeZone);
+
+        if (row.status !== "scheduled") {
+          return {
+            ok: false,
+            reason: "session_unavailable",
+            message: `${label} is not a scheduled Respite Morning. Move this companion place before approving. Nothing was published.`,
+          };
+        }
+
+        if (Number(row.usedCompanionPlaces) > row.capacity) {
+          return {
+            ok: false,
+            reason: "session_full",
+            message: `${label} is full (${row.capacity} of ${row.capacity} places taken). A full morning cannot accept another companion place. Nothing was published.`,
+          };
+        }
+      }
+    }
 
     const approvedRows = await tx
       .update(ask)
@@ -453,7 +536,13 @@ export type PublishHeldOutcome =
   | { ok: true; askId: string; slotId: string; message: string }
   | {
       ok: false;
-      reason: "not_found" | "not_approved" | "not_held" | "not_draft";
+      reason:
+        | "not_found"
+        | "not_approved"
+        | "not_held"
+        | "not_draft"
+        | "session_full"
+        | "session_unavailable";
       message: string;
     };
 
@@ -482,10 +571,13 @@ export async function resolveHeldDraftAndPublish(
         label: slot.label,
         status: slot.status,
         holdReason: slot.holdReason,
+        sessionId: slot.sessionId,
         askStatus: ask.status,
+        timeZone: church.timezone,
       })
       .from(slot)
       .innerJoin(ask, eq(ask.id, slot.askId))
+      .innerJoin(church, eq(church.id, ask.churchId))
       .where(
         and(
           eq(slot.id, slotId),
@@ -523,6 +615,68 @@ export async function resolveHeldDraftAndPublish(
         reason: "not_held",
         message: "That draft is not held, so there is nothing to resolve.",
       };
+    }
+
+    if (target.kind === "companion") {
+      if (!target.sessionId) {
+        return {
+          ok: false,
+          reason: "session_unavailable",
+          message:
+            "That companion place has no Respite Morning on the calendar. Link it to a Tuesday before publishing. Nothing was published.",
+        };
+      }
+
+      const [sessionRow] = await tx
+        .select({
+          id: session.id,
+          startsAt: session.startsAt,
+          capacity: session.capacity,
+          status: session.status,
+          usedCompanionPlaces: sql<number>`(
+            SELECT COUNT(*)::int
+              FROM slot AS used
+             WHERE used.session_id = "session"."id"
+               AND used.kind = 'companion'
+               AND used.status IN ('draft','open','claimed','covered','done')
+          )`,
+        })
+        .from(session)
+        .where(
+          and(
+            eq(session.id, target.sessionId),
+            eq(session.churchId, actor.churchId),
+          ),
+        )
+        .limit(1)
+        .for("update");
+
+      if (!sessionRow) {
+        return {
+          ok: false,
+          reason: "session_unavailable",
+          message:
+            "That companion place is linked to a Respite Morning that is no longer on the calendar. Nothing was published.",
+        };
+      }
+
+      const label = formatSessionDate(sessionRow.startsAt, target.timeZone);
+
+      if (sessionRow.status !== "scheduled") {
+        return {
+          ok: false,
+          reason: "session_unavailable",
+          message: `${label} is not a scheduled Respite Morning. Nothing was published.`,
+        };
+      }
+
+      if (Number(sessionRow.usedCompanionPlaces) > sessionRow.capacity) {
+        return {
+          ok: false,
+          reason: "session_full",
+          message: `${label} is full (${sessionRow.capacity} of ${sessionRow.capacity} places taken). A full morning cannot accept another companion place. Nothing was published.`,
+        };
+      }
     }
 
     const updated = await tx
