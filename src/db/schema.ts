@@ -69,6 +69,16 @@ export const slotTierEnum = pgEnum("slot_tier", [
   "doorstep",
 ]);
 
+/**
+ * How a published time reached the board. `coordinator` is the human gate.
+ * `auto_low_risk` is the one narrow exception: a meal or an errand published by
+ * the signed policy's switch, with no person approving that time.
+ */
+export const slotPublicationEnum = pgEnum("slot_publication", [
+  "coordinator",
+  "auto_low_risk",
+]);
+
 export const notificationKindEnum = pgEnum("notification_kind", [
   "confirmation",
   "reminder",
@@ -616,6 +626,14 @@ export const slot = pgTable(
     claimedBy: uuid("claimed_by").references(() => volunteer.personId),
     claimedAt: timestamp("claimed_at", { withTimezone: true, mode: "date" }),
     /**
+     * How this time reached the board. `coordinator` is the ordinary human
+     * approval; `auto_low_risk` is a meal or an errand published by the signed
+     * policy's switch, and it carries no approving person.
+     */
+    publishedVia: slotPublicationEnum("published_via")
+      .notNull()
+      .default("coordinator"),
+    /**
      * Publication approval: the desk published this time to the board.
      * Never reused for a claim.
      */
@@ -642,6 +660,16 @@ export const slot = pgTable(
     check(
       "slot_window_ordered",
       sql`${t.windowStart} IS NULL OR ${t.windowEnd} IS NULL OR ${t.windowEnd} > ${t.windowStart}`,
+    ),
+    /**
+     * The switch's limit, enforced by the engine rather than by a repository.
+     * Only a meal or an errand may be auto-published, it must carry the
+     * publication instant, and it must not name a person as approver — that
+     * pair is exactly how the board tells a human approval from the switch.
+     */
+    check(
+      "slot_auto_publish_low_risk_only",
+      sql`${t.publishedVia} <> 'auto_low_risk' OR (${t.kind} IN ('meal', 'errand') AND ${t.approvedAt} IS NOT NULL AND ${t.approvedBy} IS NULL)`,
     ),
   ],
 );

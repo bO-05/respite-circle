@@ -205,6 +205,7 @@ const BOARD_SLOT_KEYS = [
   "id",
   "kind",
   "label",
+  "publishedVia",
   "sessionId",
   "status",
   "tier",

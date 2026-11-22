@@ -65,6 +65,7 @@ function submission(
     reminderWindowHours: String(seedPolicy.reminderWindowHours),
     callThresholdHours: String(seedPolicy.callThresholdHours),
     callAfterOpenHours: String(seedPolicy.callAfterOpenHours),
+    autoPublishLowRisk: seedPolicy.autoPublishLowRisk,
     signedOffBy: "Grace Whitfield",
     loosenConfirmation: "",
     ...overrides,
@@ -118,7 +119,7 @@ describe("the two safeguarding clocks", () => {
 });
 
 describe("building a policy save from the editor", () => {
-  it("accepts the seeded content and keeps the fields this screen does not edit", () => {
+  it("accepts the seeded content and carries the fields this screen does not edit", () => {
     const built = buildPolicyEditorRequest(submission(), seededPolicy);
 
     expect(built.ok).toBe(true);
@@ -140,14 +141,42 @@ describe("building a policy save from the editor", () => {
     expect(built.request.familiarFaceDefault).toBe(
       seededPolicy.familiarFaceDefault,
     );
-    expect(built.request.autoPublishLowRisk).toBe(
-      seededPolicy.autoPublishLowRisk,
-    );
+    expect(built.request.autoPublishLowRisk).toBe(false);
     expect(built.request.transportEnabled).toBe(
       seededPolicy.transportEnabled,
     );
     expect(built.clockChanges).toEqual([]);
     expect(built.loosened).toEqual([]);
+  });
+
+  it("turns the low-risk switch on only through a named sign-off", () => {
+    const on = buildPolicyEditorRequest(
+      submission({ autoPublishLowRisk: true }),
+      seededPolicy,
+    );
+    expect(on.ok).toBe(true);
+    if (!on.ok) return;
+    expect(on.request.autoPublishLowRisk).toBe(true);
+    expect(on.request.signedOffBy).toBe("Grace Whitfield");
+
+    // An unsigned save cannot carry the switch: publishing is blocked while
+    // unsigned, so there is no version that could turn it on.
+    const unsigned = buildPolicyEditorRequest(
+      submission({ autoPublishLowRisk: true, signedOffBy: "   " }),
+      seededPolicy,
+    );
+    expect(unsigned.ok).toBe(false);
+    if (unsigned.ok) return;
+    expect(unsigned.errors.join(" ")).toMatch(/sign-off/i);
+
+    // Turning a switch that is already on back off is a real edit.
+    const off = buildPolicyEditorRequest(
+      submission({ autoPublishLowRisk: false }),
+      { ...seededPolicy, autoPublishLowRisk: true },
+    );
+    expect(off.ok).toBe(true);
+    if (!off.ok) return;
+    expect(off.request.autoPublishLowRisk).toBe(false);
   });
 
   it("trims typed content and drops blank promises and referral rows", () => {

@@ -5,6 +5,10 @@ import {
   SendBackForm,
 } from "@/components/ask-review-forms";
 import { formatApprovalLine } from "@/server/domain/ask-review";
+import {
+  AUTO_PUBLISH_DESK_LABEL,
+  AUTO_PUBLISH_DESK_NOTE,
+} from "@/server/domain/auto-publish";
 import { formatWindowLabel } from "@/server/domain/slots";
 import type { DraftSlotRow } from "@/server/repositories/draft-slots";
 import type { AskPublication, AskStatus } from "@/server/repositories/ask-review";
@@ -19,8 +23,78 @@ import type { AskPublication, AskStatus } from "@/server/repositories/ask-review
  * action that can resolve its hold and publish it. A sent-back ask shows the
  * note the family is reading, exactly as it was written.
  *
+ * A waiting ask may already have a low-risk time on the board. That list sits
+ * under the approval controls, labelled with the switch rather than with a
+ * person, so the deputy can see exactly what went out before deciding the rest.
+ *
  * Nothing here is a score, a ranking, or an automatic decision.
  */
+function PublishedTimes({
+  published,
+  timeZone,
+}: {
+  published: AskPublication["published"];
+  timeZone: string;
+}) {
+  return (
+    <ul
+      data-testid="published-list"
+      className="flex flex-col gap-3"
+      aria-label="Published times"
+    >
+      {published.map((entry) => {
+        const autoPublished = entry.publishedVia === "auto_low_risk";
+        const line = autoPublished
+          ? null
+          : formatApprovalLine({
+              approverFirstName: entry.approvedByName,
+              approvedAt: entry.approvedAt,
+              timeZone,
+            });
+        return (
+          <li
+            key={entry.id}
+            data-testid="published-slot"
+            data-slot-id={entry.id}
+            data-kind={entry.kind}
+            data-status={entry.status}
+            data-published-via={entry.publishedVia}
+            className="rounded-md border border-line bg-paper p-4"
+          >
+            <h3 className="font-serif text-xl text-ink">{entry.label}</h3>
+            <p className="mt-1 text-base text-ink-muted">
+              {formatWindowLabel(entry.windowStart, entry.windowEnd, timeZone)}
+            </p>
+            {autoPublished ? (
+              <p
+                data-testid="published-auto-label"
+                className="mt-2 text-base font-semibold text-ink"
+              >
+                {AUTO_PUBLISH_DESK_LABEL}
+              </p>
+            ) : line ? (
+              <p
+                data-testid="published-approval-line"
+                className="mt-2 text-base font-semibold text-ink"
+              >
+                {line}
+              </p>
+            ) : null}
+            <Link
+              href={`/desk/slot/${entry.id}`}
+              data-testid="published-slot-link"
+              className="mt-3 inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+            >
+              Review this time and any claim
+              <span className="sr-only"> — {entry.label}</span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export function AskReviewSection({
   askId,
   status,
@@ -55,8 +129,8 @@ export function AskReviewSection({
           </h2>
           <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
             Approving publishes every draft that is not held as an open time on
-            the congregation board. Your name and the time appear on each one,
-            so a neighbour can see that a person approved it.
+            the congregation board. Your name and the time appear on each draft
+            you publish, so a neighbour can see that a person approved it.
           </p>
           <p
             data-testid="approval-counts"
@@ -67,7 +141,33 @@ export function AskReviewSection({
               ? " A held time stays unpublished, with its reason, until the hold is resolved."
               : ""}
           </p>
+          {publication.autoPublishLowRisk ? (
+            <p
+              data-testid="ask-review-auto-publish"
+              className="mt-2 max-w-prose text-base leading-relaxed text-ink"
+            >
+              {AUTO_PUBLISH_DESK_NOTE}
+            </p>
+          ) : null}
         </div>
+
+        {publication.published.length > 0 ? (
+          <div data-testid="waiting-published">
+            <h3 className="font-serif text-xl text-ink">
+              Already on the board
+            </h3>
+            <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+              The low-risk switch published these without waiting for this
+              approval. Sending the ask back takes an open one off the board.
+            </p>
+            <div className="mt-3">
+              <PublishedTimes
+                published={publication.published}
+                timeZone={timeZone}
+              />
+            </div>
+          </div>
+        ) : null}
 
         <ApproveAskForm
           askId={askId}
@@ -80,9 +180,9 @@ export function AskReviewSection({
             If this is not the right answer
           </h3>
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
-            Send the ask back with a note. Nothing is published, every draft
-            stays private, and the family reads your words exactly as you wrote
-            them.
+            Send the ask back with a note. Nothing new is published, every draft
+            stays private, an open low-risk time comes off the board, and the
+            family reads your words exactly as you wrote them.
           </p>
           <div className="mt-3">
             <SendBackForm askId={askId} />
@@ -113,8 +213,8 @@ export function AskReviewSection({
             </p>
           ) : null}
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-            The board shows the time, what it needs, and this approval line.
-            It never shows the family&apos;s words.
+            The board shows the time, what it needs, and who published it. It
+            never shows the family&apos;s words.
           </p>
         </div>
 
@@ -127,56 +227,10 @@ export function AskReviewSection({
             be published below once its hold is resolved.
           </p>
         ) : (
-          <ul
-            data-testid="published-list"
-            className="flex flex-col gap-3"
-            aria-label="Published times"
-          >
-            {publication.published.map((published) => {
-              const line = formatApprovalLine({
-                approverFirstName: published.approvedByName,
-                approvedAt: published.approvedAt,
-                timeZone,
-              });
-              return (
-                <li
-                  key={published.id}
-                  data-testid="published-slot"
-                  data-slot-id={published.id}
-                  data-kind={published.kind}
-                  data-status={published.status}
-                  className="rounded-md border border-line bg-paper p-4"
-                >
-                  <h3 className="font-serif text-xl text-ink">
-                    {published.label}
-                  </h3>
-                  <p className="mt-1 text-base text-ink-muted">
-                    {formatWindowLabel(
-                      published.windowStart,
-                      published.windowEnd,
-                      timeZone,
-                    )}
-                  </p>
-                  {line ? (
-                    <p
-                      data-testid="published-approval-line"
-                      className="mt-2 text-base font-semibold text-ink"
-                    >
-                      {line}
-                    </p>
-                  ) : null}
-                  <Link
-                    href={`/desk/slot/${published.id}`}
-                    data-testid="published-slot-link"
-                    className="mt-3 inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
-                  >
-                    Review this time and any claim
-                    <span className="sr-only"> — {published.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <PublishedTimes
+            published={publication.published}
+            timeZone={timeZone}
+          />
         )}
 
         {held.length > 0 ? (

@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db as appDb } from "@/db/client";
 import {
   ask,
@@ -15,6 +15,11 @@ import {
   requireRoleSession,
   type Actor,
 } from "@/server/auth/policy";
+import {
+  AUTO_PUBLISHED_VIA,
+  autoPublishDecision,
+  type AutoPublishPolicyFacts,
+} from "@/server/domain/auto-publish";
 import {
   buildDraftSlots,
   constructionBlockedForStatus,
@@ -67,6 +72,10 @@ export type ConstructDraftSlotsResult = {
   proposals: number;
   skipped: SkippedProposal[];
   blocked: ConstructionBlock | null;
+  /** Slot ids published by the signed policy's low-risk switch. */
+  autoPublished: string[];
+  /** Kinds the switch refused, with their reason in the audit log. */
+  autoPublishRefused: string[];
 };
 
 function outcome(
@@ -79,6 +88,8 @@ function outcome(
     proposals: 0,
     skipped: [],
     blocked: null,
+    autoPublished: [],
+    autoPublishRefused: [],
     ...result,
   };
 }
@@ -98,6 +109,10 @@ export async function constructDraftSlots(
       safetyOverrideAt: ask.safetyOverrideAt,
       timeZone: church.timezone,
       transportEnabled: policy.transportEnabled,
+      policyVersion: policy.version,
+      autoPublishLowRisk: policy.autoPublishLowRisk,
+      signedOffBy: policy.signedOffBy,
+      signedOffAt: policy.signedOffAt,
       recipientFirstName: careRecipient.firstName,
     })
     .from(ask)
@@ -222,64 +237,154 @@ export async function constructDraftSlots(
       )
       .returning({ id: ask.id });
 
-    if (!marked[0]) return { won: false, slotIds: [] as string[] };
-
-    let slotIds: string[] = [];
-    if (plan.proposals.length > 0) {
-      const inserted = await tx
-        .insert(slot)
-        .values(
-          plan.proposals.map((proposal) => ({
-            askId: askRow.id,
-            churchId: input.churchId,
-            sessionId: proposal.sessionId,
-            kind: proposal.kind,
-            tier: proposal.tier,
-            label: proposal.label,
-            windowStart: proposal.windowStart,
-            windowEnd: proposal.windowEnd,
-            gated: proposal.gated,
-            orientationNote: proposal.orientationNote,
-            ruleRef: proposal.ruleRef,
-            status: "draft" as const,
-          })),
-        )
-        .returning({ id: slot.id });
-
-      slotIds = inserted.map((row) => row.id);
+    if (!marked[0]) {
+      return {
+        won: false,
+        slotIds: [] as string[],
+        autoPublished: [] as string[],
+        autoPublishRefused: [] as string[],
+      };
     }
 
-    await tx.insert(auditEvent).values({
-      churchId: input.churchId,
-      actorType: "system",
-      actorId: null,
-      action: "slots_proposed",
-      entity: "ask",
-      entityId: askRow.id,
-      detail: {
-        count: plan.proposals.length,
-        kinds: plan.proposals.map((proposal) => proposal.kind),
-        ruleRefs: plan.proposals.map((proposal) => proposal.ruleRef),
-        skipped: plan.skipped.map((entry) => ({
-          kind: entry.kind,
-          reason: entry.reason,
-          message: entry.message,
-        })),
-        noNeed: plan.proposals.length === 0 && plan.skipped.length === 0,
-        policyVersionId: askRow.policyVersionId,
-        revisionId: latestRevision.id,
-        safetyOverride: askRow.safetyOverrideAt !== null,
-      },
-    });
+    const inserted =
+      plan.proposals.length > 0
+        ? await tx
+            .insert(slot)
+            .values(
+              plan.proposals.map((proposal) => ({
+                askId: askRow.id,
+                churchId: input.churchId,
+                sessionId: proposal.sessionId,
+                kind: proposal.kind,
+                tier: proposal.tier,
+                label: proposal.label,
+                windowStart: proposal.windowStart,
+                windowEnd: proposal.windowEnd,
+                gated: proposal.gated,
+                orientationNote: proposal.orientationNote,
+                ruleRef: proposal.ruleRef,
+                status: "draft" as const,
+              })),
+            )
+            .returning({ id: slot.id, kind: slot.kind })
+        : [];
 
-    return { won: true, slotIds };
+    const slotIds = inserted.map((row) => row.id);
+
+    // The signed policy in force when the ask arrived decides whether any of
+    // these drafts publish themselves. The same pure rule the domain tests and
+    // the trust pages use is applied here; the database backs it with
+    // `slot_auto_publish_low_risk_only`.
+    const policyFacts: AutoPublishPolicyFacts = {
+      version: askRow.policyVersion,
+      autoPublishLowRisk: askRow.autoPublishLowRisk,
+      signedOffBy: askRow.signedOffBy,
+      signedOffAt: askRow.signedOffAt,
+    };
+
+    const autoPublished: string[] = [];
+    const autoPublishRefused: string[] = [];
+
+    for (const row of inserted) {
+      const decision = autoPublishDecision(policyFacts, row.kind);
+      if (decision.publish) {
+        autoPublished.push(row.id);
+      } else if (decision.reason === "not_low_risk") {
+        autoPublishRefused.push(row.kind);
+      }
+    }
+
+    if (autoPublished.length > 0) {
+      await tx
+        .update(slot)
+        .set({
+          status: "open",
+          approvedAt: now,
+          publishedVia: AUTO_PUBLISHED_VIA,
+        })
+        .where(
+          and(
+            inArray(slot.id, autoPublished),
+            eq(slot.churchId, input.churchId),
+            eq(slot.status, "draft"),
+          ),
+        );
+    }
+
+    const kindById = new Map(inserted.map((row) => [row.id, row.kind]));
+
+    await tx.insert(auditEvent).values([
+      {
+        churchId: input.churchId,
+        actorType: "system" as const,
+        actorId: null,
+        action: "slots_proposed",
+        entity: "ask",
+        entityId: askRow.id,
+        detail: {
+          count: plan.proposals.length,
+          kinds: plan.proposals.map((proposal) => proposal.kind),
+          ruleRefs: plan.proposals.map((proposal) => proposal.ruleRef),
+          skipped: plan.skipped.map((entry) => ({
+            kind: entry.kind,
+            reason: entry.reason,
+            message: entry.message,
+          })),
+          noNeed: plan.proposals.length === 0 && plan.skipped.length === 0,
+          policyVersionId: askRow.policyVersionId,
+          revisionId: latestRevision.id,
+          safetyOverride: askRow.safetyOverrideAt !== null,
+          autoPublishedCount: autoPublished.length,
+          autoPublishRefused,
+        },
+      },
+      ...autoPublished.map((slotId) => ({
+        churchId: input.churchId,
+        actorType: "system" as const,
+        actorId: null,
+        action: "slot_auto_published",
+        entity: "slot",
+        entityId: slotId,
+        detail: {
+          askId: askRow.id,
+          kinds: [kindById.get(slotId) ?? "meal"],
+          version: askRow.policyVersion,
+          policyVersionId: askRow.policyVersionId,
+          at: now.toISOString(),
+        },
+        createdAt: now,
+      })),
+      ...(autoPublishRefused.length > 0
+        ? [
+            {
+              churchId: input.churchId,
+              actorType: "system" as const,
+              actorId: null,
+              action: "slot_auto_publish_refused",
+              entity: "ask",
+              entityId: askRow.id,
+              detail: {
+                reason: "kind_not_low_risk",
+                kinds: autoPublishRefused,
+                count: autoPublishRefused.length,
+                version: askRow.policyVersion,
+                policyVersionId: askRow.policyVersionId,
+                at: now.toISOString(),
+              },
+              createdAt: now,
+            },
+          ]
+        : []),
+    ]);
+
+    return { won: true, slotIds, autoPublished, autoPublishRefused };
   });
 
   if (!recorded.won) return outcome("already_constructed");
 
   // Every draft time is checked against every active volunteer immediately, so
   // the desk never shows a proposal without its explanation. This is plain code
-  // and writes no message to anyone.
+  // and writes no message to anyone — including a time the switch published.
   if (recorded.slotIds.length > 0) {
     await evaluateCandidatesForSlots(database, {
       churchId: input.churchId,
@@ -294,6 +399,8 @@ export async function constructDraftSlots(
     proposals: recorded.slotIds.length,
     skipped: plan.skipped,
     blocked: null,
+    autoPublished: recorded.autoPublished,
+    autoPublishRefused: recorded.autoPublishRefused,
   };
 }
 

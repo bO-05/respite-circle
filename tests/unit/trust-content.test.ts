@@ -3,8 +3,11 @@ import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   AI_VISIBILITY,
+  AUTO_PUBLISH_TRUST_NOTE,
   CONSENT_TIERS,
+  DECIDES_INTRO,
   DECIDES_ROWS,
+  HOW_IT_WORKS_LEAD,
   NEVER_COMMITMENTS,
   PRIVACY_ROWS,
   PRIVACY_VIEWERS,
@@ -166,8 +169,38 @@ describe("trust page content", () => {
       row.decision.toLowerCase().includes("publishes"),
     );
     expect(publish?.ai).toBe("No");
-    expect(publish?.code).toBe("No");
+    // The publishing row must describe the low-risk switch instead of denying
+    // that a time can ever publish without a coordinator's approval.
+    expect(publish?.code).toMatch(/only a meal or an errand/i);
+    expect(publish?.code).toMatch(/signed policy/i);
+    expect(publish?.code).toMatch(/decision log/i);
     expect(publish?.coordinator).toMatch(/^Yes/);
+    expect(publish?.coordinator).toMatch(/switch/i);
+  });
+
+  it("describes the low-risk switch, its limit, its sign-off, and its audit trail", () => {
+    // The sentence appears on /how-it-works and /never, and on neither page may
+    // it deny that the switch exists once the publishing code reads it.
+    expect(TRUST_COPY_STRINGS).toContain(AUTO_PUBLISH_TRUST_NOTE);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/off by default/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/meal or an errand/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/companion place/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/drive/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/in-home visit/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/signed/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/decision log/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/policy version/i);
+    expect(scanCopy(AUTO_PUBLISH_TRUST_NOTE)).toEqual([]);
+
+    // The two sentences that frame the loop carry the same exception, so the
+    // page no longer promises that only a person ever offers a time.
+    expect(TRUST_COPY_STRINGS).toContain(HOW_IT_WORKS_LEAD);
+    expect(TRUST_COPY_STRINGS).toContain(DECIDES_INTRO);
+    expect(HOW_IT_WORKS_LEAD).toMatch(/signed policy/i);
+    expect(HOW_IT_WORKS_LEAD).toMatch(/meal or an errand/i);
+    expect(DECIDES_INTRO).toMatch(/meal or an errand/i);
+    expect(scanCopy(HOW_IT_WORKS_LEAD)).toEqual([]);
+    expect(scanCopy(DECIDES_INTRO)).toEqual([]);
   });
 
   it("lists all eight commitments", () => {

@@ -7,6 +7,7 @@ import {
   auditEvent,
   church,
   person,
+  policy,
   session,
   slot,
   slotKindEnum,
@@ -59,6 +60,11 @@ export type PublishedSlot = {
   windowEnd: Date | null;
   approvedAt: Date | null;
   approvedByName: string | null;
+  /**
+   * `coordinator`: a person approved this time. `auto_low_risk`: the signed
+   * policy's switch published a meal or an errand, and no person approved it.
+   */
+  publishedVia: "coordinator" | "auto_low_risk";
 };
 
 export type AskPublication = {
@@ -74,6 +80,8 @@ export type AskPublication = {
   closeNote: string | null;
   closedAt: Date | null;
   closedByName: string | null;
+  /** The low-risk switch on the version this ask arrived under. */
+  autoPublishLowRisk: boolean;
   published: PublishedSlot[];
 };
 
@@ -108,9 +116,11 @@ export async function getAskPublication(
         closeNote: ask.closeNote,
         closedAt: ask.closedAt,
         closedByName: closer.firstName,
+        autoPublishLowRisk: policy.autoPublishLowRisk,
       })
       .from(ask)
       .innerJoin(church, eq(church.id, ask.churchId))
+      .innerJoin(policy, eq(policy.id, ask.policyVersionId))
       .leftJoin(approver, eq(approver.id, ask.approvedBy))
       .leftJoin(sender, eq(sender.id, ask.sentBackBy))
       .leftJoin(closer, eq(closer.id, ask.closedBy))
@@ -127,6 +137,7 @@ export async function getAskPublication(
         windowEnd: slot.windowEnd,
         approvedAt: slot.approvedAt,
         approvedByName: approver.firstName,
+        publishedVia: slot.publishedVia,
       })
       .from(slot)
       .leftJoin(approver, eq(approver.id, slot.approvedBy))
@@ -155,10 +166,12 @@ export async function getAskPublication(
     closeNote: row.closeNote,
     closedAt: row.closedAt,
     closedByName: row.closedByName,
+    autoPublishLowRisk: row.autoPublishLowRisk,
     published: slotRows.map((entry) => ({
       ...entry,
       kind: entry.kind as SlotKind,
       status: entry.status as SlotStatus,
+      publishedVia: entry.publishedVia,
     })),
   };
 }
@@ -483,13 +496,39 @@ export async function approveAsk(
 // ---------------------------------------------------------------------------
 
 export type SendBackOutcome =
-  | { ok: true; askId: string; note: string; message: string }
-  | { ok: false; reason: "not_found" | "not_waiting" | "invalid_note"; message: string };
+  | {
+      ok: true;
+      askId: string;
+      note: string;
+      message: string;
+      /** Auto-published times withdrawn because the ask went back. */
+      withdrawnCount: number;
+    }
+  | {
+      ok: false;
+      reason:
+        | "not_found"
+        | "not_waiting"
+        | "invalid_note"
+        | "auto_published_claimed";
+      message: string;
+    };
+
+const AUTO_PUBLISHED_CLAIMED_MESSAGE =
+  "A neighbour has already said yes to a low-risk time from this ask. Confirm or take back that claim first, then send the ask back. Nothing was changed.";
 
 /**
- * Send the ask back with a human note. Nothing is published: every draft stays
- * a draft, and the held ones keep their reasons. The note is stored exactly as
- * typed so the caregiver reads the same words the coordinator wrote.
+ * Send the ask back with a human note.
+ *
+ * Nothing new is published: every draft stays a draft, and the held ones keep
+ * their reasons. A time the low-risk switch already published is withdrawn in
+ * the same transaction, because a time must never outlive the ask it came from;
+ * the withdrawal is audited under the person who sent the ask back. If a
+ * neighbour already claimed one of those times, the send-back is refused with a
+ * calm sentence so a volunteer is never stranded by it.
+ *
+ * The note is stored exactly as typed so the caregiver reads the same words the
+ * coordinator wrote.
  */
 export async function sendBackAsk(
   actor: Actor,
@@ -521,6 +560,38 @@ export async function sendBackAsk(
       return { ok: false, reason: "not_waiting", message: guard.message };
     }
 
+    // The low-risk switch can put a meal or an errand on the board before the
+    // ask is approved. That time belongs to this ask, so it can never stay open
+    // after a send-back. Lock the rows first so a concurrent claim cannot slip
+    // between the read and the withdrawal.
+    const autoPublished = await tx
+      .select({ id: slot.id, kind: slot.kind, status: slot.status })
+      .from(slot)
+      .where(
+        and(
+          eq(slot.askId, input.askId),
+          eq(slot.churchId, actor.churchId),
+          eq(slot.publishedVia, "auto_low_risk"),
+        ),
+      )
+      .for("update");
+
+    if (
+      autoPublished.some((row) =>
+        ["claimed", "covered", "done"].includes(row.status),
+      )
+    ) {
+      return {
+        ok: false,
+        reason: "auto_published_claimed",
+        message: AUTO_PUBLISHED_CLAIMED_MESSAGE,
+      };
+    }
+
+    const withdrawable = autoPublished
+      .filter((row) => row.status === "open")
+      .map((row) => row.id);
+
     const updated = await tx
       .update(ask)
       .set({
@@ -543,27 +614,62 @@ export async function sendBackAsk(
       return { ok: false, reason: "not_waiting", message: NOT_AVAILABLE };
     }
 
-    await tx.insert(auditEvent).values({
-      churchId: actor.churchId,
-      actorType: "human",
-      actorId: actor.personId,
-      action: "ask_sent_back",
-      entity: "ask",
-      entityId: input.askId,
-      detail: {
-        noteLength: validated.note.length,
-        // The words live on the ask row; the audit keeps only a digest so it
-        // can prove what was sent without becoming a second copy of the note.
-        noteDigest: sha256Hex(validated.note),
-        publishedCount: 0,
+    if (withdrawable.length > 0) {
+      await tx
+        .update(slot)
+        .set({ status: "cancelled" })
+        .where(
+          and(
+            inArray(slot.id, withdrawable),
+            eq(slot.churchId, actor.churchId),
+            eq(slot.publishedVia, "auto_low_risk"),
+            eq(slot.status, "open"),
+          ),
+        );
+    }
+
+    const kindById = new Map(autoPublished.map((row) => [row.id, row.kind]));
+
+    await tx.insert(auditEvent).values([
+      {
+        churchId: actor.churchId,
+        actorType: "human",
+        actorId: actor.personId,
+        action: "ask_sent_back",
+        entity: "ask",
+        entityId: input.askId,
+        detail: {
+          noteLength: validated.note.length,
+          // The words live on the ask row; the audit keeps only a digest so it
+          // can prove what was sent without becoming a second copy of the note.
+          noteDigest: sha256Hex(validated.note),
+          publishedCount: 0,
+          withdrawnCount: withdrawable.length,
+        },
       },
-    });
+      ...withdrawable.map((slotId) => ({
+        churchId: actor.churchId,
+        actorType: "human" as const,
+        actorId: actor.personId,
+        action: "slot_auto_publish_withdrawn",
+        entity: "slot",
+        entityId: slotId,
+        detail: {
+          askId: input.askId,
+          kinds: [kindById.get(slotId) ?? "meal"],
+          reason: "ask_sent_back",
+          at: now.toISOString(),
+        },
+        createdAt: now,
+      })),
+    ]);
 
     return {
       ok: true,
       askId: input.askId,
       note: validated.note,
       message: SEND_BACK_SUCCESS_MESSAGE,
+      withdrawnCount: withdrawable.length,
     };
   });
 }

@@ -64,6 +64,12 @@ export type BoardSlot = {
   approvedAt: Date | null;
   approvedByName: string | null;
   /**
+   * How the time reached the board. `auto_low_risk` means the signed policy's
+   * switch published a meal or an errand; the card labels it instead of
+   * naming a person who never approved it.
+   */
+  publishedVia: "coordinator" | "auto_low_risk";
+  /**
    * The one claim action's state. `null` means no claim action: the time is
    * already claimed or covered, or the viewer is the desk team rather than a
    * neighbour. Only an open, published time gets a verdict.
@@ -120,6 +126,7 @@ export async function getBoard(
           status: slot.status,
           approvedAt: slot.approvedAt,
           approvedByName: approver.firstName,
+          publishedVia: slot.publishedVia,
         })
         .from(slot)
         .leftJoin(approver, eq(approver.id, slot.approvedBy))

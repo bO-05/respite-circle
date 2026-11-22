@@ -2,6 +2,7 @@ import { RolePage } from "@/components/role-page";
 import { PolicyEditorForm } from "@/components/policy-editor-form";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
+import { AUTO_PUBLISH_RULES_COPY } from "@/server/domain/auto-publish";
 import { POLICY_LOOSEN_CONFIRMATION } from "@/server/domain/policy";
 import {
   POLICY_REFERRAL_ROWS_ON_SCREEN,
@@ -45,8 +46,9 @@ function blankReferral(): PolicyEditorReferral {
  *
  * One page, one save path: every edit becomes a new immutable version with a
  * required named sign-off, the author's name in the audit trail, and the
- * instant it was saved. The fields this screen does not own (familiar-face
- * default, auto-publish, driver policy) are carried from the current version.
+ * instant it was saved. The low-risk auto-publish switch is edited here with
+ * its own limit spelled out. The fields this screen does not own
+ * (familiar-face default, driver policy) are carried from the current version.
  *
  * Crisis and referral content stays on this desk page. It is rendered here for
  * the coordinator's request only, and it never appears on `/promises` or in a
@@ -136,8 +138,8 @@ export default async function DeskPolicyPage() {
                 <dt className="font-semibold text-ink">Auto-publish low-risk</dt>
                 <dd>
                   {current.autoPublishLowRisk
-                    ? "On — meal and errand slots only"
-                    : "Off"}
+                    ? "On — meal and errand times only; each one is in the decision log"
+                    : "Off — every time waits for a person"}
                 </dd>
               </div>
               <div>
@@ -518,6 +520,53 @@ export default async function DeskPolicyPage() {
                   is refused without it and is flagged in the audit log.
                 </p>
               </div>
+            </section>
+
+            <section
+              aria-labelledby="editor-auto-publish"
+              className="flex flex-col gap-3 rounded-md border border-amber bg-amber-soft px-4 py-3"
+            >
+              <h3
+                id="editor-auto-publish"
+                className="font-serif text-xl text-ink"
+              >
+                Low-risk times
+              </h3>
+              <div className="flex items-start gap-3">
+                <input
+                  id="policy-auto-publish"
+                  name="autoPublishLowRisk"
+                  type="checkbox"
+                  value="on"
+                  defaultChecked={current.autoPublishLowRisk}
+                  aria-describedby="policy-auto-publish-help"
+                  className="mt-1 h-6 w-6 shrink-0 rounded border border-line bg-surface"
+                />
+                <label
+                  htmlFor="policy-auto-publish"
+                  className="text-base font-semibold text-ink"
+                >
+                  Publish a meal or an errand automatically, under this signed
+                  policy
+                </label>
+              </div>
+              <p
+                id="policy-auto-publish-help"
+                data-testid="policy-auto-publish-help"
+                className="max-w-prose text-sm leading-relaxed text-ink"
+              >
+                {AUTO_PUBLISH_RULES_COPY} It is off by default. Turning it on or
+                off is saved with this version, your name, and a line in the
+                decision log.
+              </p>
+              <p
+                data-testid="policy-auto-publish-state"
+                className="max-w-prose text-sm leading-relaxed text-ink-muted"
+              >
+                This version is {current.autoPublishLowRisk ? "on" : "off"}.
+                Saving creates version {nextVersion}; the switch only matters
+                for asks that arrive after that version is signed.
+              </p>
             </section>
 
             <section

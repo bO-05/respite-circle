@@ -1,0 +1,3 @@
+CREATE TYPE "public"."slot_publication" AS ENUM('coordinator', 'auto_low_risk');--> statement-breakpoint
+ALTER TABLE "slot" ADD COLUMN "published_via" "slot_publication" DEFAULT 'coordinator' NOT NULL;--> statement-breakpoint
+ALTER TABLE "slot" ADD CONSTRAINT "slot_auto_publish_low_risk_only" CHECK ("slot"."published_via" <> 'auto_low_risk' OR ("slot"."kind" IN ('meal', 'errand') AND "slot"."approved_at" IS NOT NULL AND "slot"."approved_by" IS NULL));

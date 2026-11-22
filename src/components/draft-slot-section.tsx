@@ -12,6 +12,7 @@ import {
   skippedMessage,
   toDateTimeLocalValue,
 } from "@/server/domain/slots";
+import { AUTO_PUBLISH_DESK_NOTE } from "@/server/domain/auto-publish";
 import type { DraftEditorContext } from "@/server/repositories/draft-slots";
 
 /**
@@ -87,10 +88,19 @@ export function DraftSlotSection({
           data-testid="draft-not-published"
           className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted"
         >
-          Every time on this page is a draft. Volunteers, caregivers, and the
+          Every draft here waits for a person. Volunteers, caregivers, and the
           congregation board cannot see any of them until a coordinator
-          publishes the ask.
+          publishes the ask. A low-risk time the switch published by itself is
+          listed under the publish decision below.
         </p>
+        {context.autoPublishLowRisk ? (
+          <p
+            data-testid="draft-auto-publish"
+            className="mt-2 max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
+          >
+            {AUTO_PUBLISH_DESK_NOTE}
+          </p>
+        ) : null}
       </div>
 
       {blocked ? (

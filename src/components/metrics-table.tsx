@@ -139,7 +139,7 @@ function cardsFor(metrics: ChurchMetrics): MetricCard[] {
       title: "Times published",
       value: countWord(metrics.slotsPublished, "time", "times"),
       definition:
-        "Times a coordinator published to the board in this range. Offering a time again after a call counts as another publication.",
+        "Times that reached the board in this range, whether a coordinator approved the time or the signed low-risk switch published a meal or an errand. Offering a time again after a call counts as another publication.",
     },
     {
       testId: "metric-claims",

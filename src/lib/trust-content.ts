@@ -123,8 +123,9 @@ export const DECIDES_ROWS: readonly DecideRow[] = [
   {
     decision: "Publishes a time to the board",
     ai: "No",
-    code: "No",
-    coordinator: "Yes — a coordinator approves. Nothing else publishes a time.",
+    code: "Only a meal or an errand, and only while a signed policy turns the low-risk switch on. Each automatic publication goes into the decision log with the version it followed.",
+    coordinator:
+      "Yes — a coordinator approves every other time, and signs or turns off the switch.",
   },
   {
     decision: "Writes a message to your family",
@@ -310,16 +311,36 @@ export const NEVER_COMMITMENTS: readonly NeverCommitment[] = [
   },
 ];
 
+/**
+ * The one narrow path that publishes without a coordinator approving that
+ * time. Every clause was traced to `src/server/domain/auto-publish.ts`, the
+ * `slot_auto_publish_low_risk_only` constraint, and the three audit actions in
+ * `slot-construction.ts` and `repositories/policy.ts`.
+ */
+export const AUTO_PUBLISH_TRUST_NOTE =
+  "The policy carries a switch for the two low-risk kinds. It is off by default. Only a signed policy version can turn it on, and it takes a named person signing it. While it is on, a meal or an errand may appear on the board without a coordinator approving that time; a companion place, a drive, and an in-home visit never do. Every automatic publication, and every change to the switch, is written into the decision log with the policy version it followed.";
+
+/**
+ * The two sentences that introduce the loop on `/how-it-works`. They live here
+ * so the page and the banned-claim scan read the same words, and so neither can
+ * quietly keep the old claim that only a person ever offers a time.
+ */
+export const HOW_IT_WORKS_LEAD =
+  "A computer reads your words into nine typed answers. Plain code turns those answers into a few possible times. A named person decides what is offered, except that a signed policy may publish a meal or an errand by itself. A person calls when a time goes unclaimed.";
+
+export const DECIDES_INTRO =
+  "Three things happen in order. The model answers. Plain code follows fixed rules. A person decides what reaches the board, with one signed exception for a meal or an errand.";
+
 /** Every sentence the two pages render, for the banned-claim scan. */
 export const TRUST_COPY_STRINGS: readonly string[] = [
   "How it works, and who decides",
-  "A computer reads your words into nine typed answers. Plain code turns those answers into a few possible times. A named person decides what, if anything, is offered, and a person calls when a time goes unclaimed.",
+  HOW_IT_WORKS_LEAD,
   "What the AI sees, and what it never sees",
   "The model is given one thing from you: the words you wrote. It is also given the nine questions and their fixed answer choices. It returns nine answers — yes or no, or one choice from a short list — and a confidence for each. It cannot write a sentence, and it never sees what happened next.",
   ...AI_VISIBILITY.flatMap((row) => [row.item, row.note]),
   "Who decides what",
-  "Three things happen in order. The model answers. Plain code follows fixed rules. A person decides what reaches the board.",
-  "The policy carries a switch for low-risk meal times. It is off in this demo, and no kind of time can be published without a coordinator's approval.",
+  DECIDES_INTRO,
+  AUTO_PUBLISH_TRUST_NOTE,
   ...DECIDES_ROWS.flatMap((row) => [
     row.decision,
     row.ai,

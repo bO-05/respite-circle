@@ -78,6 +78,11 @@ export type DeskSlotClaimReview = {
   /** Publication approval — the desk published the time. */
   approvedAt: Date | null;
   publishedByName: string | null;
+  /**
+   * `auto_low_risk` when the signed policy published this time by itself. Such
+   * a row has no approving person, so the desk names the switch instead.
+   */
+  publishedVia: "coordinator" | "auto_low_risk";
   /** Claim confirmation — a later, distinct human decision. */
   claimConfirmedAt: Date | null;
   claimConfirmedByName: string | null;
@@ -200,6 +205,7 @@ export async function getDeskSlotClaimReview(
         volunteerFirstName: claimer.firstName,
         approvedAt: slot.approvedAt,
         publishedByName: approver.firstName,
+        publishedVia: slot.publishedVia,
         claimConfirmedAt: slot.claimConfirmedAt,
         claimConfirmedByName: confirmer.firstName,
         caregiverFirstName: caregiverPerson.firstName,

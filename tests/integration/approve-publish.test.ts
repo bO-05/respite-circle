@@ -301,6 +301,7 @@ describe("approve, publish, and send back", () => {
           "id",
           "kind",
           "label",
+          "publishedVia",
           "sessionId",
           "status",
           "tier",

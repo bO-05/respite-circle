@@ -104,8 +104,8 @@ export function SendBackForm({ askId }: { askId: string }) {
         id={hintId}
         className="max-w-prose text-base leading-relaxed text-ink-muted"
       >
-        They will read this exactly as you write it. Nothing is published from
-        this ask.
+        They will read this exactly as you write it. Nothing new is published
+        from this ask, and an open low-risk time comes off the board.
       </p>
       <textarea
         id={noteId}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicPage } from "@/components/public-page";
-import { NEVER_COMMITMENTS } from "@/lib/trust-content";
+import { AUTO_PUBLISH_TRUST_NOTE, NEVER_COMMITMENTS } from "@/lib/trust-content";
 
 export const metadata: Metadata = {
   title: "What we never do — Respite Circle",
@@ -43,6 +43,28 @@ export default function NeverPage() {
           </p>
         </section>
       ))}
+
+      <section
+        data-testid="never-auto-publish"
+        aria-labelledby="never-auto-publish-heading"
+        className="rounded-lg border border-line bg-surface p-5"
+      >
+        <h2
+          id="never-auto-publish-heading"
+          className="font-serif text-2xl leading-snug text-ink"
+        >
+          No automatic time beyond a meal or an errand
+        </h2>
+        <p className="mt-3 max-w-prose text-lg leading-relaxed text-ink">
+          {AUTO_PUBLISH_TRUST_NOTE}
+        </p>
+        <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
+          <span className="font-semibold text-ink">Where you can see it: </span>
+          The low-risk switch on the church policy names its own limit, an
+          automatically published time says so on the board, and every one of
+          them is in the decision log.
+        </p>
+      </section>
 
       <p className="max-w-prose text-lg leading-relaxed text-ink">
         If any of this stops being true, it is a defect rather than a change of

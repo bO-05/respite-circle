@@ -7,6 +7,7 @@ import { RolePage } from "@/components/role-page";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { formatApprovalLine } from "@/server/domain/ask-review";
+import { AUTO_PUBLISH_DESK_LABEL } from "@/server/domain/auto-publish";
 import { formatWindowLabel } from "@/server/domain/slots";
 import { getDeskSlotClaimReview } from "@/server/repositories/claim-review";
 import { getDeskSlotCoverage } from "@/server/repositories/coverage";
@@ -69,11 +70,16 @@ export default async function DeskSlotPage({
       coverage.calls.length > 0);
 
   const timeZone = review.timeZone;
-  const publicationLine = formatApprovalLine({
-    approverFirstName: review.publishedByName,
-    approvedAt: review.approvedAt,
-    timeZone,
-  });
+  // An auto-published time has no approving person, so it must not borrow the
+  // "Approved — a person" line; it names the switch and the policy version.
+  const autoPublished = review.publishedVia === "auto_low_risk";
+  const publicationLine = autoPublished
+    ? null
+    : formatApprovalLine({
+        approverFirstName: review.publishedByName,
+        approvedAt: review.approvedAt,
+        timeZone,
+      });
 
   return (
     <RolePage
@@ -138,13 +144,17 @@ export default async function DeskSlotPage({
         className="rounded-lg border border-line bg-surface p-5"
       >
         <h2 id="publication-heading" className="font-serif text-2xl text-ink">
-          Published by a person
+          {autoPublished
+            ? "Published by the low-risk switch"
+            : "Published by a person"}
         </h2>
         <p
           data-testid="slot-publication-line"
           className="mt-2 max-w-prose text-base leading-relaxed text-ink"
         >
-          {publicationLine ?? "This time is not published to the board yet."}
+          {autoPublished
+            ? AUTO_PUBLISH_DESK_LABEL
+            : (publicationLine ?? "This time is not published to the board yet.")}
         </p>
         <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
           Publication and claim confirmation are two separate decisions. This

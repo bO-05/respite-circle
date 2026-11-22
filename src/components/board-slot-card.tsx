@@ -1,4 +1,5 @@
 import { formatApprovalLine } from "@/server/domain/ask-review";
+import { AUTO_PUBLISH_BOARD_LABEL } from "@/server/domain/auto-publish";
 import {
   BOARD_ACTION_LABEL,
   boardClaimHint,
@@ -114,11 +115,16 @@ export function BoardSlotCard({
   const kind = boardKindCopy(slot.kind);
   const gatedLine = boardGatedLine(slot.kind);
   const isOpen = slot.status === "open";
-  const approvalLine = formatApprovalLine({
-    approverFirstName: slot.approvedByName,
-    approvedAt: slot.approvedAt,
-    timeZone,
-  });
+  // An automatically published time carries no approving person, so it must
+  // never render "Approved — a person". It names the switch instead.
+  const autoPublished = slot.publishedVia === "auto_low_risk";
+  const approvalLine = autoPublished
+    ? null
+    : formatApprovalLine({
+        approverFirstName: slot.approvedByName,
+        approvedAt: slot.approvedAt,
+        timeZone,
+      });
   const statusCopy = boardClaimStateCopy(slot.status, coordinatorFirstName);
 
   return (
@@ -186,7 +192,14 @@ export function BoardSlotCard({
         </p>
       ) : null}
 
-      {approvalLine ? (
+      {autoPublished ? (
+        <p
+          data-testid="board-auto-published"
+          className="mt-3 max-w-prose text-base font-semibold text-ink-muted"
+        >
+          {AUTO_PUBLISH_BOARD_LABEL}
+        </p>
+      ) : approvalLine ? (
         <p
           data-testid="board-approval-line"
           className="mt-3 text-base font-semibold text-ink-muted"

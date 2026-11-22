@@ -75,9 +75,10 @@ export default async function CirclePage({
             Times you can take
           </h2>
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-            Nothing appears here until a coordinator has read the family&apos;s
-            words and published the time. Each card names the person who
-            approved it.
+            Nothing appears here until a person has read the family&apos;s
+            words, with one narrow exception: a signed church policy may publish
+            a meal or an errand by itself, and that card says so. Every card
+            names who published it.
           </p>
         </div>
 

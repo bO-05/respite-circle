@@ -4,8 +4,11 @@ import { PublicPage } from "@/components/public-page";
 import { TrustMatrix } from "@/components/trust-matrix";
 import {
   AI_VISIBILITY,
+  AUTO_PUBLISH_TRUST_NOTE,
   CONSENT_TIERS,
+  DECIDES_INTRO,
   DECIDES_ROWS,
+  HOW_IT_WORKS_LEAD,
   PRIVACY_ROWS,
   PRIVACY_VIEWERS,
 } from "@/lib/trust-content";
@@ -28,7 +31,7 @@ export default function HowItWorksPage() {
       eyebrow="How it works"
       title="How it works, and who decides"
       width="wide"
-      lead="A computer reads your words into nine typed answers. Plain code turns those answers into a few possible times. A named person decides what, if anything, is offered, and a person calls when a time goes unclaimed."
+      lead={HOW_IT_WORKS_LEAD}
     >
       <section aria-labelledby="ai-heading">
         <h2 id="ai-heading" className="font-serif text-3xl leading-tight text-ink">
@@ -68,13 +71,13 @@ export default function HowItWorksPage() {
           Who decides what
         </h2>
         <p className="mt-3 max-w-prose text-lg leading-relaxed text-ink">
-          Three things happen in order. The model answers. Plain code follows
-          fixed rules. A person decides what reaches the board.
+          {DECIDES_INTRO}
         </p>
-        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-          The policy carries a switch for low-risk meal times. It is off in this
-          demo, and no kind of time can be published without a coordinator&apos;s
-          approval.
+        <p
+          data-testid="auto-publish-note"
+          className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted"
+        >
+          {AUTO_PUBLISH_TRUST_NOTE}
         </p>
         <TrustMatrix
           id="who-decides"

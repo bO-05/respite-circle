@@ -81,6 +81,12 @@ export type DraftEditorContext = {
   slotsConstructedAt: Date | null;
   timeZone: string;
   transportEnabled: boolean;
+  /**
+   * The low-risk switch on the policy version this ask arrived under. When it
+   * is on, a meal or an errand draft published itself and no longer appears in
+   * this draft list; the other kinds still wait here for a person.
+   */
+  autoPublishLowRisk: boolean;
   recipientFirstName: string;
   slots: DraftSlotRow[];
   skipped: SkippedProposal[];
@@ -225,6 +231,7 @@ export async function getDraftEditorContext(
       slotsConstructedAt: ask.slotsConstructedAt,
       timeZone: church.timezone,
       transportEnabled: policy.transportEnabled,
+      autoPublishLowRisk: policy.autoPublishLowRisk,
       recipientFirstName: careRecipient.firstName,
     })
     .from(ask)
@@ -280,6 +287,7 @@ export async function getDraftEditorContext(
     slotsConstructedAt: askRow.slotsConstructedAt,
     timeZone: askRow.timeZone,
     transportEnabled: askRow.transportEnabled,
+    autoPublishLowRisk: askRow.autoPublishLowRisk,
     recipientFirstName: askRow.recipientFirstName,
     slots: slotRows
       .filter((row) => isSlotKind(row.kind))

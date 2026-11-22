@@ -104,6 +104,8 @@ export async function savePolicyAction(
     reminderWindowHours: text(formData, "reminderWindowHours"),
     callThresholdHours: text(formData, "callThresholdHours"),
     callAfterOpenHours: text(formData, "callAfterOpenHours"),
+    // A checkbox submits "on" only while checked; an absent field is off.
+    autoPublishLowRisk: text(formData, "autoPublishLowRisk") === "on",
     signedOffBy: text(formData, "signedOffBy"),
     loosenConfirmation: text(formData, "loosenConfirmation"),
   };

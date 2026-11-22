@@ -69,6 +69,11 @@ export type PolicySaveInput = Omit<PolicyVersionInput, "signedOffBy"> & {
 export const POLICY_AUDIT_ACTIONS = {
   saved: "policy_version_saved",
   loosened: "policy_safeguarding_loosened",
+  /**
+   * The low-risk auto-publish switch changed. The actor is the person who
+   * signed the version, and the detail names the version and both states.
+   */
+  autoPublishChanged: "policy_auto_publish_changed",
 } as const;
 
 export const POLICY_SIGN_OFF_REQUIRED =
@@ -416,6 +421,11 @@ export async function savePolicyVersion(
             direction: change.direction,
           }));
 
+          const autoPublishBefore = previous?.autoPublishLowRisk ?? false;
+          const autoPublishAfter = row.autoPublishLowRisk;
+          const autoPublishChanged =
+            autoPublishBefore !== autoPublishAfter;
+
           await tx.insert(auditEvent).values([
             {
               churchId: actor.churchId,
@@ -444,10 +454,35 @@ export async function savePolicyVersion(
                   : null,
                 clockChanges: changes,
                 loosenedThresholds: loosened.map((change) => change.field),
+                autoPublishLowRisk: autoPublishAfter,
                 at: now.toISOString(),
               },
               createdAt: now,
             },
+            ...(autoPublishChanged
+              ? [
+                  {
+                    churchId: actor.churchId,
+                    actorType: "human" as const,
+                    actorId: actor.personId,
+                    action: POLICY_AUDIT_ACTIONS.autoPublishChanged,
+                    entity: "policy",
+                    entityId: row.id,
+                    detail: {
+                      version: row.version,
+                      policyVersionId: row.id,
+                      previousVersion: previous?.version ?? null,
+                      from: autoPublishBefore,
+                      to: autoPublishAfter,
+                      signedOffBy,
+                      authorName,
+                      authorPersonId: actor.personId,
+                      at: now.toISOString(),
+                    },
+                    createdAt: now,
+                  },
+                ]
+              : []),
             ...(loosened.length > 0
               ? [
                   {

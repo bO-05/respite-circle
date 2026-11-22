@@ -16,9 +16,9 @@ import {
  * dropped, question text is replaced while ids/types/options stay fixed, the
  * two clocks are whole hours, and a named sign-off is mandatory.
  *
- * The fields this screen does not edit (familiar-face default, auto-publish,
- * driver policy) are carried from the current version rather than trusted from
- * the form.
+ * The low-risk auto-publish switch is edited here. The fields this screen does
+ * not edit (familiar-face default, driver policy) are carried from the current
+ * version rather than trusted from the form.
  */
 
 export type PolicyEditorReferral = {
@@ -37,6 +37,8 @@ export type PolicyEditorSubmission = {
   reminderWindowHours: string;
   callThresholdHours: string;
   callAfterOpenHours: string;
+  /** The low-risk meal/errand switch, as the checkbox submits it. */
+  autoPublishLowRisk: boolean;
   signedOffBy: string;
   loosenConfirmation: string;
 };
@@ -224,7 +226,7 @@ export function buildPolicyEditorRequest(
       callThresholdHours,
       callAfterOpenHours,
       transportEnabled: current.transportEnabled,
-      autoPublishLowRisk: current.autoPublishLowRisk,
+      autoPublishLowRisk: submission.autoPublishLowRisk,
       signedOffBy,
     },
     loosenConfirmation: submission.loosenConfirmation,
