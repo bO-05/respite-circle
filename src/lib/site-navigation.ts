@@ -38,6 +38,7 @@ export const ROLE_NAV: Record<Role, readonly NavItem[]> = {
   coordinator: [
     { href: "/desk", label: "Desk" },
     { href: "/desk/sessions", label: "Sessions" },
+    { href: "/desk/audit", label: "Decision log" },
     { href: "/circle", label: "Board" },
     { href: "/promises", label: "Promises" },
     { href: "/desk/metrics", label: "Metrics" },
@@ -45,6 +46,7 @@ export const ROLE_NAV: Record<Role, readonly NavItem[]> = {
   deputy: [
     { href: "/desk", label: "Desk" },
     { href: "/desk/sessions", label: "Sessions" },
+    { href: "/desk/audit", label: "Decision log" },
     { href: "/circle", label: "Board" },
     { href: "/promises", label: "Promises" },
     { href: "/desk/metrics", label: "Metrics" },

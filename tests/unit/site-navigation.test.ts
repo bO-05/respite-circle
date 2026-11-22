@@ -22,6 +22,7 @@ const ROUTE_GUARDS: Record<string, readonly Role[]> = {
   "/care": CAREGIVER_ROLES,
   "/desk": DESK_ROLES,
   "/desk/sessions": DESK_ROLES,
+  "/desk/audit": DESK_ROLES,
   "/desk/metrics": DESK_AREA_ROLES,
   "/circle": BOARD_ROLES,
   "/my-claims": CLAIMS_ROLES,
@@ -44,10 +45,11 @@ describe("role navigation", () => {
     ]);
   });
 
-  it("gives the coordinator desk, sessions, board, promises, and metrics", () => {
+  it("gives the coordinator desk, sessions, the decision log, board, promises, and metrics", () => {
     expect(navForRole("coordinator").map((item) => item.label)).toEqual([
       "Desk",
       "Sessions",
+      "Decision log",
       "Board",
       "Promises",
       "Metrics",
@@ -85,6 +87,7 @@ describe("role navigation", () => {
 
   it("marks the longest matching page as current", () => {
     expect(activeNavHref("coordinator", "/desk/metrics")).toBe("/desk/metrics");
+    expect(activeNavHref("coordinator", "/desk/audit")).toBe("/desk/audit");
     expect(activeNavHref("coordinator", "/desk/ask/abc")).toBe("/desk");
     expect(activeNavHref("volunteer", "/my-claims/abc")).toBe("/my-claims");
     expect(activeNavHref("caregiver", "/care")).toBe("/care");
