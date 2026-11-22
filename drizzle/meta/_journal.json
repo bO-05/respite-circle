@@ -43,6 +43,13 @@
       "when": 1795312585958,
       "tag": "0005_draft_slot_editor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795316372764,
+      "tag": "0006_exclusion_candidates",
+      "breakpoints": true
     }
   ]
 }

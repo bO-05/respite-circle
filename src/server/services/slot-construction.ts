@@ -24,6 +24,7 @@ import {
 } from "@/server/domain/slots";
 import { listSessionOptions } from "@/server/repositories/draft-slots";
 import type { AppDatabase } from "@/server/repositories/coordinator";
+import { evaluateCandidatesForSlots } from "@/server/services/candidate-evaluation";
 
 /**
  * Turn the nine typed answers into draft slots, once per ask.
@@ -263,6 +264,17 @@ export async function constructDraftSlots(
   });
 
   if (!recorded.won) return outcome("already_constructed");
+
+  // Every draft time is checked against every active volunteer immediately, so
+  // the desk never shows a proposal without its explanation. This is plain code
+  // and writes no message to anyone.
+  if (recorded.slotIds.length > 0) {
+    await evaluateCandidatesForSlots(database, {
+      churchId: input.churchId,
+      slotIds: recorded.slotIds,
+      now,
+    });
+  }
 
   return {
     created: true,

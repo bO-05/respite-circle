@@ -773,14 +773,13 @@ describe("draft slot construction", () => {
     );
     if (!companion) throw new Error("expected a companion draft");
 
-    await t.db.insert(slotCandidate).values({
-      slotId: companion.id,
-      volunteerId: seedIds.people.ruth,
-      eligible: false,
-      ruleCode: "not_familiar",
-      fixHint: "A coordinator introduction is needed first.",
-      owner: "Grace",
-    });
+    // Construction records one explanation per active volunteer, so there is
+    // already a candidate row to clear when the draft is removed.
+    const before = await t.db
+      .select()
+      .from(slotCandidate)
+      .where(eq(slotCandidate.slotId, companion.id));
+    expect(before.length).toBeGreaterThan(0);
 
     const removed = await removeDraftSlot(GRACE, companion.id, t.db);
     expect(removed.ok).toBe(true);

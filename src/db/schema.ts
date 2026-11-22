@@ -592,7 +592,18 @@ export const slotCandidate = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("slot_candidate_slot_idx").on(t.slotId)],
+  (t) => [
+    index("slot_candidate_slot_idx").on(t.slotId),
+    /**
+     * One explanation per volunteer per slot. Re-evaluation upserts this row
+     * rather than appending, so the panel can never show the same person twice
+     * and two concurrent evaluations cannot duplicate a candidate.
+     */
+    uniqueIndex("slot_candidate_slot_volunteer_uidx").on(
+      t.slotId,
+      t.volunteerId,
+    ),
+  ],
 );
 
 // ---------------------------------------------------------------------------

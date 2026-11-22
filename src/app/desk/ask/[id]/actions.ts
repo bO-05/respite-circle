@@ -17,6 +17,7 @@ import {
   updateDraftSlot,
 } from "@/server/repositories/draft-slots";
 import { proposeDraftsForAsk } from "@/server/services/slot-construction";
+import { reevaluateExclusions } from "@/server/services/candidate-evaluation";
 
 /**
  * Server actions for the draft editor.
@@ -188,6 +189,29 @@ export async function addDraftAction(
     if (!result.ok) return errorState(result.message, "kind");
     refresh(result.askId);
     return successState(result.message, result.slotId);
+  } catch {
+    return errorState(GENERIC_FAILURE);
+  }
+}
+
+/** Check every active volunteer against every draft time again. */
+export async function reevaluateCandidatesAction(
+  _previous: DraftActionState,
+  formData: FormData,
+): Promise<DraftActionState> {
+  const authorized = await deskSession();
+  if (!authorized) return errorState(SESSION_ENDED);
+
+  const askId = text(formData, "askId").trim();
+  if (!UUID_PATTERN.test(askId)) {
+    return errorState("That ask is not available.");
+  }
+
+  try {
+    const result = await reevaluateExclusions(authorized.session, askId);
+    if (!result.ok) return errorState(result.message);
+    refresh(askId);
+    return successState(result.message);
   } catch {
     return errorState(GENERIC_FAILURE);
   }

@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import { RolePage } from "@/components/role-page";
 import { DraftSlotSection } from "@/components/draft-slot-section";
+import { ExclusionPanelSection } from "@/components/exclusion-panel";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { holdReasonFor } from "@/server/domain/desk-queue";
 import { getCoordinatorAskWords } from "@/server/repositories/asks";
 import { getDraftEditorContext } from "@/server/repositories/draft-slots";
+import { getExclusionPanel } from "@/server/repositories/exclusions";
 
 export const dynamic = "force-dynamic";
 
@@ -32,14 +34,16 @@ export default async function DeskAskPage({
   const { person, session } = await requirePage(DESK_ROLES);
   const { id } = await params;
 
-  // Two independent scoped reads in parallel: the words, and the drafts. The
-  // Neon round trip is ~325 ms, so the page must not serialise them.
-  const [review, draftContext] = await Promise.all([
+  // Three independent scoped reads in parallel: the words, the drafts, and the
+  // exclusion explanations. The Neon round trip is ~325 ms, so the page must
+  // not serialise them.
+  const [review, draftContext, exclusionContext] = await Promise.all([
     getCoordinatorAskWords(session, id),
     getDraftEditorContext(session, id),
+    getExclusionPanel(session, id),
   ]);
 
-  if (!review || !draftContext) {
+  if (!review || !draftContext || !exclusionContext) {
     notFound();
   }
 
@@ -119,6 +123,8 @@ export default async function DeskAskPage({
       </section>
 
       <DraftSlotSection context={draftContext} timeZone={draftContext.timeZone} />
+
+      <ExclusionPanelSection context={exclusionContext} />
     </RolePage>
   );
 }

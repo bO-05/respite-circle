@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "slot_candidate_slot_volunteer_uidx" ON "slot_candidate" USING btree ("slot_id","volunteer_id");

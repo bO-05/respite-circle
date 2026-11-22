@@ -30,6 +30,7 @@ import {
   type ValidatedDraftSlot,
 } from "@/server/domain/slots";
 import type { AppDatabase } from "./coordinator";
+import { evaluateCandidatesForSlots } from "@/server/services/candidate-evaluation";
 
 /**
  * Coordinator draft-slot reads and writes.
@@ -348,7 +349,7 @@ export async function updateDraftSlot(
     return { ok: false, message: DRIVE_POLICY_SENTENCE };
   }
 
-  return database.transaction(async (tx) => {
+  const result: DraftWriteResult = await database.transaction(async (tx) => {
     const rows = await tx
       .update(slot)
       .set({
@@ -397,6 +398,17 @@ export async function updateDraftSlot(
       message: "Saved. It is still a draft — nobody can see it yet.",
     };
   });
+
+  if (result.ok) {
+    // The window, kind, or gated flag may have changed, so the recorded
+    // explanation for every volunteer is refreshed in place.
+    await evaluateCandidatesForSlots(database, {
+      churchId: actor.churchId,
+      slotIds: [result.slotId],
+    });
+  }
+
+  return result;
 }
 
 /**
@@ -637,7 +649,7 @@ export async function addDraftSlot(
 
   const proposal = manual.proposal;
 
-  return database.transaction(async (tx) => {
+  const result = await database.transaction(async (tx) => {
     const inserted = await tx
       .insert(slot)
       .values({
@@ -681,4 +693,12 @@ export async function addDraftSlot(
       message: "Added. It is a draft — nobody can see it yet.",
     };
   });
+
+  await evaluateCandidatesForSlots(database, {
+    churchId: actor.churchId,
+    slotIds: [result.slotId],
+    now,
+  });
+
+  return result;
 }

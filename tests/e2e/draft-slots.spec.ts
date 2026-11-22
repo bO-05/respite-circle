@@ -248,6 +248,10 @@ test.describe("draft slot editor", () => {
 
     await expect(home.getByTestId("draft-feedback")).toHaveText(
       /Saved\. It is still a draft/,
+      // Saving now also refreshes the exclusion explanations. The Neon round
+      // trip is ~325 ms from this host, so the action legitimately takes longer
+      // than a single write; production runs next to the database.
+      { timeout: 20_000 },
     );
     await shot(grace.page, "draft-edit-after");
 
@@ -324,6 +328,7 @@ test.describe("draft slot editor", () => {
     await grace.page.getByTestId("draft-add-submit").click();
     await expect(grace.page.getByTestId("draft-add-feedback")).toHaveText(
       /Added\. It is a draft/,
+      { timeout: 20_000 },
     );
 
     await grace.page.reload();

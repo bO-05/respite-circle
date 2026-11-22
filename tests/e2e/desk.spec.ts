@@ -97,7 +97,7 @@ async function shot(page: Page, name: string): Promise<void> {
   });
 }
 
-test.describe.configure({ timeout: 90_000 });
+test.describe.configure({ timeout: 150_000 });
 
 test.describe("coordinator desk queue", () => {
   let db: E2eDatabase;
