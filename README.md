@@ -234,6 +234,7 @@ between tests.
 | `npm run test:integration` | PostgreSQL invariants: the claim race, gating in SQL, notification absence, verbatim immutability, privacy projections. One worker; about an hour against remote Neon. | `E2E_DATABASE_URL_UNPOOLED`, `RC_DB_BRANCH=e2e` |
 | `npm run test` | Unit and component, then integration. | both of the above |
 | `npm run test:e2e` | Playwright with one worker and one retry: the happy path, failure path, role boundaries, safety and personal care, policy, trust pages, privacy payloads, and the parallel claim. Builds production and serves it on 127.0.0.1:3130; about 50 minutes. | `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, `RC_DB_BRANCH=e2e` |
+| `npm run verify:production-flow` | The deployed-flow proof: enters as Ruth through the real access link, requires an open claimable card on `/circle`, claims one time through the real claim route, requires the claim on the board and on `/my-claims`, then resets the demo and requires 12 of 12 seed assertions and the `sha256:` seed digest. **The only command that mutates production**; the reset runs in a `finally` block, and it refuses any origin other than the configured production URL. | `RC_DEMO_RESET_TOKEN` in `.env.local` or the shell |
 | `npm run build` | Production build with Turbopack. | — |
 
 Playwright uses `127.0.0.1`, not `localhost`, because `localhost` can resolve to
@@ -304,22 +305,34 @@ npx --yes vercel@latest deploy --prod --yes
 Use `npx --yes vercel@latest`: an older globally installed CLI is rejected by
 the current endpoints.
 
-### Required post-deploy check
+### Required post-deploy checks
 
 ```powershell
-npm run smoke:production
+npm run smoke:production        # read-only
+npm run verify:production-flow  # claims one time, then resets the demo
 ```
 
-Run it after every production deploy. It checks `/`, `/api/health`,
-`/promises`, `/how-it-works`, and `/never`; requires the sample-data stamp; and
-fails on any non-200, on a `db` other than `ok`, and on a `/api/health`
-`version` that differs from the pushed commit. It also scans the served client
-chunks for connection strings, model keys, and assigned server variables. The
-expected commit is your local `git rev-parse --short HEAD`; override the origin
-with `RC_PRODUCTION_URL` and the expected short SHA with
-`RC_EXPECTED_VERSION` or `-- --expected=<sha>`. Because every push
-auto-deploys, a version mismatch means the live build is not the commit you
-pushed.
+Run both after every production deploy. `smoke:production` is read-only and
+checks `/`, `/api/health`, `/promises`, `/how-it-works`, and `/never`; requires
+the sample-data stamp; and fails on any non-200, on a `db` other than `ok`, and
+on a `/api/health` `version` that differs from the pushed commit. It also scans
+the served client chunks for connection strings, model keys, and assigned
+server variables. The expected commit is your local
+`git rev-parse --short HEAD`; override the origin with `RC_PRODUCTION_URL` and
+the expected short SHA with `RC_EXPECTED_VERSION` or `-- --expected=<sha>`.
+Because every push auto-deploys, a version mismatch means the live build is not
+the commit you pushed.
+
+`verify:production-flow` is the check to run after any redeploy and again
+before the judged window. It is **the only command that mutates production**,
+and it says so before it writes. It enters as Ruth through the seeded access
+link, requires at least one open claimable card on `/circle`, claims one time
+through the real claim route, requires the claim on the board and on
+`/my-claims`, then posts the demo reset token to `/api/demo/reset` and requires
+`reset: true`, 12 of 12 seed assertions, and a `sha256:` seed digest. The reset
+runs in a `finally` block, so a failed run cannot leave the judged demo
+mutated. It refuses any origin other than the configured production URL and
+never prints the token.
 
 `/api/health` runs one `SELECT 1` and returns `{ ok, db, provider, version }`
 with `cache-control: no-store`. `db` is `"ok"` or `"down"`; `provider` is

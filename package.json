@@ -20,6 +20,7 @@
     "pretest:e2e": "node scripts/free-port.mjs",
     "posttest:e2e": "node scripts/free-port.mjs",
     "smoke:production": "npx tsx scripts/smoke-production.ts",
+    "verify:production-flow": "npx tsx scripts/verify-production-flow.ts",
     "calibrate": "npx tsx scripts/calibrate.ts",
     "calibrate:baseline": "npx tsx scripts/calibrate.ts --baseline",
     "db:generate": "npx drizzle-kit generate",
