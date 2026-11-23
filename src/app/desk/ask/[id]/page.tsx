@@ -74,7 +74,7 @@ export default async function DeskAskPage({
       person={person}
       role={session.role}
       title="Ask review"
-      lead="A person reads every word. A time reaches a neighbour only after that person approves it, unless the signed low-risk policy has published a meal or an errand by itself."
+      lead="A person reads every word. A time reaches a neighbour only after that person approves it, unless the signed low-risk policy has published a meal by itself."
     >
       <dl className="grid gap-4 rounded-lg border border-line bg-surface p-5 sm:grid-cols-2">
         <div>

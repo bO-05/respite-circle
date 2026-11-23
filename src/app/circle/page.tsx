@@ -77,7 +77,7 @@ export default async function CirclePage({
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
             Nothing appears here until a person has read the family&apos;s
             words, with one narrow exception: a signed church policy may publish
-            a meal or an errand by itself, and that card says so. Every card
+            a meal by itself, and that card says so. Every card
             names who published it.
           </p>
         </div>

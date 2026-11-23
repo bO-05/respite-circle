@@ -3,6 +3,7 @@ import {
   AUTO_PUBLISHED_VIA,
   AUTO_PUBLISH_BOARD_LABEL,
   AUTO_PUBLISH_DESK_LABEL,
+  AUTO_PUBLISH_DESK_NOTE,
   AUTO_PUBLISH_KINDS,
   AUTO_PUBLISH_RULES_COPY,
   autoPublishDecision,
@@ -37,10 +38,12 @@ const UNSIGNED_ON: AutoPublishPolicyFacts = {
 };
 
 describe("the low-risk auto-publish setting", () => {
-  it("covers exactly a meal and an errand, and nothing else", () => {
-    expect([...AUTO_PUBLISH_KINDS]).toEqual(["meal", "errand"]);
+  it("covers exactly a meal, and nothing else", () => {
+    expect([...AUTO_PUBLISH_KINDS]).toEqual(["meal"]);
     expect(isAutoPublishKind("meal")).toBe(true);
-    expect(isAutoPublishKind("errand")).toBe(true);
+    // `errand` is a reserved enum value with no producer. The switch must
+    // refuse it so the rule, the database check, and the copy all agree.
+    expect(isAutoPublishKind("errand")).toBe(false);
     expect(isAutoPublishKind("companion")).toBe(false);
     expect(isAutoPublishKind("home")).toBe(false);
     expect(isAutoPublishKind("drive")).toBe(false);
@@ -55,41 +58,35 @@ describe("the low-risk auto-publish setting", () => {
   it("refuses every kind while the switch is off", () => {
     for (const kind of ["meal", "errand", "companion", "home", "drive"]) {
       const decision = autoPublishDecision(SIGNED_OFF, kind);
-      expect(decision.publish).toBe(false);
+      expect(decision.publish, kind).toBe(false);
       if (decision.publish) return;
       expect(decision.reason).toBe("switch_off");
       expect(decision.message).toMatch(/waits for a coordinator/i);
     }
   });
 
-  it("refuses a meal or an errand while the policy version is unsigned", () => {
-    for (const kind of ["meal", "errand"]) {
-      const decision = autoPublishDecision(UNSIGNED_ON, kind);
-      expect(decision.publish).toBe(false);
-      if (decision.publish) return;
-      expect(decision.reason).toBe("policy_unsigned");
-      expect(decision.message).toMatch(/not signed/i);
-    }
+  it("refuses a meal while the policy version is unsigned", () => {
+    const decision = autoPublishDecision(UNSIGNED_ON, "meal");
+    expect(decision.publish).toBe(false);
+    if (decision.publish) return;
+    expect(decision.reason).toBe("policy_unsigned");
+    expect(decision.message).toMatch(/not signed/i);
   });
 
-  it("publishes a meal and an errand under a signed policy that turns it on", () => {
+  it("publishes a meal under a signed policy that turns it on", () => {
     expect(autoPublishDecision(SIGNED_ON, "meal")).toEqual({
       publish: true,
       kind: "meal",
     });
-    expect(autoPublishDecision(SIGNED_ON, "errand")).toEqual({
-      publish: true,
-      kind: "errand",
-    });
   });
 
-  it("refuses a companion place, a home visit, and a drive with a reason", () => {
-    for (const kind of ["companion", "home", "drive"]) {
+  it("refuses an errand, a companion place, a home visit, and a drive with a reason", () => {
+    for (const kind of ["errand", "companion", "home", "drive"]) {
       const decision = autoPublishDecision(SIGNED_ON, kind);
-      expect(decision.publish).toBe(false);
+      expect(decision.publish, kind).toBe(false);
       if (decision.publish) return;
       expect(decision.reason).toBe("not_low_risk");
-      expect(decision.message).toMatch(/meal or an errand/i);
+      expect(decision.message).toMatch(/only a meal/i);
       expect(decision.message).toMatch(/coordinator/i);
     }
 
@@ -97,19 +94,24 @@ describe("the low-risk auto-publish setting", () => {
     expect(autoPublishRefusalCopy("home")).toMatch(/in-home visit/i);
     expect(autoPublishRefusalCopy("drive")).toMatch(/drive/i);
     expect(autoPublishRefusalCopy("companion")).toMatch(
-      /only a meal or an errand/i,
+      /only a meal can publish/i,
+    );
+    expect(autoPublishRefusalCopy("errand")).toMatch(
+      /errands are not available yet/i,
     );
   });
 
   it("carries the same limit in the copy a coordinator and a neighbour read", () => {
-    expect(AUTO_PUBLISH_RULES_COPY).toMatch(/meal or an errand/i);
+    expect(AUTO_PUBLISH_RULES_COPY).toMatch(/only a meal can publish/i);
     expect(AUTO_PUBLISH_RULES_COPY).toMatch(/companion place/i);
     expect(AUTO_PUBLISH_RULES_COPY).toMatch(/drive/i);
     expect(AUTO_PUBLISH_RULES_COPY).toMatch(/in-home visit/i);
+    expect(AUTO_PUBLISH_RULES_COPY).toMatch(/errands are not available yet/i);
     expect(AUTO_PUBLISH_RULES_COPY).toMatch(/decision log/i);
     expect(AUTO_PUBLISH_BOARD_LABEL).toMatch(/automatically/i);
-    expect(AUTO_PUBLISH_BOARD_LABEL).toMatch(/meal or an errand/i);
+    expect(AUTO_PUBLISH_BOARD_LABEL).toMatch(/a meal only/i);
     expect(AUTO_PUBLISH_DESK_LABEL).toMatch(/auto-published/i);
     expect(AUTO_PUBLISH_DESK_LABEL).toMatch(/decision log/i);
+    expect(AUTO_PUBLISH_DESK_NOTE).toMatch(/errands are not available yet/i);
   });
 });

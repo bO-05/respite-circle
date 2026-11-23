@@ -65,8 +65,8 @@ export type BoardSlot = {
   approvedByName: string | null;
   /**
    * How the time reached the board. `auto_low_risk` means the signed policy's
-   * switch published a meal or an errand; the card labels it instead of
-   * naming a person who never approved it.
+   * switch published a meal; the card labels it instead of naming a person who
+   * never approved it.
    */
   publishedVia: "coordinator" | "auto_low_risk";
   /**

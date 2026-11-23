@@ -248,7 +248,7 @@ async function saveSwitch(
   signer = "Eli Low",
 ): Promise<void> {
   const toggle = page.getByLabel(
-    /publish a meal or an errand automatically/i,
+    /publish a meal automatically/i,
   );
   if (on) {
     await toggle.check();
@@ -291,11 +291,14 @@ test("a deputy carries the desk, the switch is audited, and only a meal publishe
     await page.goto("/desk/policy");
     await expect(page.getByTestId("deputy-banner")).toBeVisible();
     const toggle = page.getByLabel(
-      /publish a meal or an errand automatically/i,
+      /publish a meal automatically/i,
     );
     await expect(toggle).toBeVisible();
     await expect(page.getByTestId("policy-auto-publish-help")).toContainText(
-      /meal or an errand/i,
+      /only a meal can publish/i,
+    );
+    await expect(page.getByTestId("policy-auto-publish-help")).toContainText(
+      /errands are not available yet/i,
     );
     await expect(page.getByTestId("policy-auto-publish-help")).toContainText(
       /companion|drive|home/i,
@@ -343,12 +346,51 @@ test("a deputy carries the desk, the switch is audited, and only a meal publishe
     expect(latestChange?.detail.version).toBe(signed.version);
     expect(latestChange?.detail.authorName).toBe("Eli Low");
 
-    // 3. A meal ask arrives while the switch is on.
+    // The caregiver's own pages speak the same exception. The words are still
+    // never shown; a meal time may reach the congregation board before a
+    // person approves it. With the switch off these sentences are unchanged,
+    // which the seeded-church ask spec pins separately.
     const caregiver = await signIn(browser, CAREGIVER_TOKEN);
+    await caregiver.page.goto("/ask");
+    const consentLabel = caregiver.page.locator("label[for='ask-consent']");
+    await expect(consentLabel).toContainText(/Ada reads this\./);
+    await expect(consentLabel).toContainText(
+      /my words are never shown to anyone/i,
+    );
+    await expect(consentLabel).toContainText(
+      /meal time from this ask may go on the congregation board/i,
+    );
+    await expect(consentLabel).toContainText(/before she approves that time/i);
+    const consentHelp = caregiver.page.locator("#ask-consent-help");
+    await expect(consentHelp).toContainText(/Ada reads every ask\./);
+    await expect(consentHelp).toContainText(
+      /your words are never shown to anyone/i,
+    );
+    await expect(consentHelp).toContainText(/congregation board/i);
+    await expect(
+      caregiver.page.getByText(/Ada reads what you write/i).first(),
+    ).toBeVisible();
+    await shot(caregiver.page, "02b-caregiver-qualified-consent");
+
+    // 3. A meal ask arrives while the switch is on.
     const mealAskId = await createAsk(caregiver.context, MEAL_ASK);
 
     const mealAsk = await askRow(db, mealAskId);
     expect(mealAsk.policy_version_id).toBe(signed.id);
+
+    // The receipt for this ask carries the same qualification, read from the
+    // policy version stored on the ask rather than the current page state.
+    await caregiver.page.goto(`/ask/${mealAskId}`);
+    await expect(
+      caregiver.page.getByText(/Ada reads every ask\./).first(),
+    ).toBeVisible();
+    await expect(
+      caregiver.page.getByText(/your words are never shown to anyone/i).first(),
+    ).toBeVisible();
+    await expect(
+      caregiver.page.getByText(/may go on the congregation board/i).first(),
+    ).toBeVisible();
+    await shot(caregiver.page, "02c-caregiver-qualified-receipt");
 
     const mealSlots = await slotsFor(db, mealAskId);
     expect(mealSlots.map((row) => row.kind)).toEqual(["meal"]);
@@ -385,7 +427,7 @@ test("a deputy carries the desk, the switch is audited, and only a meal publishe
     await expect(card).toHaveAttribute("data-kind", "meal");
     await expect(card.getByTestId("board-auto-published")).toBeVisible();
     await expect(card.getByTestId("board-auto-published")).toContainText(
-      /meal or an errand/i,
+      /a meal only/i,
     );
     await expect(card.getByTestId("board-approval-line")).toHaveCount(0);
     await shot(page, "03-board-auto-published");
@@ -399,7 +441,7 @@ test("a deputy carries the desk, the switch is audited, and only a meal publishe
     await expect(page.getByTestId("waiting-published")).toBeVisible();
     const publishedLabel = page.getByTestId("published-auto-label");
     await expect(publishedLabel).toBeVisible();
-    await expect(publishedLabel).toContainText(/meal or an errand|auto-published/i);
+    await expect(publishedLabel).toContainText(/a meal only|auto-published/i);
     await expect(page.getByTestId("published-approval-line")).toHaveCount(0);
     await shot(page, "04-desk-auto-published");
 
@@ -524,21 +566,24 @@ test("a deputy carries the desk, the switch is audited, and only a meal publishe
     await page.goto("/how-it-works");
     const note = page.getByTestId("auto-publish-note");
     await expect(note).toBeVisible();
-    await expect(note).toContainText(/meal or an errand/i);
+    await expect(note).toContainText(/one low-risk kind: a meal/i);
+    await expect(note).toContainText(/errands are not available yet/i);
     await expect(note).toContainText(/signed policy version/i);
     await expect(note).toContainText(/decision log/i);
     const whoDecides = page.getByRole("table", { name: /who decides what/i });
     const publishRow = whoDecides.getByRole("row", {
       name: /publishes a time to the board/i,
     });
-    await expect(publishRow).toContainText(/only a meal or an errand/i);
+    await expect(publishRow).toContainText(/only a meal/i);
+    await expect(publishRow).toContainText(/errands are not available yet/i);
     await expect(publishRow).toContainText(/low-risk switch/i);
     await shot(page, "08-how-it-works");
 
     await page.goto("/never");
     const neverNote = page.getByTestId("never-auto-publish");
     await expect(neverNote).toBeVisible();
-    await expect(neverNote).toContainText(/meal or an errand/i);
+    await expect(neverNote).toContainText(/one low-risk kind: a meal/i);
+    await expect(neverNote).toContainText(/errands are not available yet/i);
     await expect(neverNote).toContainText(/companion place, a drive, and an in-home visit/i);
     await expect(neverNote).toContainText(/decision log/i);
     await shot(page, "09-never");

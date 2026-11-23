@@ -1,0 +1,2 @@
+ALTER TABLE "slot" DROP CONSTRAINT "slot_auto_publish_low_risk_only";--> statement-breakpoint
+ALTER TABLE "slot" ADD CONSTRAINT "slot_auto_publish_low_risk_only" CHECK ("slot"."published_via" <> 'auto_low_risk' OR ("slot"."kind" = 'meal' AND "slot"."approved_at" IS NOT NULL AND "slot"."approved_by" IS NULL));

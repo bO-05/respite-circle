@@ -83,8 +83,8 @@ export type DraftEditorContext = {
   transportEnabled: boolean;
   /**
    * The low-risk switch on the policy version this ask arrived under. When it
-   * is on, a meal or an errand draft published itself and no longer appears in
-   * this draft list; the other kinds still wait here for a person.
+   * is on, a meal draft published itself and no longer appears in this draft
+   * list; the other kinds still wait here for a person.
    */
   autoPublishLowRisk: boolean;
   recipientFirstName: string;

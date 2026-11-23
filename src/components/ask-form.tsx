@@ -130,8 +130,11 @@ function resultTranscript(result: SpeechResult): string {
 
 export function AskForm({
   coordinatorFirstName,
+  autoPublishLowRisk = false,
 }: {
   coordinatorFirstName: string | null;
+  /** The switch on the signed policy in force; qualifies the consent copy. */
+  autoPublishLowRisk?: boolean;
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -508,12 +511,12 @@ export function AskForm({
             aria-describedby={
               consentError ? `${CONSENT_HELP_ID} ${CONSENT_ERROR_ID}` : CONSENT_HELP_ID
             }
-            className="mt-1 h-6 w-6 shrink-0 rounded border-line accent-accent"
+            className="mt-1 h-11 w-11 shrink-0 rounded border-line accent-accent"
           />
-          <span>{consentSentence(coordinatorFirstName)}</span>
+          <span>{consentSentence(coordinatorFirstName, autoPublishLowRisk)}</span>
         </label>
         <p id={CONSENT_HELP_ID} className="text-base leading-relaxed text-ink-muted">
-          {receiptSentence(coordinatorFirstName)}
+          {receiptSentence(coordinatorFirstName, autoPublishLowRisk)}
         </p>
         {consentError ? (
           <p
@@ -548,8 +551,9 @@ export function AskForm({
           {pending ? "Sending your words…" : "Send this to " + (coordinatorFirstName ?? "my coordinator")}
         </button>
         <p className="max-w-prose text-base leading-relaxed text-ink-muted">
-          Nothing is sent to a neighbour. The next thing that happens is a
-          person reading your words.
+          {autoPublishLowRisk
+            ? "Your words are never shown to a neighbour. Under the church's signed low-risk policy, a meal time from this ask may go on the congregation board before a person approves it."
+            : "Nothing is sent to a neighbour. The next thing that happens is a person reading your words."}
         </p>
       </div>
     </form>

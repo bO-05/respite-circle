@@ -114,7 +114,7 @@ export default async function AskReceiptPage({
       person={person}
       role={session.role}
       title={`Thank you — your words are with ${reader}.`}
-      lead={receiptSentence(name)}
+      lead={receiptSentence(name, receipt.autoPublishLowRisk)}
     >
       <p
         data-testid="ask-status"
@@ -255,8 +255,10 @@ export default async function AskReceiptPage({
             without you.
           </li>
           <li>
-            If a time can be offered, you decide whether it helps. Nothing is
-            shown to a neighbour until {name ?? "your coordinator"} approves it.
+            If a time can be offered, you decide whether it helps.{" "}
+            {receipt.autoPublishLowRisk
+              ? `Under the church's signed low-risk policy, a meal time may go on the congregation board before ${name ?? "your coordinator"} approves that time. Your words are never shown there.`
+              : `Nothing is shown to a neighbour until ${name ?? "your coordinator"} approves it.`}
           </li>
           <li>
             You can come back here at any time to read your words again.

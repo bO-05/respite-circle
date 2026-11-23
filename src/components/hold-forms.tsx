@@ -135,7 +135,7 @@ export function OverrideSafetyHoldForm({ askId }: { askId: string }) {
             data-testid="hold-override-confirm"
             aria-invalid={confirmError || undefined}
             aria-describedby={confirmError ? confirmErrorId : undefined}
-            className="mt-1 h-6 w-6 shrink-0"
+            className="mt-1 h-11 w-11 shrink-0"
           />
           <label htmlFor={confirmId} className="text-lg leading-relaxed text-ink">
             I called the family today and confirmed there is no immediate

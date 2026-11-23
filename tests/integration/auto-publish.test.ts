@@ -52,7 +52,8 @@ import {
  * later ask then publishes itself, is visibly labelled, is audited with the
  * policy version it followed, and writes no notification. A companion place, a
  * home visit, and a drive are refused with a reason, and the database itself
- * refuses an auto-published row that is not a meal or an errand.
+ * refuses an auto-published row that is not a meal — including an errand, which
+ * no path can build and which the copy says is not available yet.
  *
  * A send-back withdraws an open auto-published time and is refused while a
  * neighbour already holds one, so a low-risk time can never outlive its ask.
@@ -477,7 +478,7 @@ describe("the deputy and the low-risk auto-publish setting", () => {
     expect(await auditRows(t, "slot_auto_published")).toHaveLength(0);
   });
 
-  it("the database itself refuses an auto-published row that is not a meal or an errand", async () => {
+  it("the database itself refuses an auto-published row that is not a meal", async () => {
     const askId = await insertAskWithAnswers(t, { answers: SITTING_ANSWERS });
 
     await expectRejection(
@@ -488,6 +489,25 @@ describe("the deputy and the low-risk auto-publish setting", () => {
           kind: "companion",
           tier: "public_event",
           label: "A companion place with no person behind it",
+          gated: false,
+          status: "open",
+          approvedAt: NOW,
+          approvedBy: null,
+          publishedVia: "auto_low_risk",
+        }),
+      /slot_auto_publish_low_risk_only|check constraint/i,
+    );
+
+    // An errand is a reserved enum value with no producer, and the switch
+    // refuses it even as a raw insert. Rule, database check, and copy agree.
+    await expectRejection(
+      () =>
+        t.db.insert(slot).values({
+          askId,
+          churchId: seedIds.church,
+          kind: "errand",
+          tier: "doorstep",
+          label: "An errand the app cannot produce",
           gated: false,
           status: "open",
           approvedAt: NOW,

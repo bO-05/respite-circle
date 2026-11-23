@@ -54,6 +54,12 @@ export const slotStatusEnum = pgEnum("slot_status", [
   "expired_unclaimed",
 ]);
 
+/**
+ * The stored slot kinds. `errand` is a reserved enum value: no construction
+ * path and no manual-add path produces one today, and every page says errands
+ * are not available yet. The value stays so a future path does not need a DDL
+ * change; the auto-publish check below still refuses it.
+ */
 export const slotKindEnum = pgEnum("slot_kind", [
   "companion",
   "home",
@@ -71,8 +77,8 @@ export const slotTierEnum = pgEnum("slot_tier", [
 
 /**
  * How a published time reached the board. `coordinator` is the human gate.
- * `auto_low_risk` is the one narrow exception: a meal or an errand published by
- * the signed policy's switch, with no person approving that time.
+ * `auto_low_risk` is the one narrow exception: a meal published by the signed
+ * policy's switch, with no person approving that time.
  */
 export const slotPublicationEnum = pgEnum("slot_publication", [
   "coordinator",
@@ -634,8 +640,8 @@ export const slot = pgTable(
     claimedAt: timestamp("claimed_at", { withTimezone: true, mode: "date" }),
     /**
      * How this time reached the board. `coordinator` is the ordinary human
-     * approval; `auto_low_risk` is a meal or an errand published by the signed
-     * policy's switch, and it carries no approving person.
+     * approval; `auto_low_risk` is a meal published by the signed policy's
+     * switch, and it carries no approving person.
      */
     publishedVia: slotPublicationEnum("published_via")
       .notNull()
@@ -670,13 +676,14 @@ export const slot = pgTable(
     ),
     /**
      * The switch's limit, enforced by the engine rather than by a repository.
-     * Only a meal or an errand may be auto-published, it must carry the
-     * publication instant, and it must not name a person as approver — that
-     * pair is exactly how the board tells a human approval from the switch.
+     * Only a meal may be auto-published today (no path builds an errand), it
+     * must carry the publication instant, and it must not name a person as
+     * approver — that pair is exactly how the board tells a human approval from
+     * the switch.
      */
     check(
       "slot_auto_publish_low_risk_only",
-      sql`${t.publishedVia} <> 'auto_low_risk' OR (${t.kind} IN ('meal', 'errand') AND ${t.approvedAt} IS NOT NULL AND ${t.approvedBy} IS NULL)`,
+      sql`${t.publishedVia} <> 'auto_low_risk' OR (${t.kind} = 'meal' AND ${t.approvedAt} IS NOT NULL AND ${t.approvedBy} IS NULL)`,
     ),
   ],
 );

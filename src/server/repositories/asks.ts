@@ -72,6 +72,12 @@ export type CaregiverAskView = {
   /** The church's policy in force when the ask was first submitted. */
   policyVersion: number;
   /**
+   * The low-risk switch on that same policy version. The receipt uses it to
+   * qualify the sentence about what a person approves; it never changes what
+   * any neighbour can read.
+   */
+  autoPublishLowRisk: boolean;
+  /**
    * A send-back note, exactly as the coordinator wrote it. Present only after
    * a send-back; the page renders it character-for-character and never trims
    * or rewraps it.
@@ -346,6 +352,7 @@ export async function getCaregiverAsk(
       originalText: ask.verbatimText,
       careRecipientFirstName: careRecipient.firstName,
       policyVersion: policy.version,
+      autoPublishLowRisk: policy.autoPublishLowRisk,
       sendBackNote: ask.sendBackNote,
       sentBackAt: ask.sentBackAt,
       sentBackByFirstName: sentBackBy.firstName,
@@ -388,6 +395,7 @@ export async function getCaregiverAsk(
     careRecipientFirstName: row.careRecipientFirstName,
     coordinatorFirstName,
     policyVersion: row.policyVersion,
+    autoPublishLowRisk: row.autoPublishLowRisk,
     sendBackNote: row.sendBackNote,
     sentBackAt: row.sentBackAt,
     sentBackByFirstName: row.sentBackByFirstName,

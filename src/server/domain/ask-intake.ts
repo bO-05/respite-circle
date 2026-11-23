@@ -87,9 +87,25 @@ export function validateAskSubmission(input: {
  * The plain receipt sentence. It names the human who reads the words first and
  * promises the one thing the code actually enforces: nothing is published
  * before that person approves it.
+ *
+ * `autoPublishLowRisk` is the switch on the policy version in force for this
+ * ask. Only when it is on does the sentence qualify itself: a meal time from
+ * this ask may reach the congregation board before a person approves that
+ * time. The family's words are still never shown. With the switch off the
+ * sentence is exactly the one the app has always shown.
  */
-export function receiptSentence(coordinatorFirstName: string | null): string {
+export function receiptSentence(
+  coordinatorFirstName: string | null,
+  autoPublishLowRisk = false,
+): string {
   const name = coordinatorFirstName?.trim();
+
+  if (autoPublishLowRisk) {
+    const reader = name ?? "Your coordinator";
+    const they = name ? "she" : "they";
+    const approves = name ? "approves" : "approve";
+    return `${reader} reads every ask. Your words are never shown to anyone else. One exception: under the church's signed low-risk policy, a meal time from this ask may go on the congregation board before ${they} ${approves} that time.`;
+  }
 
   if (name) {
     return `${name} reads every ask first. Nothing is shown to anyone until she approves it.`;
@@ -101,9 +117,22 @@ export function receiptSentence(coordinatorFirstName: string | null): string {
 /**
  * The consent line the caregiver must acknowledge. It names the same human as
  * the receipt, and it describes exactly what the app does with the words.
+ *
+ * The switch qualification follows the same rule as `receiptSentence`: it is
+ * present only while the signed policy in force carries `auto_publish_low_risk`.
  */
-export function consentSentence(coordinatorFirstName: string | null): string {
+export function consentSentence(
+  coordinatorFirstName: string | null,
+  autoPublishLowRisk = false,
+): string {
   const name = coordinatorFirstName?.trim();
+
+  if (autoPublishLowRisk) {
+    const reader = name ?? "my coordinator";
+    const they = name ? "she" : "they";
+    const approves = name ? "approves" : "approve";
+    return `I understand that ${reader} reads this. My words are never shown to anyone else. One exception: under the church's signed low-risk policy, a meal time from this ask may go on the congregation board before ${they} ${approves} that time.`;
+  }
 
   if (name) {
     return `I understand that ${name} reads this first, and that nothing is shown to anyone else unless she approves it.`;

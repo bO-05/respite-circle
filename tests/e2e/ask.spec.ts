@@ -101,8 +101,14 @@ test.describe("caregiver ask intake", () => {
     await expect(textarea).toHaveAttribute("aria-required", "true");
 
     await expect(
-      page.getByLabel(/i understand that Grace reads this first/i),
+      page.getByLabel(
+        "I understand that Grace reads this first, and that nothing is shown to anyone else unless she approves it.",
+      ),
     ).toBeVisible();
+    // The seeded policy's low-risk switch is off, so neither the consent line
+    // nor its help sentence carries the auto-publish exception.
+    await expect(page.getByText(/signed low-risk policy/i)).toHaveCount(0);
+    await expect(page.getByText(/congregation board/i)).toHaveCount(0);
     await expect(
       page.getByText(/these examples are fictional/i),
     ).toBeVisible();
@@ -177,12 +183,18 @@ test.describe("caregiver ask intake", () => {
     await expect(page.getByTestId("ask-status")).toContainText(
       /waiting — Grace reads this first/i,
     );
+    // The switch is off for the seeded church, so the receipt is exactly the
+    // sentence that shipped before the switch existed.
     await expect(
-      page.getByText(/Grace reads every ask first/i).first(),
+      page
+        .getByText(
+          "Grace reads every ask first. Nothing is shown to anyone until she approves it.",
+          { exact: true },
+        )
+        .first(),
     ).toBeVisible();
-    await expect(
-      page.getByText(/nothing is shown to anyone until she approves it/i).first(),
-    ).toBeVisible();
+    await expect(page.getByText(/signed low-risk policy/i)).toHaveCount(0);
+    await expect(page.getByText(/congregation board/i)).toHaveCount(0);
 
     const shown = await page.getByTestId("caregiver-verbatim").textContent();
     expect(shown).toBe(HERO_ASK);

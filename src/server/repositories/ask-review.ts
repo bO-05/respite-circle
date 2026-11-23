@@ -62,7 +62,7 @@ export type PublishedSlot = {
   approvedByName: string | null;
   /**
    * `coordinator`: a person approved this time. `auto_low_risk`: the signed
-   * policy's switch published a meal or an errand, and no person approved it.
+   * policy's switch published a meal, and no person approved it.
    */
   publishedVia: "coordinator" | "auto_low_risk";
 };
@@ -560,8 +560,8 @@ export async function sendBackAsk(
       return { ok: false, reason: "not_waiting", message: guard.message };
     }
 
-    // The low-risk switch can put a meal or an errand on the board before the
-    // ask is approved. That time belongs to this ask, so it can never stay open
+    // The low-risk switch can put a meal on the board before the ask is
+    // approved. That time belongs to this ask, so it can never stay open
     // after a send-back. Lock the rows first so a concurrent claim cannot slip
     // between the read and the withdrawal.
     const autoPublished = await tx

@@ -393,7 +393,8 @@ export function canClaim(
     );
   }
 
-  // Companion, meal, and errand places are open to any active volunteer.
+  // Companion and meal places are open to any active volunteer. `errand` is a
+  // reserved enum value with no producer; the default arm treats it the same.
   return eligible();
 }
 

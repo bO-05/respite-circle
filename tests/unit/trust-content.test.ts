@@ -170,10 +170,12 @@ describe("trust page content", () => {
     );
     expect(publish?.ai).toBe("No");
     // The publishing row must describe the low-risk switch instead of denying
-    // that a time can ever publish without a coordinator's approval.
-    expect(publish?.code).toMatch(/only a meal or an errand/i);
+    // that a time can ever publish without a coordinator's approval, and it
+    // must not offer a kind the app cannot produce.
+    expect(publish?.code).toMatch(/only a meal/i);
     expect(publish?.code).toMatch(/signed policy/i);
     expect(publish?.code).toMatch(/decision log/i);
+    expect(publish?.code).toMatch(/errands are not available yet/i);
     expect(publish?.coordinator).toMatch(/^Yes/);
     expect(publish?.coordinator).toMatch(/switch/i);
   });
@@ -183,10 +185,12 @@ describe("trust page content", () => {
     // it deny that the switch exists once the publishing code reads it.
     expect(TRUST_COPY_STRINGS).toContain(AUTO_PUBLISH_TRUST_NOTE);
     expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/off by default/i);
-    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/meal or an errand/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/one low-risk kind: a meal/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/a meal may appear on the board/i);
     expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/companion place/i);
     expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/drive/i);
     expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/in-home visit/i);
+    expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/errands are not available yet/i);
     expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/signed/i);
     expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/decision log/i);
     expect(AUTO_PUBLISH_TRUST_NOTE).toMatch(/policy version/i);
@@ -197,10 +201,17 @@ describe("trust page content", () => {
     expect(TRUST_COPY_STRINGS).toContain(HOW_IT_WORKS_LEAD);
     expect(TRUST_COPY_STRINGS).toContain(DECIDES_INTRO);
     expect(HOW_IT_WORKS_LEAD).toMatch(/signed policy/i);
-    expect(HOW_IT_WORKS_LEAD).toMatch(/meal or an errand/i);
-    expect(DECIDES_INTRO).toMatch(/meal or an errand/i);
+    expect(HOW_IT_WORKS_LEAD).toMatch(/publish a meal by itself/i);
+    expect(HOW_IT_WORKS_LEAD).toMatch(/errands are not available yet/i);
+    expect(DECIDES_INTRO).toMatch(/exception for a meal/i);
     expect(scanCopy(HOW_IT_WORKS_LEAD)).toEqual([]);
     expect(scanCopy(DECIDES_INTRO)).toEqual([]);
+
+    // No rendered trust sentence may offer an errand again. The only allowed
+    // mention is the plain statement that errands are not available yet.
+    for (const line of TRUST_COPY_STRINGS) {
+      expect(line, line).not.toMatch(/meal or an errand|meal and an errand/i);
+    }
   });
 
   it("lists all eight commitments", () => {

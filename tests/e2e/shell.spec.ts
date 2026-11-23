@@ -53,6 +53,18 @@ test("landing explains the loop and gives the failure path equal weight", async 
     }),
   ).toBeVisible();
 
+  // The loop must not read as "every time waits for a person". One line under
+  // it names the signed meal exception and links to the page that explains it,
+  // so the landing loop and the trust page cannot contradict each other.
+  const qualifier = page.getByTestId("landing-auto-publish-note");
+  await expect(qualifier).toBeVisible();
+  await expect(qualifier).toContainText(/one signed exception/i);
+  await expect(qualifier).toContainText(/a meal on the congregation board/i);
+  await expect(qualifier).toContainText(/errands are not available yet/i);
+  await expect(
+    qualifier.getByRole("link", { name: /how the exception works/i }),
+  ).toHaveAttribute("href", "/how-it-works");
+
   // Equal visual weight is a rendered property, not a copy promise.
   const stepSize = await page
     .getByRole("heading", { name: /you write it in your own words/i })

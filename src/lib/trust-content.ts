@@ -123,7 +123,7 @@ export const DECIDES_ROWS: readonly DecideRow[] = [
   {
     decision: "Publishes a time to the board",
     ai: "No",
-    code: "Only a meal or an errand, and only while a signed policy turns the low-risk switch on. Each automatic publication goes into the decision log with the version it followed.",
+    code: "Only a meal, and only while a signed policy turns the low-risk switch on. Each automatic publication goes into the decision log with the version it followed. Errands are not available yet.",
     coordinator:
       "Yes — a coordinator approves every other time, and signs or turns off the switch.",
   },
@@ -318,7 +318,7 @@ export const NEVER_COMMITMENTS: readonly NeverCommitment[] = [
  * `slot-construction.ts` and `repositories/policy.ts`.
  */
 export const AUTO_PUBLISH_TRUST_NOTE =
-  "The policy carries a switch for the two low-risk kinds. It is off by default. Only a signed policy version can turn it on, and it takes a named person signing it. While it is on, a meal or an errand may appear on the board without a coordinator approving that time; a companion place, a drive, and an in-home visit never do. Every automatic publication, and every change to the switch, is written into the decision log with the policy version it followed.";
+  "The policy carries a switch for one low-risk kind: a meal. It is off by default. Only a signed policy version can turn it on, and it takes a named person signing it. While it is on, a meal may appear on the board without a coordinator approving that time; a companion place, a drive, and an in-home visit never do. Errands are not available yet, so no errand time is ever built. Every automatic publication, and every change to the switch, is written into the decision log with the policy version it followed.";
 
 /**
  * The two sentences that introduce the loop on `/how-it-works`. They live here
@@ -326,10 +326,10 @@ export const AUTO_PUBLISH_TRUST_NOTE =
  * quietly keep the old claim that only a person ever offers a time.
  */
 export const HOW_IT_WORKS_LEAD =
-  "A computer reads your words into nine typed answers. Plain code turns those answers into a few possible times. A named person decides what is offered, except that a signed policy may publish a meal or an errand by itself. A person calls when a time goes unclaimed.";
+  "A computer reads your words into nine typed answers. Plain code turns those answers into a few possible times. A named person decides what is offered, except that a signed policy may publish a meal by itself. A person calls when a time goes unclaimed. Errands are not available yet.";
 
 export const DECIDES_INTRO =
-  "Three things happen in order. The model answers. Plain code follows fixed rules. A person decides what reaches the board, with one signed exception for a meal or an errand.";
+  "Three things happen in order. The model answers. Plain code follows fixed rules. A person decides what reaches the board, with one signed exception for a meal.";
 
 /** Every sentence the two pages render, for the banned-claim scan. */
 export const TRUST_COPY_STRINGS: readonly string[] = [

@@ -37,7 +37,7 @@ export type PolicyEditorSubmission = {
   reminderWindowHours: string;
   callThresholdHours: string;
   callAfterOpenHours: string;
-  /** The low-risk meal/errand switch, as the checkbox submits it. */
+  /** The low-risk meal switch, as the checkbox submits it. */
   autoPublishLowRisk: boolean;
   signedOffBy: string;
   loosenConfirmation: string;

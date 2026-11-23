@@ -146,6 +146,29 @@ export async function getPolicyInForce(
 }
 
 /**
+ * The one policy fact a caregiver-facing sentence needs: whether the version in
+ * force has the low-risk auto-publish switch on. The projection is deliberately
+ * one boolean — the crisis script and referrals never leave the desk.
+ *
+ * `churchId` must come from the resolved session. The same signed-version
+ * filter as `getPolicyInForce` decides which row answers: an unsigned draft
+ * with the flag set changes nothing.
+ */
+export async function isAutoPublishLowRiskInForce(
+  churchId: string,
+  database: AppDatabase = appDb,
+): Promise<boolean> {
+  const rows = await database
+    .select({ autoPublishLowRisk: policy.autoPublishLowRisk })
+    .from(policy)
+    .where(signedPolicyFilter(churchId))
+    .orderBy(desc(policy.version))
+    .limit(1);
+
+  return rows[0]?.autoPublishLowRisk === true;
+}
+
+/**
  * The coordinator's (or deputy's) full copy, including crisis and referral
  * content. This is the only projection that may reach a desk screen.
  */

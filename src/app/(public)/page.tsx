@@ -16,7 +16,7 @@ const STEPS = [
   },
   {
     title: "A person approves what is offered",
-    body: "A named coordinator reads every word. Nothing reaches a neighbour until that person has decided what, if anything, can be offered.",
+    body: "A named coordinator reads every word and decides what, if anything, is offered. A signed church policy can put a meal on the board before that decision; nothing else can.",
   },
   {
     title: "A neighbour claims a time",
@@ -74,7 +74,8 @@ export default function HomePage() {
           How a hard week becomes a few hours
         </h2>
         <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
-          Three steps, and a person holds every one of them.
+          Three steps, and a person holds the loop — with one signed exception
+          for a meal.
         </p>
 
         <ol className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -96,6 +97,22 @@ export default function HomePage() {
             </li>
           ))}
         </ol>
+
+        <p
+          data-testid="landing-auto-publish-note"
+          className="mt-4 max-w-prose text-base leading-relaxed text-ink-muted"
+        >
+          One signed exception: a church policy can put a meal on the
+          congregation board without a person approving that time first.
+          Errands are not available yet.{" "}
+          <Link
+            href="/how-it-works"
+            className="font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            Read how the exception works
+          </Link>
+          .
+        </p>
       </section>
 
       <section

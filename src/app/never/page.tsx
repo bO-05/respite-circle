@@ -53,7 +53,7 @@ export default function NeverPage() {
           id="never-auto-publish-heading"
           className="font-serif text-2xl leading-snug text-ink"
         >
-          No automatic time beyond a meal or an errand
+          No automatic time beyond a meal
         </h2>
         <p className="mt-3 max-w-prose text-lg leading-relaxed text-ink">
           {AUTO_PUBLISH_TRUST_NOTE}

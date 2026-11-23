@@ -9,6 +9,7 @@ import {
   listCaregiverInvites,
   markCaregiverInvitesSeen,
 } from "@/server/repositories/invites";
+import { isAutoPublishLowRiskInForce } from "@/server/repositories/policy";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +31,13 @@ export default async function AskPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { person, session } = await requirePage(CAREGIVER_ROLES);
-  const [coordinatorFirstName, invites, query] = await Promise.all([
-    findCoordinatorFirstName(session.churchId),
-    listCaregiverInvites(session),
-    searchParams,
-  ]);
+  const [coordinatorFirstName, invites, autoPublishLowRisk, query] =
+    await Promise.all([
+      findCoordinatorFirstName(session.churchId),
+      listCaregiverInvites(session),
+      isAutoPublishLowRiskInForce(session.churchId),
+      searchParams,
+    ]);
   const again = typeof query.again === "string";
   const unseenInvite = invites.find((invite) => invite.seenAt === null) ?? null;
   if (unseenInvite) {
@@ -43,9 +46,16 @@ export default async function AskPage({
     await markCaregiverInvitesSeen(session).catch(() => undefined);
   }
 
-  const lead = coordinatorFirstName
-    ? `Tell us in your own words. ${coordinatorFirstName} reads it first, before anyone else sees a time.`
-    : "Tell us in your own words. Your coordinator reads it first, before anyone else sees a time.";
+  // The lead makes the same promise as the consent line below it. While the
+  // signed policy has the low-risk switch on, "before anyone else sees a time"
+  // is no longer true, so the sentence names the one exception instead.
+  const lead = autoPublishLowRisk
+    ? coordinatorFirstName
+      ? `Tell us in your own words. ${coordinatorFirstName} reads what you write, and your words are never shown to anyone else. Under the church's signed low-risk policy, a meal time from your ask may go on the congregation board before she approves that time.`
+      : "Tell us in your own words. Your coordinator reads what you write, and your words are never shown to anyone else. Under the church's signed low-risk policy, a meal time from your ask may go on the congregation board before they approve that time."
+    : coordinatorFirstName
+      ? `Tell us in your own words. ${coordinatorFirstName} reads it first, before anyone else sees a time.`
+      : "Tell us in your own words. Your coordinator reads it first, before anyone else sees a time.";
 
   return (
     <RolePage
@@ -63,7 +73,10 @@ export default async function AskPage({
           {askAgainHint()}
         </p>
       ) : null}
-      <AskForm coordinatorFirstName={coordinatorFirstName} />
+      <AskForm
+        coordinatorFirstName={coordinatorFirstName}
+        autoPublishLowRisk={autoPublishLowRisk}
+      />
     </RolePage>
   );
 }

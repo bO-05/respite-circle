@@ -202,8 +202,10 @@ const CONTRAST_FN = `
 const TARGETS_FN = `
   (() => {
     const out = [];
+    // A checkbox is a control in its own right. The label row around it is
+    // clickable, but the 44x44 rule is measured on the input itself.
     const nodes = document.querySelectorAll(
-      'button, [role="button"], a[data-primary-action]'
+      'button, [role="button"], a[data-primary-action], input[type="checkbox"]'
     );
     for (const el of Array.from(nodes)) {
       const style = getComputedStyle(el);
@@ -381,6 +383,30 @@ test("every primary action measures at least 44 by 44 CSS pixels", async ({
   // measured across the app, not just one screen.
   const total = Array.from(checked.values()).reduce((sum, n) => sum + n, 0);
   expect(total).toBeGreaterThan(10);
+});
+
+test("the consent and low-risk checkboxes measure 44 by 44 themselves", async ({
+  browser,
+}) => {
+  // Both boxes sit inside a clickable label row. The row is not the control:
+  // a strict reading of the 44x44 rule measures the input's own box.
+  const caregiver = await signIn(browser, seedAccessTokens.marta);
+  await caregiver.page.goto("/ask");
+  const consent = caregiver.page.locator("#ask-consent");
+  await expect(consent).toBeVisible();
+  const consentBox = await consent.boundingBox();
+  expect(consentBox?.width ?? 0, "consent checkbox width").toBeGreaterThanOrEqual(44);
+  expect(consentBox?.height ?? 0, "consent checkbox height").toBeGreaterThanOrEqual(44);
+  await caregiver.context.close();
+
+  const coordinator = await signIn(browser, seedAccessTokens.grace);
+  await coordinator.page.goto("/desk/policy");
+  const toggle = coordinator.page.locator("#policy-auto-publish");
+  await expect(toggle).toBeVisible();
+  const toggleBox = await toggle.boundingBox();
+  expect(toggleBox?.width ?? 0, "auto-publish checkbox width").toBeGreaterThanOrEqual(44);
+  expect(toggleBox?.height ?? 0, "auto-publish checkbox height").toBeGreaterThanOrEqual(44);
+  await coordinator.context.close();
 });
 
 test("text and controls meet WCAG AA contrast on every measured screen", async ({

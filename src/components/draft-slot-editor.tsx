@@ -283,7 +283,7 @@ export function DraftSlotCard({
             data-testid="draft-gated-flag"
             type="checkbox"
             defaultChecked={slot.gated}
-            className="mt-1 size-6 rounded border border-line"
+            className="mt-1 size-11 rounded border border-line"
           />
           <label htmlFor={`${slot.id}-gated`} className="text-base text-ink">
             Gated — a neighbour needs the in-home checks or the driver policy

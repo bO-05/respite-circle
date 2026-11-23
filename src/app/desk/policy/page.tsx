@@ -138,7 +138,7 @@ export default async function DeskPolicyPage() {
                 <dt className="font-semibold text-ink">Auto-publish low-risk</dt>
                 <dd>
                   {current.autoPublishLowRisk
-                    ? "On — meal and errand times only; each one is in the decision log"
+                    ? "On — meal times only; each one is in the decision log"
                     : "Off — every time waits for a person"}
                 </dd>
               </div>
@@ -540,14 +540,13 @@ export default async function DeskPolicyPage() {
                   value="on"
                   defaultChecked={current.autoPublishLowRisk}
                   aria-describedby="policy-auto-publish-help"
-                  className="mt-1 h-6 w-6 shrink-0 rounded border border-line bg-surface"
+                  className="mt-1 h-11 w-11 shrink-0 rounded border border-line bg-surface"
                 />
                 <label
                   htmlFor="policy-auto-publish"
                   className="text-base font-semibold text-ink"
                 >
-                  Publish a meal or an errand automatically, under this signed
-                  policy
+                  Publish a meal automatically, under this signed policy
                 </label>
               </div>
               <p

@@ -98,26 +98,63 @@ describe("ask submission validation", () => {
 });
 
 describe("ask copy", () => {
-  it("names the coordinator and says she reads it first", () => {
-    const sentence = receiptSentence("Grace");
-
-    expect(sentence).toMatch(/^Grace reads every ask first\./);
-    expect(sentence).toMatch(/Nothing is shown to anyone until she approves it\./);
+  it("keeps today's receipt sentence exactly while the switch is off", () => {
+    expect(receiptSentence("Grace")).toBe(
+      "Grace reads every ask first. Nothing is shown to anyone until she approves it.",
+    );
+    expect(receiptSentence("Grace", false)).toBe(receiptSentence("Grace"));
   });
 
   it("never pretends a named person exists when the church has none", () => {
     const sentence = receiptSentence(null);
 
-    expect(sentence).toMatch(/your coordinator reads every ask first/i);
+    expect(sentence).toBe(
+      "Your coordinator reads every ask first. Nothing is shown to anyone until they approve it.",
+    );
     expect(sentence).not.toContain("null");
   });
 
-  it("states the consent line in the first person and names the reader", () => {
-    const sentence = consentSentence("Grace");
+  it("keeps today's consent line exactly while the switch is off", () => {
+    expect(consentSentence("Grace")).toBe(
+      "I understand that Grace reads this first, and that nothing is shown to anyone else unless she approves it.",
+    );
+    expect(consentSentence(null)).toBe(
+      "I understand that my coordinator reads this first, and that nothing is shown to anyone else unless they approve it.",
+    );
+    expect(consentSentence("Grace", false)).toBe(consentSentence("Grace"));
+  });
 
-    expect(sentence).toMatch(/^I understand that Grace reads this first/);
-    expect(sentence).toMatch(/nothing is shown to anyone else/i);
-    expect(consentSentence(null)).toMatch(/my coordinator reads this first/i);
+  it("qualifies the consent line only while the signed policy switch is on", () => {
+    const sentence = consentSentence("Grace", true);
+
+    expect(sentence).toMatch(/Grace reads this\./);
+    // The words are still never shown; the exception is a meal time, named.
+    expect(sentence).toMatch(/my words are never shown to anyone/i);
+    expect(sentence).toMatch(/signed low-risk policy/i);
+    expect(sentence).toMatch(/meal time from this ask may go on the congregation board/i);
+    expect(sentence).toMatch(/before she approves that time/i);
+    // The pre-switch promise that she reads it "first" is no longer true.
+    expect(sentence).not.toMatch(/reads this first/i);
+
+    const unnamed = consentSentence(null, true);
+    expect(unnamed).toMatch(/my coordinator reads this\./);
+    expect(unnamed).toMatch(/before they approve that time/i);
+  });
+
+  it("qualifies the receipt sentence only while the signed policy switch is on", () => {
+    const sentence = receiptSentence("Grace", true);
+
+    expect(sentence).toMatch(/Grace reads every ask\./);
+    expect(sentence).toMatch(/your words are never shown to anyone/i);
+    expect(sentence).toMatch(/signed low-risk policy/i);
+    expect(sentence).toMatch(/meal time from this ask may go on the congregation board/i);
+    expect(sentence).toMatch(/before she approves that time/i);
+    expect(sentence).not.toMatch(/reads every ask first/i);
+
+    const unnamed = receiptSentence(null, true);
+    expect(unnamed).toMatch(/your coordinator reads every ask\./i);
+    expect(unnamed).toMatch(/before they approve that time/i);
+    expect(unnamed).not.toContain("null");
   });
 
   it("counts characters without judging them", () => {
