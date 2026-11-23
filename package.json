@@ -17,6 +17,8 @@
     "test:unit": "vitest run --config vitest.unit.config.ts --pool=forks --maxWorkers=2",
     "test:integration": "vitest run --config vitest.integration.config.ts --pool=forks --maxWorkers=1",
     "test:e2e": "playwright test --workers=1",
+    "pretest:e2e": "node scripts/free-port.mjs",
+    "posttest:e2e": "node scripts/free-port.mjs",
     "calibrate": "npx tsx scripts/calibrate.ts",
     "calibrate:baseline": "npx tsx scripts/calibrate.ts --baseline",
     "db:generate": "npx drizzle-kit generate",

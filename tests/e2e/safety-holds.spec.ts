@@ -210,7 +210,12 @@ test.describe("safety and personal-care routing", () => {
     const boardHtml = await ruth.page.content();
     expect(boardHtml).not.toContain(askId);
     expect(boardHtml).not.toContain("wander out of the house");
-    expect(boardHtml).not.toMatch(/Companion place at Respite Morning/);
+    // The seeded demo time is published on this board, so its label cannot
+    // prove what is absent. The held ask's id and words are the specific
+    // values that must not appear, and `slotCount` above proves it has no
+    // slot. This positive control keeps the absence check from passing on a
+    // blank or failed render.
+    expect(boardHtml).toContain("Companion place at Respite Morning");
 
     const boardResponse = await ruth.context.request.get("/circle");
     const payload = await boardResponse.text();

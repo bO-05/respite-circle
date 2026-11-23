@@ -1,15 +1,17 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { loadEnvLocal } from "../src/db/env";
-import { resetDemoDatabase } from "../src/db/reset";
 import * as schema from "../src/db/schema";
-import type { SeedDb } from "../src/db/seed";
+import type { SeedDb } from "../src/db/seed-core";
 import { assertWritableTarget, requireDirectUrl } from "../src/db/target";
-import { verifySeed } from "./verify-seed";
+import { COUNTED_TABLES } from "../src/db/counts";
+import { runDemoReset } from "../src/server/services/demo-reset";
 
 /**
- * Wipe the demo tables and reseed the deterministic cast. Refuses to touch the
- * app database without `RC_SEED_ALLOW_REMOTE=1` (see src/db/target.ts).
+ * Wipe the demo tables, reseed the deterministic cast, write the demo-ready
+ * asks and published times, and verify twelve assertions before reporting
+ * success. Refuses to touch the app database without `RC_SEED_ALLOW_REMOTE=1`
+ * (see src/db/target.ts); the isolated test database needs `RC_DB_BRANCH=e2e`.
  */
 async function main(): Promise<void> {
   loadEnvLocal();
@@ -29,24 +31,29 @@ async function main(): Promise<void> {
 
   try {
     const db = drizzle(client, { schema }) as SeedDb;
-    await resetDemoDatabase(db);
+    const result = await runDemoReset(db);
 
-    const result = await verifySeed(db);
     if (!result.ok) {
-      console.error("Reset completed but seed verification failed:");
+      console.error("Demo reset failed; success was not reported.");
       for (const failure of result.failures) {
-        console.error(`  - ${failure}`);
+        console.error(`  - [${failure.id}] ${failure.message}`);
       }
       process.exitCode = 1;
       return;
     }
 
-    console.log("Demo reset: tables truncated, Grace Community Church reseeded.");
     console.log(
-      Object.entries(result.counts)
-        .map(([table, value]) => `${table}=${value}`)
-        .join(" "),
+      `Demo reset: tables truncated, ${result.church} reseeded with the demo-ready board.`,
     );
+    console.log(
+      COUNTED_TABLES.map(
+        (table) => `${table}=${result.counts[table] ?? 0}`,
+      ).join(" "),
+    );
+    console.log(
+      `Assertions: ${result.assertions.passed}/${result.assertions.total} passed.`,
+    );
+    console.log(`Seed digest: ${result.seedDigest}`);
   } finally {
     await client.end();
   }

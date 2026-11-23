@@ -5,6 +5,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { loadEnvLocal } from "../../src/db/env";
 import { assertE2eTarget } from "../../src/db/target";
+import { E2E_BASE_URL } from "./helpers/e2e-env";
 
 /**
  * Playwright's one-time fixture.
@@ -50,4 +51,21 @@ export default async function setup(): Promise<void> {
       RC_DB_BRANCH: "e2e",
     },
   });
+
+  // The reset above warms the database through its own connection. Warm the
+  // app server's pooled connection too, so the first spec's cold write is not
+  // paying the Neon wake and a fresh TLS handshake. When Playwright starts the
+  // webServer after global setup, the fetch below fails immediately and
+  // `ask.spec.ts` warms the server from inside the run instead.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(`${E2E_BASE_URL}/api/health`, {
+        signal: AbortSignal.timeout(25_000),
+      });
+      if (response.ok) break;
+    } catch {
+      // No server yet; the spec's own warm-up covers it.
+      break;
+    }
+  }
 }

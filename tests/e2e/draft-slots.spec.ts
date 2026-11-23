@@ -576,6 +576,7 @@ test.describe("draft slot editor", () => {
 
     const rows = await draftsFor(db, askId);
     const labels = rows.map((row) => row.label);
+    const draftIds = rows.map((row) => row.id);
     expect(labels).toHaveLength(2);
 
     const [publishedRows] = await db.client<{ count: number }[]>`
@@ -603,18 +604,31 @@ test.describe("draft slot editor", () => {
       const response = await ruth.page.goto(route);
       expect(response?.status()).toBe(200);
       const body = await ruth.page.locator("body").innerText();
-      for (const label of labels) {
-        expect(body).not.toContain(label);
+      // The seeded demo time is published on this board, and a demo rule can
+      // produce the same label as this ask's draft. A label therefore cannot
+      // prove absence; the draft slot ids and this ask's own words are the
+      // specific values that must not appear.
+      for (const id of draftIds) {
+        expect(body).not.toContain(id);
       }
       expect(body).not.toContain(HERO_ASK);
       expect(body).not.toContain("I haven't had a Saturday morning");
 
-      // Raw HTML, including the RSC payload, has no draft label either.
+      // Raw HTML, including the RSC payload, leaks no draft id either.
       const raw = await ruth.context.request.get(route);
       expect(raw.status()).toBe(200);
       const html = await raw.text();
-      for (const label of labels) {
-        expect(html).not.toContain(label);
+      for (const id of draftIds) {
+        expect(html).not.toContain(id);
+      }
+      if (route === "/circle") {
+        // The seeded demo time proves the board rendered; the draft ids
+        // above are what actually must be missing from it.
+        expect(
+          await ruth.page
+            .locator('[data-testid="board-open"], [data-testid="board-taken"]')
+            .count(),
+        ).toBeGreaterThan(0);
       }
     }
     await shot(ruth.page, "draft-absent-volunteer-board");

@@ -72,11 +72,20 @@ async function readAsk(
     : null;
 }
 
+test.describe.configure({ timeout: 120_000 });
+
 test.describe("caregiver ask intake", () => {
   let db: E2eDatabase;
 
-  test.beforeAll(async () => {
+  test.beforeAll(async ({ request }) => {
     db = await openE2eDatabase();
+    // The first POST /api/asks of a run pays the app pool's cold Neon wake and
+    // a fresh TLS handshake (measured 5.4-5.6 s, with the decision run and
+    // slot construction on top). Warm the server's own connection once here so
+    // the first cold write cannot time out and a retry is never what makes
+    // this spec green.
+    const warm = await request.get("/api/health", { timeout: 45_000 });
+    expect(warm.ok()).toBe(true);
   });
 
   test.afterAll(async () => {

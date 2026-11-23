@@ -1,5 +1,5 @@
-import type { SeedDb } from "./seed";
-import { seedDatabase } from "./seed";
+import type { SeedDb } from "./seed-core";
+import { seedDatabase } from "./seed-core";
 
 /**
  * Every app table, in dependency order. One TRUNCATE statement lets Postgres

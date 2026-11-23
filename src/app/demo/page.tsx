@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicPage } from "@/components/public-page";
 import {
@@ -78,6 +79,19 @@ export default async function DemoPage() {
             </section>
           ))
         )}
+
+        <p className="max-w-prose text-base leading-relaxed text-ink-muted">
+          Between walkthroughs, the demo operator can restore the seeded cast,
+          the published board, and the failure path with{" "}
+          <Link
+            href="/demo/reset"
+            data-testid="demo-reset-link"
+            className="font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            the demo reset page
+          </Link>
+          .
+        </p>
       </PublicPage>
     </>
   );

@@ -5,13 +5,17 @@ import {
   databaseNameFromUrl,
   E2E_DATABASE_NAME,
 } from "./src/db/target";
+import {
+  E2E_BASE_URL,
+  E2E_RESET_TOKEN,
+  E2E_SESSION_SECRET,
+} from "./tests/e2e/helpers/e2e-env";
 
 // The Playwright config process does not run inside Next, so `.env.local` is
 // not loaded for it. Load it before reading the test database strings.
 loadEnvLocal();
 
-const PORT = 3130;
-const BASE_URL = `http://127.0.0.1:${PORT}`;
+const BASE_URL = E2E_BASE_URL;
 
 // Ask intake writes rows. The suite therefore runs against the isolated
 // `respite_circle_e2e` database and never against the demo database `neondb`.
@@ -61,7 +65,9 @@ export default defineConfig({
     command: "npm run build && npm run start",
     // Use 127.0.0.1, never localhost: localhost can resolve to ::1 while
     // `next start` binds IPv4 only, and the run hangs waiting for the socket.
-    url: BASE_URL,
+    // Wait for the database check, not just the socket: the first poll also
+    // warms the server's pooled connection.
+    url: `${BASE_URL}/api/health`,
     reuseExistingServer: process.env.PW_REUSE === "1",
     timeout: 240_000,
     env: {
@@ -70,7 +76,10 @@ export default defineConfig({
       // run without it and the route answers 404.
       RC_E2E: "1",
       RC_DEMO_MODE: "1",
-      RC_DEMO_RESET_TOKEN: "e2e-reset-token",
+      RC_DEMO_RESET_TOKEN: E2E_RESET_TOKEN,
+      // A fixed, recognisable value so `secrets.spec.ts` can prove this exact
+      // string never reaches `.next/static`. Test-only; never used in prod.
+      SESSION_SECRET: E2E_SESSION_SECRET,
       // No network, no tokens, no flake: the rules engine answers the nine
       // typed questions in the E2E suite.
       LLM_PROVIDER: "deterministic",
