@@ -141,6 +141,26 @@ export function consentSentence(
   return "I understand that my coordinator reads this first, and that nothing is shown to anyone else unless they approve it.";
 }
 
+/**
+ * The receipt line for a sent-back ask. With the low-risk switch off it is the
+ * sentence the app has always shown. With it on, "nothing was published" is no
+ * longer true: a meal time from this ask may have been on the congregation
+ * board and is taken down by the send-back, so the sentence says exactly that
+ * without claiming the words were ever shared.
+ */
+export function sentBackReceiptSentence(
+  senderFirstName: string | null,
+  autoPublishLowRisk = false,
+): string {
+  const sender = senderFirstName?.trim() || "Your coordinator";
+
+  if (autoPublishLowRisk) {
+    return `${sender} read your words and sent this back with a note. Your words stay private. No time from this ask is on the congregation board now — any meal time that had been put there is taken down with the ask.`;
+  }
+
+  return `${sender} read your words and sent this back with a note. Nothing was shared with a neighbour, and nothing was published.`;
+}
+
 /** A quiet character count, with the limit stated only once it is exceeded. */
 export function characterCountLabel(
   length: number,

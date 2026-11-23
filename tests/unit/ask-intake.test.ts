@@ -5,6 +5,7 @@ import {
   consentSentence,
   MAX_ASK_LENGTH,
   receiptSentence,
+  sentBackReceiptSentence,
   validateAskSubmission,
 } from "@/server/domain/ask-intake";
 import {
@@ -155,6 +156,34 @@ describe("ask copy", () => {
     expect(unnamed).toMatch(/your coordinator reads every ask\./i);
     expect(unnamed).toMatch(/before they approve that time/i);
     expect(unnamed).not.toContain("null");
+  });
+
+  it("keeps today's send-back receipt exactly while the switch is off", () => {
+    expect(sentBackReceiptSentence("Grace")).toBe(
+      "Grace read your words and sent this back with a note. Nothing was shared with a neighbour, and nothing was published.",
+    );
+    expect(sentBackReceiptSentence("Grace", false)).toBe(
+      sentBackReceiptSentence("Grace"),
+    );
+    expect(sentBackReceiptSentence(null)).toMatch(
+      /^Your coordinator read your words/,
+    );
+  });
+
+  it("never says nothing was published when a meal may have been on the board", () => {
+    const sentence = sentBackReceiptSentence("Grace", true);
+
+    expect(sentence).toMatch(/your words stay private/i);
+    expect(sentence).toMatch(
+      /no time from this ask is on the congregation board now/i,
+    );
+    expect(sentence).toMatch(
+      /any meal time that had been put there is taken down/i,
+    );
+    // The pre-switch claim is no longer true while the switch is on.
+    expect(sentence).not.toMatch(/nothing was published/i);
+    expect(sentence).not.toMatch(/nothing was shared with a neighbour/i);
+    expect(sentence).not.toContain("null");
   });
 
   it("counts characters without judging them", () => {

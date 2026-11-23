@@ -581,6 +581,12 @@ describe("the deputy and the low-risk auto-publish setting", () => {
     expect(sentBack.ok).toBe(true);
     if (!sentBack.ok) return;
 
+    // The desk is told what happened without the old false claim: a time was
+    // published, and this send-back took it down.
+    expect(sentBack.withdrawnCount).toBe(1);
+    expect(sentBack.message).toMatch(/nothing new was published/i);
+    expect(sentBack.message).not.toMatch(/nothing was published/i);
+
     const [withdrawn] = await slotRows(t, otherAsk);
     expect(withdrawn.status).toBe("cancelled");
 

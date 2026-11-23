@@ -390,6 +390,12 @@ test("a deputy carries the desk, the switch is audited, and only a meal publishe
     await expect(
       caregiver.page.getByText(/may go on the congregation board/i).first(),
     ).toBeVisible();
+    // The status pill is part of the receipt. A time from this ask can already
+    // be on the board, so the pill must not claim the coordinator read it
+    // first (the seeded-church ask spec pins the unqualified off-state pill).
+    const receiptStatus = caregiver.page.getByTestId("ask-status");
+    await expect(receiptStatus).toContainText(/waiting — ada reads this/i);
+    await expect(receiptStatus).not.toContainText(/reads this first/i);
     await shot(caregiver.page, "02c-caregiver-qualified-receipt");
 
     const mealSlots = await slotsFor(db, mealAskId);

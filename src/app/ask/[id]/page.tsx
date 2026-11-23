@@ -7,7 +7,10 @@ import {
 import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
-import { receiptSentence } from "@/server/domain/ask-intake";
+import {
+  receiptSentence,
+  sentBackReceiptSentence,
+} from "@/server/domain/ask-intake";
 import { askAgainLinkLabel } from "@/server/domain/closure";
 import {
   bilingualHandoffSentence,
@@ -22,11 +25,13 @@ export const dynamic = "force-dynamic";
  * The caregiver's receipt, extended with the decision trail.
  *
  * The receipt the caregiver already knows stays first: the status pill, the
- * exact words, and the sentence naming the person who reads them are
- * unchanged. Below them the page shows the nine typed answers for the *latest*
- * revision only, plus the model metadata, the policy version, and the digest.
- * There is no model prose anywhere on this page, and no edit control for the
- * words.
+ * exact words, and the sentence naming the person who reads them. The pill and
+ * that sentence qualify themselves only while the ask's signed policy has the
+ * low-risk switch on, because a meal time can then reach the congregation
+ * board before a person approves it. Below them the page shows the nine typed
+ * answers for the *latest* revision only, plus the model metadata, the policy
+ * version, and the digest. There is no model prose anywhere on this page, and
+ * no edit control for the words.
  */
 
 type StatusCopy = { label: string; tone: "amber" | "green" | "ink" };
@@ -35,12 +40,21 @@ function statusCopy(
   status: AskStatus,
   coordinatorFirstName: string | null,
   sentBackByFirstName: string | null,
+  autoPublishLowRisk: boolean,
 ): StatusCopy {
   const name = coordinatorFirstName ?? "Your coordinator";
 
   switch (status) {
     case "waiting_coordinator":
-      return { label: `Waiting — ${name} reads this first`, tone: "amber" };
+      // While the signed low-risk switch is on, a meal time from this ask can
+      // be on the congregation board before the coordinator has read the ask.
+      // "Reads this first" would then be a promise the code no longer keeps.
+      return {
+        label: autoPublishLowRisk
+          ? `Waiting — ${name} reads this`
+          : `Waiting — ${name} reads this first`,
+        tone: "amber",
+      };
     case "safety_hold":
       return { label: `${name} will call you today`, tone: "amber" };
     case "care_hold":
@@ -105,6 +119,7 @@ export default async function AskReceiptPage({
     receipt.status,
     name,
     receipt.sentBackByFirstName,
+    receipt.autoPublishLowRisk,
   );
   const reader = name ?? "your coordinator";
   const sender = receipt.sentBackByFirstName ?? name ?? "Your coordinator";
@@ -193,8 +208,10 @@ export default async function AskReceiptPage({
             A note from {sender}
           </h2>
           <p className="max-w-prose text-lg leading-relaxed text-ink">
-            {sender} read your words and sent this back with a note. Nothing was
-            shared with a neighbour, and nothing was published.
+            {sentBackReceiptSentence(
+              receipt.sentBackByFirstName ?? name,
+              receipt.autoPublishLowRisk,
+            )}
           </p>
           <blockquote
             data-testid="send-back-note-body"

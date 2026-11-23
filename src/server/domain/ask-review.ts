@@ -165,8 +165,13 @@ export function formatApprovalLine(input: {
 // Action copy and the form state shared by the server action and its client
 // ---------------------------------------------------------------------------
 
+/**
+ * Sent back. "Nothing new" is the true claim while the low-risk switch exists:
+ * a meal time already published is withdrawn by the send-back, which the desk
+ * form names before the coordinator writes the note.
+ */
 export const SEND_BACK_SUCCESS_MESSAGE =
-  "Sent back with your note. Nothing was published. The family will see your words exactly as you wrote them.";
+  "Sent back with your note. Nothing new was published, and every draft stayed private. The family will see your words exactly as you wrote them.";
 
 export const APPROVE_SUCCESS_MESSAGE =
   "Approved. The times that were ready are open on the congregation board.";

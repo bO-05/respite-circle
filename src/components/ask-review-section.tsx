@@ -312,7 +312,7 @@ export function AskReviewSection({
                   timeZone,
                 )}`
               : ""}
-            . Nothing was published, and every draft stayed private.
+            . Nothing new was published, and every draft stayed private.
           </p>
         </div>
 
