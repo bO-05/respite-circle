@@ -4,6 +4,13 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnvLocal } from "../src/db/env";
 import { seedQuestionSet } from "../src/db/seed-data";
+import { parsePublishedCalibration } from "../src/server/calibration/published";
+import {
+  runCalibrationCases,
+  type CalibrationCaseRun,
+  type CalibrationMode,
+  type CalibrationRun,
+} from "../src/server/calibration/runner";
 import {
   CALIBRATION_RESULT_FILES,
   CALIBRATION_SOURCE_LABEL,
@@ -11,7 +18,6 @@ import {
   calibrationQuestionSetLabel,
   combineCalibrationCases,
   parseCalibrationDataset,
-  predictSlotKinds,
   scoreCalibration,
   type CalibrationCase,
   type CalibrationOutcome,
@@ -22,7 +28,6 @@ import { renderCalibrationMarkdown } from "../src/server/domain/calibration-repo
 import { PROMPT_VERSION } from "../src/server/services/decision-contract";
 import { decide } from "../src/server/services/decide";
 import {
-  createDeterministicProvider,
   resolveProviderName,
   selectProvider,
 } from "../src/server/services/providers";
@@ -47,14 +52,6 @@ import {
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const LIVE_SUCCESS_THRESHOLD = 0.9;
-
-type Mode = "live" | "baseline";
-
-type RunResult = {
-  outcomes: CalibrationOutcome[];
-  attemptedCount: number;
-  liveSuccessCount: number;
-};
 
 function readCases(): CalibrationCase[] {
   const files = ["data/calibration.json", "data/personal-care-cases.json"];
@@ -122,73 +119,25 @@ function engineOutcomes(
   return attempted.length > 0 ? attempted : outcomes;
 }
 
+function logCase(run: CalibrationCaseRun): void {
+  const kinds =
+    run.outcome.predictedKinds.length === 0
+      ? "no slots"
+      : run.outcome.predictedKinds.join("+");
+  console.log(
+    `[${String(run.index + 1).padStart(2, " ")}/${run.total}] ${run.caseId} ${run.outcome.provider}/${run.outcome.model} ${run.outcome.latencyMs}ms ${run.routingStatus} -> ${kinds}`,
+  );
+}
+
 async function runCases(
   cases: readonly CalibrationCase[],
-  mode: Mode,
+  mode: CalibrationMode,
   env: NodeJS.ProcessEnv,
-): Promise<RunResult> {
-  const provider =
-    mode === "baseline" ? createDeterministicProvider() : selectProvider(env);
-  const outcomes: CalibrationOutcome[] = [];
-  let attemptedCount = 0;
-  let liveSuccessCount = 0;
-
-  for (const [index, entry] of cases.entries()) {
-    const result = await decide({
-      askText: entry.ask,
-      questions: seedQuestionSet,
-      provider,
-      env,
-    });
-
-    const routing = result.routing;
-    const providerAttempted = result.engine !== "routing";
-    const invalidResponse =
-      mode === "live" && providerAttempted && result.engine !== "live";
-    if (providerAttempted) attemptedCount += 1;
-    if (mode === "live" && result.engine === "live" && !result.samplesIncomplete) {
-      liveSuccessCount += 1;
-    }
-
-    const outcome: CalibrationOutcome = {
-      id: entry.id,
-      predictedKinds: predictSlotKinds(result.decisions, routing),
-      // A routing guard (non-English, empty, contract check) abstains on every
-      // question without a provider call; that abstention is not evidence of a
-      // safety or personal-care finding, so only evaluated answers raise flags.
-      safetyFlagged: providerAttempted ? routing.safetyReview : false,
-      personalCareFlagged: providerAttempted ? routing.personalCareReview : false,
-      bilingual: routing.bilingualNeeded,
-      routingStatus: routing.status,
-      abstained: result.decisions.some((decision) => decision.abstained),
-      abstentionCount: result.decisions.filter(
-        (decision) => decision.abstained,
-      ).length,
-      samples:
-        result.decisions.length === 0
-          ? 0
-          : Math.max(...result.decisions.map((decision) => decision.samples)),
-      latencyMs: result.latencyMs,
-      provider: result.provider,
-      model: result.model,
-      // The deterministic engine is the requested engine in a baseline run, not
-      // a fallback from a live provider.
-      degraded: mode === "baseline" ? false : result.degraded,
-      providerAttempted,
-      invalidResponse,
-    };
-    outcomes.push(outcome);
-
-    const kinds =
-      outcome.predictedKinds.length === 0
-        ? "no slots"
-        : outcome.predictedKinds.join("+");
-    console.log(
-      `[${String(index + 1).padStart(2, " ")}/${cases.length}] ${entry.id} ${result.provider}/${result.model} ${result.latencyMs}ms ${routing.status} -> ${kinds}`,
-    );
-  }
-
-  return { outcomes, attemptedCount, liveSuccessCount };
+): Promise<CalibrationRun> {
+  // The loop lives in `src/` so the unit test can run the same baseline path
+  // the published file came from. This script owns the console line and the
+  // files; the runner owns only case execution.
+  return runCalibrationCases({ cases, mode, env, onCase: logCase });
 }
 
 async function probeLiveProvider(env: NodeJS.ProcessEnv): Promise<void> {
@@ -291,9 +240,14 @@ function writeReport(report: CalibrationReport): { json: string; markdown: strin
   const jsonPath = resolve(repoRoot, files.json);
   const markdownPath = resolve(repoRoot, files.markdown);
 
+  // Refuse to publish a record `/calibration` cannot read. This is the one
+  // place the runner's shape meets the page's contract, so a field added on
+  // one side without the other fails here instead of rendering a blank number.
+  const validated = parsePublishedCalibration(report);
+
   mkdirSync(dirname(jsonPath), { recursive: true });
-  writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-  writeFileSync(markdownPath, renderCalibrationMarkdown(report), "utf8");
+  writeFileSync(jsonPath, `${JSON.stringify(validated, null, 2)}\n`, "utf8");
+  writeFileSync(markdownPath, renderCalibrationMarkdown(validated), "utf8");
   return files;
 }
 

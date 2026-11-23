@@ -7,6 +7,15 @@ const nextConfig: NextConfig = {
   experimental: {
     authInterrupts: true,
   },
+  // `/calibration` reads the published runs at request time. The results are
+  // data files, not imports, so the deploy trace must carry them with the
+  // route or the page would answer "missing" on Vercel while passing locally.
+  outputFileTracingIncludes: {
+    "/calibration": [
+      "./data/calibration-results.json",
+      "./data/calibration-results.baseline.json",
+    ],
+  },
   // Tailwind 4 is processed by the Turbopack loader that ships with
   // create-next-app. There is deliberately no webpack configuration:
   // Turbopack is the default builder in Next.js 16.
