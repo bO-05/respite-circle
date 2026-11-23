@@ -208,4 +208,106 @@ test.describe("the failure path", () => {
     await grace.context.close();
     await david.context.close();
   });
+
+  test("the failure card names whoever holds the desk, and always offers a way through", async ({
+    browser,
+    request,
+  }) => {
+    await reset(request);
+
+    const cardSelector = `[data-testid="coverage-card"][data-slot-id="${DEMO_IDS.slotFailure}"]`;
+
+    // Grace holds the desk, so the card names Grace — read from the session,
+    // not from a fixed string in the component.
+    const grace = await signIn(browser, seedAccessTokens.grace);
+    await grace.page.goto("/desk/failures");
+    const graceCard = grace.page.locator(cardSelector);
+    await expect(graceCard).toBeVisible();
+    await expect(graceCard.getByTestId("coverage-lead")).toHaveText(
+      "Grace Whitfield calls David; the app sends nothing.",
+    );
+    await expect(
+      grace.page.getByText(
+        "Grace Whitfield makes the call; the app sends nothing.",
+      ),
+    ).toBeVisible();
+
+    // The lead line sits alongside the family, the window, the time open, and
+    // the live zero-message line the card already carried.
+    await expect(graceCard.getByTestId("coverage-who")).toContainText("David");
+    await expect(graceCard.getByTestId("coverage-window")).not.toBeEmpty();
+    await expect(graceCard.getByTestId("coverage-open-for")).toContainText(
+      /Open for /,
+    );
+    await expect(graceCard.getByTestId("coverage-message-count")).toHaveText(
+      "Messages sent to the caregiver about this slot: 0",
+    );
+
+    // All five human outcomes are offered on the card itself.
+    for (const outcome of [
+      "Reached them",
+      "Left a message",
+      "Try again later",
+      "The family withdrew this ask",
+      "I will cover this time myself",
+    ]) {
+      await expect(graceCard.getByLabel(outcome)).toBeVisible();
+    }
+
+    // No dead end: the call and the close are both available, the re-offer
+    // explains the one step that must come first, and the full review stays
+    // reachable.
+    await expect(graceCard.getByTestId("save-coverage-call")).toBeEnabled();
+    await expect(graceCard.getByTestId("coverage-expire")).toBeEnabled();
+    await expect(
+      graceCard
+        .getByTestId("coverage-reoffer")
+        .or(graceCard.getByTestId("coverage-reoffer-disabled")),
+    ).toBeVisible();
+    await expect(
+      grace.page.locator(`a[href="/desk/slot/${DEMO_IDS.slotFailure}"]`),
+    ).toHaveText("Open the full time review");
+
+    // A deputy covering the desk sees the deputy's own name on the same card.
+    const daniel = await signIn(browser, seedAccessTokens.daniel);
+    await daniel.page.goto("/desk/failures");
+    const danielCard = daniel.page.locator(cardSelector);
+    await expect(danielCard).toBeVisible();
+    await expect(danielCard.getByTestId("coverage-lead")).toHaveText(
+      "Daniel Okafor calls David; the app sends nothing.",
+    );
+    await expect(danielCard.getByTestId("coverage-lead")).not.toContainText(
+      "Grace",
+    );
+    await expect(
+      daniel.page.getByText(
+        "Daniel Okafor makes the call; the app sends nothing.",
+      ),
+    ).toBeVisible();
+
+    // The caregiver's surfaces are untouched: no desk name, no card line.
+    const david = await signIn(browser, seedAccessTokens.david);
+    const careResponse = await david.page.goto("/care");
+    expect(careResponse?.status()).toBe(200);
+    const careText = await david.page.locator("body").innerText();
+    expect(careText).not.toContain("Whitfield");
+    expect(careText).not.toContain("calls David");
+    const careHtml = await (await david.page.request.get("/care")).text();
+    expect(careHtml).not.toContain("Whitfield");
+    expect(careHtml).not.toContain("calls David");
+
+    await david.page.goto("/ask");
+    const askText = await david.page.locator("body").innerText();
+    expect(askText).not.toContain("Whitfield");
+    expect(askText).not.toContain("calls David");
+
+    await david.page.goto(`/ask/${DEMO_IDS.askWaiting}`);
+    const askDetailText = await david.page.locator("body").innerText();
+    expect(askDetailText).not.toContain("Whitfield");
+    expect(askDetailText).not.toContain("calls David");
+
+    await grace.context.close();
+    await daniel.context.close();
+    await david.context.close();
+  });
 });

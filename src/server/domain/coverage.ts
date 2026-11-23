@@ -204,6 +204,21 @@ export function coverageMessageCountLine(count: number): string {
 }
 
 /**
+ * The lead line on a time that nobody has taken.
+ *
+ * The coordinator is named from the signed-in desk session, never from the
+ * seed: a deputy covering the desk is the person who will actually pick up the
+ * phone, so the deputy's name belongs on the card. The family's first name and
+ * the product's central claim stay in the same sentence.
+ */
+export function coverageCallLeadLine(input: {
+  coordinatorName: string;
+  caregiverFirstName: string;
+}): string {
+  return `${input.coordinatorName} calls ${input.caregiverFirstName}; the app sends nothing.`;
+}
+
+/**
  * The query text stored with an absence proof. It is a parameterised query:
  * `$1` is the slot id and `$2` the church id. The repository runs exactly this
  * shape against the live database inside the expiry transaction, and stores

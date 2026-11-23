@@ -166,7 +166,10 @@ export default async function DeskSlotPage({
       <ClaimReviewSection review={review} />
 
       {showCoverage && coverage ? (
-        <CoverageSection coverage={coverage} />
+        <CoverageSection
+          coverage={coverage}
+          coordinatorName={`${person.firstName} ${person.lastName}`}
+        />
       ) : null}
 
       {reminder ? <ReminderSection reminder={reminder} /> : null}

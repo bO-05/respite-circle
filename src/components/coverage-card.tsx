@@ -4,6 +4,7 @@ import {
   CoverageReofferForm,
 } from "@/components/coverage-forms";
 import {
+  coverageCallLeadLine,
   coverageMessageCountLine,
   coverageOutcomeLabel,
   coverageReofferRefusal,
@@ -59,8 +60,10 @@ function messageCountNote(count: number, churchCount: number): string {
 
 export function CoverageCard({
   item,
+  coordinatorName,
 }: {
   item: CoverageWatchItem | DeskSlotCoverage;
+  coordinatorName: string;
 }) {
   const timeZone = item.timeZone;
   const count = item.caregiverOutboxCount;
@@ -83,9 +86,20 @@ export function CoverageCard({
       className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
     >
       <div>
+        {item.status === "open" ? (
+          <p
+            data-testid="coverage-lead"
+            className="text-xl leading-relaxed text-ink"
+          >
+            {coverageCallLeadLine({
+              coordinatorName,
+              caregiverFirstName: item.caregiverFirstName,
+            })}
+          </p>
+        ) : null}
         <p
           data-testid="coverage-who"
-          className="text-lg font-semibold text-ink"
+          className="mt-1 text-lg font-semibold text-ink"
         >
           For {item.caregiverFirstName}, about {item.careRecipientFirstName}
         </p>
@@ -268,8 +282,10 @@ export function CoverageCard({
  */
 export function CoverageSection({
   coverage,
+  coordinatorName,
 }: {
   coverage: DeskSlotCoverage;
+  coordinatorName: string;
 }) {
   return (
     <section
@@ -290,7 +306,7 @@ export function CoverageSection({
           message exists.
         </p>
       </div>
-      <CoverageCard item={coverage} />
+      <CoverageCard item={coverage} coordinatorName={coordinatorName} />
     </section>
   );
 }

@@ -22,13 +22,14 @@ export const dynamic = "force-dynamic";
 export default async function CoverageWatchPage() {
   const { person, session } = await requirePage(DESK_ROLES);
   const items = await listCoverageWatch(session);
+  const coordinatorName = `${person.firstName} ${person.lastName}`;
 
   return (
     <RolePage
       person={person}
       role={session.role}
       title="Coverage watch"
-      lead="Times that nobody has taken yet. A person calls; the app sends nothing."
+      lead={`Times that nobody has taken yet. ${coordinatorName} makes the call; the app sends nothing.`}
     >
       {items.length === 0 ? (
         <section
@@ -77,7 +78,10 @@ export default async function CoverageWatchPage() {
           >
             {items.map((item) => (
               <li key={item.slotId}>
-                <CoverageCard item={item} />
+                <CoverageCard
+                  item={item}
+                  coordinatorName={coordinatorName}
+                />
                 <p className="mt-2 px-1 text-base text-ink-muted">
                   <Link
                     href={`/desk/slot/${item.slotId}`}

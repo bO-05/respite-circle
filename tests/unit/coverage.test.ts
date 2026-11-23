@@ -8,6 +8,7 @@ import {
   DEFAULT_CALL_AFTER_OPEN_HOURS,
   DEFAULT_CALL_THRESHOLD_HOURS,
   caregiverWorkingSentence,
+  coverageCallLeadLine,
   coverageExpiryRefusalCopy,
   coverageMessageCountLine,
   coverageOpenFor,
@@ -333,6 +334,34 @@ describe("closing a time unclaimed", () => {
     expect(
       coverageExpiryRefusalCopy("open").toLowerCase(),
     ).not.toMatch(SHAME_WORDS);
+  });
+});
+
+describe("the call line on the failure card", () => {
+  it("names the person holding the desk, not a fixed seed name", () => {
+    const graceLine = coverageCallLeadLine({
+      coordinatorName: "Grace Whitfield",
+      caregiverFirstName: "Marta",
+    });
+    expect(graceLine).toBe(
+      "Grace Whitfield calls Marta; the app sends nothing.",
+    );
+
+    // A deputy covering the desk is the person who will actually call, so the
+    // line follows whoever is signed in rather than the seeded coordinator.
+    const danielLine = coverageCallLeadLine({
+      coordinatorName: "Daniel Okafor",
+      caregiverFirstName: "Marta",
+    });
+    expect(danielLine).toBe(
+      "Daniel Okafor calls Marta; the app sends nothing.",
+    );
+    expect(danielLine).not.toContain("Grace");
+
+    for (const line of [graceLine, danielLine]) {
+      expect(line).toContain("the app sends nothing");
+      expect(line.toLowerCase()).not.toMatch(GARBAGE_WORDS);
+    }
   });
 });
 
