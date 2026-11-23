@@ -210,6 +210,14 @@ export type ReviewActionState = {
   status: "idle" | "success" | "error";
   message: string;
   field?: ReviewActionField;
+  /**
+   * The note the coordinator had typed when a refusal came back. React 19
+   * resets an uncontrolled form after a Server Action, so the form seeds the
+   * textarea from this rather than losing a person's words.
+   */
+  values?: {
+    note?: string;
+  };
 };
 
 export const IDLE_REVIEW_ACTION: ReviewActionState = {

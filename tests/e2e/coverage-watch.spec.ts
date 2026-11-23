@@ -490,6 +490,17 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
       `[data-testid="coverage-card"][data-slot-id="${QUIET_WATCH_SLOT}"]`,
     );
     await expect(card).toBeVisible();
+    await expect(card.getByTestId("coverage-due")).toHaveAttribute(
+      "data-call-recorded",
+      "false",
+    );
+    await expect(card.getByTestId("coverage-due")).toHaveAttribute(
+      "data-due",
+      "true",
+    );
+    await expect(card.getByTestId("coverage-due")).toHaveText(
+      "This time needs a call now.",
+    );
 
     const note =
       "Left a message with her neighbour. Try again after six.";
@@ -510,6 +521,16 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     await expect(card.getByTestId("coverage-message-count")).toHaveText(
       MESSAGE_LINE,
     );
+
+    // The due line no longer claims a call is owed once one is printed
+    // directly beneath it.
+    const due = card.getByTestId("coverage-due");
+    await expect(due).toHaveAttribute("data-call-recorded", "true");
+    await expect(due).toHaveText(
+      "A call is on record — offer this time again or close it.",
+    );
+    await expect(due).not.toContainText(/needs a call now/i);
+    await expect(due).not.toContainText(/enters the coverage watch/i);
 
     const [row] = await db.client<
       {

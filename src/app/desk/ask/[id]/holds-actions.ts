@@ -31,8 +31,9 @@ const UUID_PATTERN =
 function errorState(
   message: string,
   field: HoldActionField = "form",
+  values?: HoldActionState["values"],
 ): HoldActionState {
-  return { status: "error", message, field };
+  return { status: "error", message, field, values };
 }
 
 function successState(message: string): HoldActionState {
@@ -70,27 +71,30 @@ export async function closeHeldAskAction(
   _previous: HoldActionState,
   formData: FormData,
 ): Promise<HoldActionState> {
-  const authorized = await deskSession();
-  if (!authorized) return errorState(HOLD_SESSION_ENDED);
-
   const askId = text(formData, "askId").trim();
-  if (!UUID_PATTERN.test(askId)) {
-    return errorState("That ask is not available.");
+  // The note is passed through untouched: the validator refuses a blank note
+  // and never trims or rewrites the coordinator's words. It is read before any
+  // check so every refusal can hand the same words back to the form.
+  const note = text(formData, "note");
+
+  const authorized = await deskSession();
+  if (!authorized) {
+    return errorState(HOLD_SESSION_ENDED, "form", { note });
   }
 
-  // The note is passed through untouched: the validator refuses a blank note
-  // and never trims or rewrites the coordinator's words.
-  const note = text(formData, "note");
+  if (!UUID_PATTERN.test(askId)) {
+    return errorState("That ask is not available.", "form", { note });
+  }
 
   try {
     const result = await closeHeldAsk(authorized.session, { askId, note });
     if (!result.ok) {
-      return errorState(result.message, result.field ?? "form");
+      return errorState(result.message, result.field ?? "form", { note });
     }
     refreshAfterTransition(askId);
     return successState(result.message);
   } catch {
-    return errorState(HOLD_GENERIC_FAILURE);
+    return errorState(HOLD_GENERIC_FAILURE, "form", { note });
   }
 }
 
@@ -98,26 +102,30 @@ export async function overrideSafetyHoldAction(
   _previous: HoldActionState,
   formData: FormData,
 ): Promise<HoldActionState> {
-  const authorized = await deskSession();
-  if (!authorized) return errorState(HOLD_SESSION_ENDED);
-
   const askId = text(formData, "askId").trim();
+  const reason = text(formData, "reason");
+
+  const authorized = await deskSession();
+  if (!authorized) {
+    return errorState(HOLD_SESSION_ENDED, "form", { reason });
+  }
+
   if (!UUID_PATTERN.test(askId)) {
-    return errorState("That ask is not available.");
+    return errorState("That ask is not available.", "form", { reason });
   }
 
   try {
     const result = await overrideSafetyHold(authorized.session, {
       askId,
       confirmation: text(formData, OVERRIDE_CONFIRMATION_FIELD),
-      reason: text(formData, "reason"),
+      reason,
     });
     if (!result.ok) {
-      return errorState(result.message, result.field ?? "form");
+      return errorState(result.message, result.field ?? "form", { reason });
     }
     refreshAfterTransition(askId);
     return successState(result.message);
   } catch {
-    return errorState(HOLD_GENERIC_FAILURE);
+    return errorState(HOLD_GENERIC_FAILURE, "form", { reason });
   }
 }

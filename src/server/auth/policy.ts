@@ -39,7 +39,9 @@ export const ROLE_HOME: Record<Role, string> = {
 };
 
 export const ROLE_LABEL: Record<Role, string> = {
-  caregiver: "Caregiver",
+  // The person who does the caring is never labelled "caregiver" on their own
+  // screens. "Family member" is plain, dignified, and true.
+  caregiver: "Family member",
   coordinator: "Coordinator",
   deputy: "Deputy coordinator",
   volunteer: "Volunteer",

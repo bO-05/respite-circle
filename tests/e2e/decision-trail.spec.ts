@@ -295,7 +295,7 @@ test.describe("decision trail", () => {
     await context.close();
   });
 
-  test("renders an abstention as a plain handoff, with no guessed answer and no slot", async ({
+  test("names a bilingual handoff on the trail and the desk, with no guessed answer and no slot", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -303,20 +303,31 @@ test.describe("decision trail", () => {
 
     await page.goto(`/ask/${created.askId}`);
 
+    // The page says why a person is needed instead of implying the model was
+    // unsure about the family.
+    const notice = page.getByTestId("trail-bilingual");
+    await expect(notice).toBeVisible();
+    await expect(notice).toHaveText(/written in Spanish/i);
+    await expect(notice).toHaveText(/nothing was translated or guessed/i);
+    await expect(notice).toHaveText(/no time is proposed/i);
+
     const abstentions = page.locator('[data-testid="decision-abstention"]');
     await expect(abstentions).toHaveCount(9);
     for (let index = 0; index < 9; index += 1) {
       await expect(abstentions.nth(index)).toHaveText(
-        "This isn't mine to answer — a person will decide.",
+        "This was written in Spanish. A bilingual person will read it with you.",
       );
     }
 
     await expect(page.getByTestId("decision-Q1")).toContainText(
-      "This isn't mine to answer — a person will decide.",
+      "A bilingual person will read it with you.",
     );
     await expect(
       page.getByTestId("decision-Q1").getByTestId("decision-answer"),
     ).toHaveCount(0);
+    await expect(page.getByTestId("decision-list")).not.toContainText(
+      "answers uncertain",
+    );
     await expect(page.getByTestId("trail-run-metadata")).toContainText(
       "language-router-v1",
     );
@@ -324,11 +335,36 @@ test.describe("decision trail", () => {
       "Nothing has been published yet.",
     );
 
+    const [stored] = await db.client<
+      { language: string; bilingual_needed: boolean }[]
+    >`
+      SELECT language, bilingual_needed FROM ask WHERE id = ${created.askId}
+    `;
+    expect(stored.language).toBe("es");
+    expect(stored.bilingual_needed).toBe(true);
     expect(await readAskStatus(db, created.askId)).toBe("waiting_coordinator");
     expect(await countSlots(db, created.askId)).toBe(0);
 
     await shot(page, "trail-abstention");
     await context.close();
+
+    // The coordinator's queue row and detail name the same handoff.
+    const grace = await signIn(browser, seedAccessTokens.grace);
+    await grace.page.goto("/desk");
+    const deskRow = grace.page.locator(
+      `[data-testid="desk-row"][data-ask-id="${created.askId}"]`,
+    );
+    await expect(deskRow).toHaveAttribute("data-bilingual", "true");
+    await expect(deskRow.getByTestId("desk-reason-summary")).toHaveText(
+      "Written in Spanish — a bilingual person is needed. No English answers were guessed.",
+    );
+
+    await grace.page.goto(`/desk/ask/${created.askId}`);
+    await expect(grace.page.getByTestId("desk-detail-bilingual")).toHaveText(
+      "Written in Spanish — a bilingual person is needed. No English answers were guessed.",
+    );
+    await shot(grace.page, "desk-bilingual-handoff");
+    await grace.context.close();
   });
 
   test("shows the safety banner and next human step for a safety hold", async ({

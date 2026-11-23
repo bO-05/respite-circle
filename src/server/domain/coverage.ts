@@ -426,6 +426,15 @@ export type CoverageActionState = {
   status: "idle" | "success" | "error";
   message: string;
   field?: CoverageActionField;
+  /**
+   * What the coordinator had entered when a refusal came back. React 19
+   * resets an uncontrolled form after a Server Action, so the call form seeds
+   * its chosen outcome and note from this.
+   */
+  values?: {
+    note?: string;
+    outcome?: string;
+  };
 };
 
 export const IDLE_COVERAGE_ACTION: CoverageActionState = {

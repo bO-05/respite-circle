@@ -186,7 +186,7 @@ export function DraftSlotCard({
             {fieldError("kind") ? (
               <p
                 id={`${slot.id}-kind-error`}
-                className="text-base leading-relaxed text-red"
+                role="alert" className="text-base leading-relaxed text-red"
               >
                 {state.message}
               </p>
@@ -215,7 +215,7 @@ export function DraftSlotCard({
             {fieldError("label") ? (
               <p
                 id={`${slot.id}-label-error`}
-                className="text-base leading-relaxed text-red"
+                role="alert" className="text-base leading-relaxed text-red"
               >
                 {state.message}
               </p>
@@ -270,7 +270,7 @@ export function DraftSlotCard({
         {fieldError("window") ? (
           <p
             id={`${slot.id}-window-error`}
-            className="text-base leading-relaxed text-red"
+            role="alert" className="text-base leading-relaxed text-red"
           >
             {state.message}
           </p>
@@ -315,7 +315,7 @@ export function DraftSlotCard({
           {fieldError("orientationNote") ? (
             <p
               id={`${slot.id}-orientation-error`}
-              className="text-base leading-relaxed text-red"
+              role="alert" className="text-base leading-relaxed text-red"
             >
               {state.message}
             </p>
@@ -344,7 +344,7 @@ export function DraftSlotCard({
             {fieldError("reason") ? (
               <p
                 id={`${slot.id}-hold-error`}
-                className="text-base leading-relaxed text-red"
+                role="alert" className="text-base leading-relaxed text-red"
               >
                 {state.message}
               </p>
@@ -352,7 +352,14 @@ export function DraftSlotCard({
           </div>
         ) : null}
 
-        <Feedback state={state} testId="draft-feedback" />
+        {/*
+          One error, one place. A field-level message already sits beside its
+          control; rendering the same sentence again here would make a reader
+          (and a screen-wide text assertion) see it twice.
+        */}
+        {state.status !== "error" || state.field === "form" ? (
+          <Feedback state={state} testId="draft-feedback" />
+        ) : null}
 
         <div className="flex flex-wrap gap-3">
           <button

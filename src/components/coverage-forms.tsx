@@ -81,6 +81,7 @@ export function CoverageCallForm({ slotId }: { slotId: string }) {
                 name="outcome"
                 value={outcome}
                 required
+                defaultChecked={state.values?.outcome === outcome}
                 className="h-5 w-5 shrink-0"
               />
               {COVERAGE_CALL_OUTCOME_LABELS[outcome]}
@@ -105,6 +106,7 @@ export function CoverageCallForm({ slotId }: { slotId: string }) {
         data-testid="coverage-call-note"
         rows={3}
         maxLength={COVERAGE_NOTE_MAX_LENGTH}
+        defaultValue={state.values?.note ?? ""}
         aria-describedby={noteError ? `${hintId} ${errorId}` : hintId}
         className="w-full max-w-prose rounded-md border border-line bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
       />

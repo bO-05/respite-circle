@@ -118,7 +118,7 @@ export function ClaimReviewSection({
         ) : (
           <p
             data-testid="confirmation-missing"
-            className="max-w-prose text-base leading-relaxed text-amber"
+            className="max-w-prose text-base font-semibold leading-relaxed text-ink"
           >
             No confirmation message is on record for this time. Speak with the
             family directly before you rely on a message.

@@ -81,6 +81,7 @@ export function CloseHeldAskForm({ askId }: { askId: string }) {
         data-testid="hold-close-note"
         rows={5}
         required
+        defaultValue={state.values?.note ?? ""}
         aria-invalid={noteError || undefined}
         aria-describedby={noteError ? `${hintId} ${errorId}` : hintId}
         className="w-full max-w-prose rounded-md border border-line bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
@@ -164,6 +165,7 @@ export function OverrideSafetyHoldForm({ askId }: { askId: string }) {
         data-testid="hold-override-reason"
         rows={4}
         required
+        defaultValue={state.values?.reason ?? ""}
         aria-invalid={reasonError || undefined}
         aria-describedby={
           reasonError ? `${reasonHintId} ${reasonErrorId}` : reasonHintId
@@ -176,7 +178,15 @@ export function OverrideSafetyHoldForm({ askId }: { askId: string }) {
         ) : null}
       </div>
 
-      <Feedback state={state} testId="hold-override-feedback" />
+      {/*
+        One error, one place. A field-level message already sits beside the
+        confirmation or the reason; the form-level slot only speaks when the
+        refusal belongs to neither field, so the same sentence never appears
+        twice on one screen.
+      */}
+      {!confirmError && !reasonError ? (
+        <Feedback state={state} testId="hold-override-feedback" />
+      ) : null}
 
       <button
         type="submit"

@@ -64,6 +64,8 @@ export type DeskAskSummary = {
 export type DeskQueueItem = Omit<DeskAskSummary, "status"> & {
   status: DeskQueueStatus;
   language: string;
+  /** True when the language router handed this ask to a person. */
+  bilingualNeeded: boolean;
   category: QueueCategory;
   pinLabel: string | null;
   holdReason: string | null;
@@ -154,7 +156,7 @@ async function readLatestAnswers(
 }
 
 function buildQueueItem(
-  row: DeskAskSummary & { language: string },
+  row: DeskAskSummary & { language: string; bilingualNeeded: boolean },
   answers: readonly QueueAnswer[],
 ): DeskQueueItem {
   const status = row.status as DeskQueueStatus;
@@ -166,10 +168,16 @@ function buildQueueItem(
     caregiverFirstName: row.caregiverFirstName,
     careRecipientFirstName: row.careRecipientFirstName,
     language: row.language,
+    bilingualNeeded: row.bilingualNeeded,
     category: queueCategoryFor(status),
     pinLabel: pinLabelFor(status),
     holdReason: holdReasonFor(status),
-    reasonSummary: formatReasonSummary(summariseTypedReasons(answers)),
+    reasonSummary: formatReasonSummary(
+      summariseTypedReasons(answers, {
+        bilingualNeeded: row.bilingualNeeded,
+        language: row.language,
+      }),
+    ),
     answers: [...answers],
   };
 }
@@ -191,6 +199,7 @@ export async function listDeskAsks(
       status: ask.status,
       createdAt: ask.createdAt,
       language: ask.language,
+      bilingualNeeded: ask.bilingualNeeded,
       caregiverFirstName: person.firstName,
       careRecipientFirstName: careRecipient.firstName,
     })

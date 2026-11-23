@@ -145,8 +145,9 @@ export async function revokeClaimAction(
 function coverageError(
   message: string,
   field: CoverageActionField = "form",
+  values?: CoverageActionState["values"],
 ): CoverageActionState {
-  return { status: "error", message, field };
+  return { status: "error", message, field, values };
 }
 
 function refreshAfterCoverage(slotId: string): void {
@@ -162,28 +163,36 @@ export async function recordCoverageCallAction(
   _previous: CoverageActionState,
   formData: FormData,
 ): Promise<CoverageActionState> {
-  const authorized = await deskSession();
-  if (!authorized) return coverageError(COVERAGE_SESSION_ENDED);
-
   const slotId = text(formData, "slotId").trim();
+  // Read the person's entries before any check so a refusal hands them back
+  // instead of letting React reset the form to empty.
+  const outcome = text(formData, "outcome");
+  const note = text(formData, "note");
+  const values = { outcome, note };
+
+  const authorized = await deskSession();
+  if (!authorized) {
+    return coverageError(COVERAGE_SESSION_ENDED, "form", values);
+  }
+
   if (!UUID_PATTERN.test(slotId)) {
-    return coverageError("That time is not available.");
+    return coverageError("That time is not available.", "form", values);
   }
 
   try {
     const result = await recordCoverageCall(authorized.session, slotId, {
-      outcome: text(formData, "outcome"),
-      note: text(formData, "note"),
+      outcome,
+      note,
     });
 
     if (!result.ok) {
-      return coverageError(result.message, result.field ?? "form");
+      return coverageError(result.message, result.field ?? "form", values);
     }
 
     refreshAfterCoverage(slotId);
     return { status: "success", message: result.message };
   } catch {
-    return coverageError(COVERAGE_GENERIC_FAILURE);
+    return coverageError(COVERAGE_GENERIC_FAILURE, "form", values);
   }
 }
 

@@ -6,7 +6,7 @@ import { ExclusionPanelSection } from "@/components/exclusion-panel";
 import { HoldCardSection } from "@/components/hold-card";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
-import { holdReasonFor } from "@/server/domain/desk-queue";
+import { holdReasonFor, bilingualSummarySentence } from "@/server/domain/desk-queue";
 import { formatWindowLabel } from "@/server/domain/slots";
 import { getCoordinatorAskWords } from "@/server/repositories/asks";
 import { getAskPublication } from "@/server/repositories/ask-review";
@@ -109,6 +109,16 @@ export default async function DeskAskPage({
           className="rounded-md border border-accent-soft bg-accent-soft px-4 py-3 text-lg leading-relaxed text-ink"
         >
           {holdReason}
+        </p>
+      ) : null}
+
+      {review.bilingualNeeded ? (
+        <p
+          data-testid="desk-detail-bilingual"
+          role="status"
+          className="max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-3 text-lg leading-relaxed text-ink"
+        >
+          {bilingualSummarySentence(review.language)}
         </p>
       ) : null}
 

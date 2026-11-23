@@ -44,6 +44,9 @@ export type DecisionTrailView = {
   policyVersion: number | null;
   decisions: DecisionTrailRow[];
   run: DecisionRunMetadata | null;
+  /** The language router's finding, persisted on the ask. */
+  language: string;
+  bilingualNeeded: boolean;
   /** Kinds plain code has proposed but the coordinator has not published. */
   draftKinds: string[];
   /** Slots the congregation can already see (open, claimed, covered, done). */
@@ -72,7 +75,11 @@ export async function getDecisionTrailForRevision(
 
   const [ownedRows, decisionRows, slotRows] = await Promise.all([
     database
-      .select({ id: ask.id })
+      .select({
+        id: ask.id,
+        language: ask.language,
+        bilingualNeeded: ask.bilingualNeeded,
+      })
       .from(ask)
       .where(ownedWhere)
       .limit(1),
@@ -127,6 +134,8 @@ export async function getDecisionTrailForRevision(
     askId: input.askId,
     revisionId: input.revisionId,
     policyVersion: first?.policyVersion ?? null,
+    language: ownedRows[0].language,
+    bilingualNeeded: ownedRows[0].bilingualNeeded,
     decisions: decisionRows.map((row) => ({
       questionId: row.questionId,
       questionText: row.questionText,

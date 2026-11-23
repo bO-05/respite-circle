@@ -97,6 +97,9 @@ export type DeskAskWords = {
   revisionCount: number;
   caregiverFirstName: string;
   careRecipientFirstName: string;
+  /** The language router's finding, shown plainly on the detail page. */
+  language: string;
+  bilingualNeeded: boolean;
   /**
    * The safety conversion record, if a coordinator made one. The desk shows
    * who converted the hold, when, and their reason, so the decision is never
@@ -416,6 +419,8 @@ export async function getCoordinatorAskWords(
       originalText: ask.verbatimText,
       caregiverFirstName: person.firstName,
       careRecipientFirstName: careRecipient.firstName,
+      language: ask.language,
+      bilingualNeeded: ask.bilingualNeeded,
       safetyOverrideAt: ask.safetyOverrideAt,
       safetyOverrideByName: overrider.firstName,
       safetyOverrideReason: ask.safetyOverrideReason,
@@ -441,6 +446,8 @@ export async function getCoordinatorAskWords(
     revisionCount: revisions.length,
     caregiverFirstName: row.caregiverFirstName,
     careRecipientFirstName: row.careRecipientFirstName,
+    language: row.language,
+    bilingualNeeded: row.bilingualNeeded,
     safetyOverrideAt: row.safetyOverrideAt,
     safetyOverrideByName: row.safetyOverrideByName,
     safetyOverrideReason: row.safetyOverrideReason,

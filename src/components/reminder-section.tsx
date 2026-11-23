@@ -73,7 +73,7 @@ export function ReminderSection({
         {reminder.status !== "covered" ? (
           <p
             data-testid="desk-reminder-closed"
-            className="max-w-prose text-base leading-relaxed text-amber"
+            className="max-w-prose text-base leading-relaxed text-ink"
           >
             This time is now {statusLabel}. The message above was already
             received and is kept as the record.

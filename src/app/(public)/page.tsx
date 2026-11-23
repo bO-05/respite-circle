@@ -4,7 +4,7 @@ import { PageMain } from "@/components/page-main";
 import { isDemoModeEnabled } from "@/server/auth/policy";
 
 export const metadata: Metadata = {
-  title: "Respite Circle — a church-run break for the family caregiver",
+  title: "Respite Circle — a church-run break for a family that cares for someone",
   description:
     "A named coordinator reads what you write, a neighbour claims a time, and if nobody claims it, a person calls.",
 };
@@ -81,7 +81,8 @@ export default function HomePage() {
           {STEPS.map((step, index) => (
             <li
               key={step.title}
-              className="flex flex-col rounded-lg border border-line bg-surface p-5"
+              data-testid="landing-step-card"
+              className="flex h-full flex-col rounded-lg border border-line bg-surface p-5"
             >
               <p className="text-base font-semibold uppercase tracking-wide text-ink-muted">
                 Step {index + 1}
@@ -99,7 +100,8 @@ export default function HomePage() {
 
       <section
         aria-labelledby="failure-heading"
-        className="mt-4 rounded-lg border border-line bg-amber-soft p-5 sm:p-6"
+        data-testid="landing-failure-card"
+        className="mt-4 rounded-lg border border-line bg-amber-soft p-5 sm:mt-6 sm:p-6"
       >
         <p className="text-base font-semibold uppercase tracking-wide text-ink-muted">
           When a time goes unclaimed

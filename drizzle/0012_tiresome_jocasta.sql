@@ -1,0 +1,1 @@
+ALTER TABLE "ask" ADD COLUMN "bilingual_needed" boolean DEFAULT false NOT NULL;

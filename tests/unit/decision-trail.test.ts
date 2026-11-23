@@ -4,6 +4,8 @@ import {
   CONFIDENCE_LABEL,
   PLAIN_CODE_SENTENCE,
   RULES_BANNER,
+  bilingualHandoffSentence,
+  bilingualTrailNotice,
   buildTrailRows,
   formatAnswer,
   formatConfidencePercent,
@@ -120,6 +122,30 @@ describe("decision trail formatting", () => {
     expect(summary).toContain("a home visit");
     expect(summary).toContain("not published");
     expect(summariseDraftKinds([])).toBeNull();
+  });
+
+  it("explains a bilingual handoff in words, not as model uncertainty", () => {
+    const rows = buildTrailRows(
+      [input({ abstained: true }), input({ questionId: "Q2" })],
+      { handoff: bilingualHandoffSentence("es") },
+    );
+
+    expect(rows[0].abstained).toBe(true);
+    expect(rows[0].handoff).toBe(
+      "This was written in Spanish. A bilingual person will read it with you.",
+    );
+    expect(rows[1].handoff).toBeNull();
+
+    // An unknown language code never becomes a made-up language name.
+    expect(bilingualHandoffSentence("und")).toBe(
+      "This was written in another language. A bilingual person will read it with you.",
+    );
+
+    const notice = bilingualTrailNotice("es");
+    expect(notice).toContain("written in Spanish");
+    expect(notice).toContain("Nothing was translated or guessed");
+    expect(notice).toContain("no time is proposed");
+    expect(bilingualTrailNotice(null)).toContain("another language");
   });
 
   it("says plainly that nothing has been published yet", () => {

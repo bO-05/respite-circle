@@ -3,6 +3,7 @@ import {
   pickOptionsForQuestion,
   type PickAnswer,
 } from "@/server/services/decision-contract";
+import { languageDisplayName } from "./language";
 
 /**
  * The render guard for the decision trail.
@@ -18,6 +19,32 @@ export const CONFIDENCE_LABEL = "the model's stated confidence";
 
 export const ABSTENTION_SENTENCE =
   "This isn't mine to answer — a person will decide.";
+
+/**
+ * What a row says when the ask was written in another language. The model was
+ * never asked to guess in English, so the honest sentence names the handoff
+ * instead of implying uncertainty about the answers.
+ */
+export function bilingualHandoffSentence(
+  language: string | null | undefined,
+): string {
+  const name = languageDisplayName(language);
+  if (name) {
+    return `This was written in ${name}. A bilingual person will read it with you.`;
+  }
+  return "This was written in another language. A bilingual person will read it with you.";
+}
+
+/** The one calm notice at the top of a bilingual trail. */
+export function bilingualTrailNotice(
+  language: string | null | undefined,
+): string {
+  const name = languageDisplayName(language);
+  if (name) {
+    return `This ask was written in ${name}. Nothing was translated or guessed. A bilingual person will read it with you, and no time is proposed until then.`;
+  }
+  return "This ask was written in another language. Nothing was translated or guessed. A bilingual person will read it with you, and no time is proposed until then.";
+}
 
 export const RULES_BANNER =
   "Auto-filled by rules, not AI — please verify.";
@@ -90,7 +117,9 @@ export function formatAnswer(
  */
 export function buildTrailRows(
   inputs: readonly TrailAnswerInput[],
+  options: { handoff?: string | null } = {},
 ): TrailRowView[] {
+  const handoff = options.handoff ?? ABSTENTION_SENTENCE;
   return inputs.map((input) => {
     const answerLabel = input.abstained
       ? null
@@ -102,7 +131,7 @@ export function buildTrailRows(
       questionText: input.questionText,
       answerLabel: abstained ? null : answerLabel,
       abstained,
-      handoff: abstained ? ABSTENTION_SENTENCE : null,
+      handoff: abstained ? handoff : null,
       confidencePercent: formatConfidencePercent(input.confidence),
       samples: input.samples,
     };

@@ -9,7 +9,10 @@ import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { receiptSentence } from "@/server/domain/ask-intake";
 import { askAgainLinkLabel } from "@/server/domain/closure";
-import { buildTrailRows } from "@/server/domain/decision-trail";
+import {
+  bilingualHandoffSentence,
+  buildTrailRows,
+} from "@/server/domain/decision-trail";
 import { getCaregiverAsk, type AskStatus } from "@/server/repositories/asks";
 import { getDecisionTrailForRevision } from "@/server/repositories/decision-trail";
 
@@ -87,7 +90,15 @@ export default async function AskReceiptPage({
       })
     : null;
 
-  const trailRows = trail ? buildTrailRows(trail.decisions) : [];
+  const trailRows = trail
+    ? buildTrailRows(trail.decisions, {
+        // A bilingual ask never received English answers. Its rows name the
+        // handoff instead of implying the model was unsure about the family.
+        handoff: trail.bilingualNeeded
+          ? bilingualHandoffSentence(trail.language)
+          : null,
+      })
+    : [];
 
   const name = receipt.coordinatorFirstName;
   const status = statusCopy(
@@ -262,6 +273,8 @@ export default async function AskReceiptPage({
         revisionCount={receipt.revisionCount}
         draftKinds={trail?.draftKinds ?? []}
         publishedCount={trail?.publishedCount ?? 0}
+        bilingualNeeded={trail?.bilingualNeeded ?? false}
+        language={trail?.language ?? null}
       />
 
       <p className="max-w-prose text-base leading-relaxed text-ink-muted">

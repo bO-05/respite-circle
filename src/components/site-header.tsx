@@ -32,7 +32,7 @@ export async function SiteHeader() {
             </p>
           ) : (
             <p className="text-base text-ink-muted">
-              A church-run break for the family caregiver
+              A church-run break for a family that cares for someone
             </p>
           )}
         </div>

@@ -281,6 +281,15 @@ export type HoldActionState = {
   status: "idle" | "success" | "error";
   message: string;
   field?: HoldActionField;
+  /**
+   * The person's own words when a refusal came back. React 19 resets an
+   * uncontrolled form after a Server Action, so the form seeds its fields from
+   * this: a coordinator never has to type the same note twice.
+   */
+  values?: {
+    note?: string;
+    reason?: string;
+  };
 };
 
 export const IDLE_HOLD_ACTION: HoldActionState = {

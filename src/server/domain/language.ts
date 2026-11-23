@@ -17,6 +17,29 @@ export type LanguageDetection = {
   signals: number;
 };
 
+/**
+ * The plain-language name a person can read on screen. Only a recognised
+ * two-letter code earns a name; a script guess ("cyrl", "cjk") deliberately
+ * returns null so the copy says "another language" rather than naming a
+ * language the detector never claimed.
+ */
+const LANGUAGE_NAMES: Record<string, string> = {
+  es: "Spanish",
+  fr: "French",
+  pt: "Portuguese",
+  de: "German",
+  it: "Italian",
+};
+
+export function languageDisplayName(
+  code: string | null | undefined,
+): string | null {
+  if (!code) return null;
+  const key = code.trim().toLowerCase().split(/[-_]/)[0] ?? "";
+  if (key === "en" || key === "und" || key.length === 0) return null;
+  return LANGUAGE_NAMES[key] ?? null;
+}
+
 const ENGLISH_WORDS = [
   "the",
   "and",

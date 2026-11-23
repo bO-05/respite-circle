@@ -5,6 +5,7 @@ import {
   NO_TYPED_REASON_SENTENCE,
   QUEUE_CATEGORY_HEADING,
   QUEUE_CATEGORY_ORDER,
+  bilingualSummarySentence,
   formatReasonSummary,
   formatWaitingTime,
   groupDeskQueue,
@@ -199,6 +200,55 @@ describe("typed reason summary", () => {
     ]);
 
     expect(formatReasonSummary(summary)).toBe(
+      "1 answer uncertain — a person will decide.",
+    );
+  });
+
+  it("names a bilingual handoff instead of counting uncertain answers", () => {
+    // A Spanish ask produces nine abstentions because the model refused to
+    // guess in English. "9 answers uncertain" hides the only fact the
+    // coordinator needs: nobody has read the family's own language yet.
+    const summary = summariseTypedReasons(
+      [
+        answer({ questionId: "Q1", abstained: true, answer: true }),
+        answer({ questionId: "Q2", abstained: true, answer: false }),
+        answer({ questionId: "Q3", abstained: true, answer: false }),
+        answer({ questionId: "Q4", abstained: true, answer: "saturday" }),
+      ],
+      { bilingualNeeded: true, language: "es" },
+    );
+
+    expect(summary.reasons).toEqual([bilingualSummarySentence("es")]);
+    expect(summary.reasons[0]).toBe(
+      "Written in Spanish — a bilingual person is needed. No English answers were guessed.",
+    );
+    expect(summary.uncertainCount).toBe(0);
+    expect(summary.fallback).toBe(false);
+    expect(formatReasonSummary(summary)).toBe(summary.reasons[0]);
+    expect(formatReasonSummary(summary)).not.toMatch(/answers? uncertain/);
+  });
+
+  it("names a language it knows and never invents one it does not", () => {
+    expect(bilingualSummarySentence("es")).toContain("Spanish");
+    expect(bilingualSummarySentence("fr")).toContain("French");
+    expect(bilingualSummarySentence("und")).toBe(
+      "Written in another language — a bilingual person is needed. No English answers were guessed.",
+    );
+    expect(bilingualSummarySentence(null)).toBe(
+      "Written in another language — a bilingual person is needed. No English answers were guessed.",
+    );
+  });
+
+  it("leaves an English ask's summary exactly as it was", () => {
+    const answers = [answer({ questionId: "Q2", abstained: true, answer: true })];
+    const plain = summariseTypedReasons(answers);
+    const explicit = summariseTypedReasons(answers, {
+      bilingualNeeded: false,
+      language: "en",
+    });
+
+    expect(explicit).toEqual(plain);
+    expect(formatReasonSummary(explicit)).toBe(
       "1 answer uncertain — a person will decide.",
     );
   });

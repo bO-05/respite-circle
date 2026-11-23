@@ -15,9 +15,12 @@ import {
 import { getDecisionTrailForRevision } from "../../src/server/repositories/decision-trail";
 import {
   ABSTENTION_SENTENCE,
+  bilingualHandoffSentence,
   buildTrailRows,
   summariseDraftKinds,
 } from "../../src/server/domain/decision-trail";
+import { bilingualSummarySentence } from "../../src/server/domain/desk-queue";
+import { listDeskAsks } from "../../src/server/repositories/coordinator";
 import {
   expectRejection,
   openTestDatabase,
@@ -240,6 +243,36 @@ describe("decision trail reads", () => {
       expect(row.answerLabel).toBeNull();
       expect(row.handoff).toBe(ABSTENTION_SENTENCE);
     }
+
+    // The bilingual handoff is a persisted fact, not something the page
+    // re-derives. Both the trail and the desk name the language plainly.
+    expect(trail?.language).toBe("es");
+    expect(trail?.bilingualNeeded).toBe(true);
+
+    const [stored] = await t.client<
+      { language: string; bilingual_needed: boolean }[]
+    >`
+      SELECT language, bilingual_needed
+        FROM ask
+       WHERE id = ${result.askId}
+    `;
+    expect(stored.language).toBe("es");
+    expect(stored.bilingual_needed).toBe(true);
+
+    const bilingualRows = buildTrailRows(trail?.decisions ?? [], {
+      handoff: bilingualHandoffSentence(trail?.language),
+    });
+    for (const row of bilingualRows) {
+      expect(row.handoff).toBe(
+        "This was written in Spanish. A bilingual person will read it with you.",
+      );
+    }
+
+    const desk = await listDeskAsks(GRACE, t.db);
+    const deskItem = desk.find((item) => item.id === result.askId);
+    expect(deskItem?.bilingualNeeded).toBe(true);
+    expect(deskItem?.reasonSummary).toBe(bilingualSummarySentence("es"));
+    expect(deskItem?.reasonSummary).not.toMatch(/answers? uncertain/);
 
     const [slotCount] = await t.client<{ count: number }[]>`
       SELECT COUNT(*)::int AS count FROM slot WHERE ask_id = ${result.askId}

@@ -125,15 +125,18 @@ export function CoverageCard({
           <p
             data-testid="coverage-due"
             data-due={item.isDue ? "true" : "false"}
+            data-call-recorded={item.calls.length > 0 ? "true" : "false"}
             className="max-w-prose text-base leading-relaxed text-ink"
           >
-            {item.isDue
-              ? "This time needs a call now."
-              : `This time enters the coverage watch on ${formatWindowLabel(
-                  item.dueAt,
-                  null,
-                  timeZone,
-                )}.`}
+            {item.calls.length > 0
+              ? "A call is on record — offer this time again or close it."
+              : item.isDue
+                ? "This time needs a call now."
+                : `This time enters the coverage watch on ${formatWindowLabel(
+                    item.dueAt,
+                    null,
+                    timeZone,
+                  )}.`}
           </p>
         ) : null}
       </div>

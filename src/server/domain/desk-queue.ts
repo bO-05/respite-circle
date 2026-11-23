@@ -11,6 +11,8 @@
  * screen, so a stored oddity can never turn into a sentence about a family.
  */
 
+import { languageDisplayName } from "./language";
+
 export const DESK_QUEUE_STATUSES = [
   "waiting_coordinator",
   "safety_hold",
@@ -99,8 +101,30 @@ export type TypedReasonSummary = {
   fallback: boolean;
 };
 
+export type ReasonSummaryOptions = {
+  /**
+   * True when the language router sent the ask to a person because it was not
+   * written in English. The uncertainty count is then an artifact of refusing
+   * to guess, not a fact about the family, so the bilingual line replaces it.
+   */
+  bilingualNeeded?: boolean;
+  /** The detected language code, shown by name when it is recognised. */
+  language?: string | null;
+};
+
 export const NO_TYPED_REASON_SENTENCE =
   "No practical need was named in the nine answers — read the words.";
+
+/** The one line that explains a bilingual handoff without a count. */
+export function bilingualSummarySentence(
+  language: string | null | undefined,
+): string {
+  const name = languageDisplayName(language);
+  if (name) {
+    return `Written in ${name} — a bilingual person is needed. No English answers were guessed.`;
+  }
+  return "Written in another language — a bilingual person is needed. No English answers were guessed.";
+}
 
 const YESNO_REASON: Record<string, string> = {
   Q1: "Companionship",
@@ -133,7 +157,19 @@ function uncertainSentence(count: number): string {
 /** Build the typed summary from closed answers only. */
 export function summariseTypedReasons(
   answers: readonly QueueAnswer[],
+  options: ReasonSummaryOptions = {},
 ): TypedReasonSummary {
+  // A bilingual handoff is the whole reason this ask is on the desk. Saying
+  // "six answers uncertain" instead would hide the one fact the coordinator
+  // needs: nobody has read these words in the family's own language yet.
+  if (options.bilingualNeeded) {
+    return {
+      reasons: [bilingualSummarySentence(options.language)],
+      uncertainCount: 0,
+      fallback: false,
+    };
+  }
+
   const reasons: string[] = [];
   let uncertainCount = 0;
 

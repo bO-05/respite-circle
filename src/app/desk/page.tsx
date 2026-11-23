@@ -29,6 +29,7 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
       data-ask-id={item.id}
       data-status={item.status}
       data-category={item.category}
+      data-bilingual={item.bilingualNeeded ? "true" : "false"}
       data-created-at={item.createdAt.toISOString()}
       className="rounded-lg border border-line bg-surface p-4"
     >

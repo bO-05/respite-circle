@@ -333,6 +333,13 @@ export const ask = pgTable(
       .references(() => careRecipient.id),
     verbatimText: text("verbatim_text").notNull(),
     language: text("language").notNull().default("en"),
+    /**
+     * True when the language router sent this ask to the coordinator because
+     * it was written in another language. Persisted (not re-derived from
+     * `language`) so the desk row and the family's trail can say plainly why a
+     * person is needed instead of showing "N answers uncertain".
+     */
+    bilingualNeeded: boolean("bilingual_needed").notNull().default(false),
     status: askStatusEnum("status").notNull().default("draft"),
     policyVersionId: uuid("policy_version_id")
       .notNull()

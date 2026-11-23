@@ -4,6 +4,7 @@ import {
   CONFIDENCE_LABEL,
   PLAIN_CODE_SENTENCE,
   RULES_BANNER,
+  bilingualTrailNotice,
   formatLatency,
   publicationSentence,
   revisionTrailSentence,
@@ -35,6 +36,8 @@ export function DecisionTrail({
   revisionCount,
   draftKinds,
   publishedCount,
+  bilingualNeeded = false,
+  language = null,
 }: {
   rows: readonly TrailRowView[];
   run: DecisionTrailRun | null;
@@ -44,6 +47,8 @@ export function DecisionTrail({
   revisionCount: number;
   draftKinds: readonly string[];
   publishedCount: number;
+  bilingualNeeded?: boolean;
+  language?: string | null;
 }) {
   const draftSummary = summariseDraftKinds(draftKinds);
   const incomplete = rows.length > 0 && rows.length < 9;
@@ -83,6 +88,16 @@ export function DecisionTrail({
           className="mt-4 w-fit rounded-md border border-amber bg-amber-soft px-4 py-2 text-base font-semibold text-ink"
         >
           {RULES_BANNER}
+        </p>
+      ) : null}
+
+      {bilingualNeeded ? (
+        <p
+          data-testid="trail-bilingual"
+          role="status"
+          className="mt-4 max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-3 text-lg leading-relaxed text-ink"
+        >
+          {bilingualTrailNotice(language)}
         </p>
       ) : null}
 

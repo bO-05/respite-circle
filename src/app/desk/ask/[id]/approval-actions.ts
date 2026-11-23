@@ -31,8 +31,9 @@ const UUID_PATTERN =
 function errorState(
   message: string,
   field: ReviewActionField = "form",
+  values?: ReviewActionState["values"],
 ): ReviewActionState {
-  return { status: "error", message, field };
+  return { status: "error", message, field, values };
 }
 
 function successState(message: string): ReviewActionState {
@@ -91,17 +92,20 @@ export async function sendBackAskAction(
   _previous: ReviewActionState,
   formData: FormData,
 ): Promise<ReviewActionState> {
-  const authorized = await deskSession();
-  if (!authorized) return errorState(REVIEW_SESSION_ENDED);
-
   const askId = text(formData, "askId").trim();
-  if (!UUID_PATTERN.test(askId)) {
-    return errorState("That ask is not available.");
+  // The note is passed through untouched. The domain validator refuses a
+  // whitespace-only note; it never trims or rewrites a real one. Reading it
+  // before every check lets a refusal hand the same words back to the form.
+  const note = text(formData, "note");
+
+  const authorized = await deskSession();
+  if (!authorized) {
+    return errorState(REVIEW_SESSION_ENDED, "form", { note });
   }
 
-  // The note is passed through untouched. The domain validator refuses a
-  // whitespace-only note; it never trims or rewrites a real one.
-  const note = text(formData, "note");
+  if (!UUID_PATTERN.test(askId)) {
+    return errorState("That ask is not available.", "form", { note });
+  }
 
   try {
     const result = await sendBackAskForCoordinator(authorized.session, {
@@ -109,12 +113,18 @@ export async function sendBackAskAction(
       note,
     });
     if (!result.ok) {
-      return errorState(result.message, result.reason === "invalid_note" ? "note" : "form");
+      return errorState(
+        result.message,
+        result.reason === "invalid_note" ? "note" : "form",
+        // React resets the form after the action; these words come back with
+        // the refusal so the coordinator never retypes them.
+        { note },
+      );
     }
     refreshAfterTransition(result.askId);
     return successState(result.message);
   } catch {
-    return errorState(REVIEW_GENERIC_FAILURE);
+    return errorState(REVIEW_GENERIC_FAILURE, "form", { note });
   }
 }
 

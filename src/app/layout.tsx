@@ -11,7 +11,7 @@ import "./globals.css";
  * leak the hidden route's name into a refused caregiver's tab.
  */
 export const metadata: Metadata = {
-  description: "A church-run break for the family caregiver.",
+  description: "A church-run break for a family that cares for someone.",
   // Access links carry a bearer token in the path; never leak it in a Referer.
   referrer: "no-referrer",
 };

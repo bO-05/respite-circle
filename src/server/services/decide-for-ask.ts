@@ -152,6 +152,10 @@ export async function decideForAsk(
         .set({
           status: run.routing.status,
           language: run.language.code,
+          // The bilingual handoff is a fact about this ask, not a value a
+          // reader may recompute differently later. Persist it beside the
+          // language so the desk and the trail can name the reason.
+          bilingualNeeded: run.routing.bilingualNeeded,
           updatedAt: new Date(),
         })
         .where(
