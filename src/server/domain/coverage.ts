@@ -19,10 +19,11 @@
  * There is no urgency score and no ranking. A time that is due is due.
  *
  * The absence proof is deliberately narrow: the exact query text is a
- * constant, and its SHA-256 digest is computed by the repository with the same
- * `sha256Hex` helper the decision audit uses. The row's
- * `caregiver_outbox_count` is read live inside the transaction and the
- * database's `absence_proof_zero_outbox` CHECK refuses anything but zero.
+ * constant, and `absence-proof.ts` hashes it together with the slot id, the
+ * live zero count, and the written instant under the `absence-proof/v1`
+ * recipe. The row's `caregiver_outbox_count` is read live inside the
+ * transaction and the database's `absence_proof_zero_outbox` CHECK refuses
+ * anything but zero.
  */
 
 import {
@@ -224,7 +225,8 @@ export function coverageCallLeadLine(input: {
  * shape against the live database inside the expiry transaction, and stores
  * this constant as the proof of what was asked. It counts every outbox row
  * for the slot — not just one caregiver's — so zero means nothing at all was
- * sent about this time.
+ * sent about this time. The digest recipe in `absence-proof.ts` includes this
+ * text verbatim, so a changed query changes the digest.
  */
 export const ABSENCE_PROOF_QUERY_TEXT = [
   "SELECT count(*)::int AS caregiver_outbox_count",

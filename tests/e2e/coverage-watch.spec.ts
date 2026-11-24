@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -184,16 +185,51 @@ async function askStatus(db: E2eDatabase, askId: string): Promise<string> {
 async function absenceProofs(db: E2eDatabase, slotId: string) {
   return db.client<
     {
+      slot_id: string;
       caregiver_outbox_count: number;
       query_text: string;
       digest: string;
+      created_at: Date | string;
     }[]
   >`
-    SELECT caregiver_outbox_count, query_text, digest
+    SELECT slot_id, caregiver_outbox_count, query_text, digest, created_at
       FROM absence_proof
      WHERE slot_id = ${slotId}
      ORDER BY created_at, id
   `;
+}
+
+/**
+ * The published recipe, rebuilt from the documentation rather than calling
+ * the implementation, so a drift in either place stops the match.
+ */
+function isoInstant(value: Date | string): string {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`The stored proof instant is not a date: ${String(value)}`);
+  }
+  return date.toISOString();
+}
+
+function recomputeAbsenceProofDigest(row: {
+  slot_id: string;
+  caregiver_outbox_count: number;
+  query_text: string;
+  created_at: Date | string;
+}): string {
+  return createHash("sha256")
+    .update(
+      [
+        "absence-proof/v1",
+        `slot_id:${row.slot_id.toLowerCase()}`,
+        `caregiver_outbox_count:${Number(row.caregiver_outbox_count)}`,
+        `generated_at:${isoInstant(row.created_at)}`,
+        "query_text:",
+        row.query_text,
+      ].join("\n"),
+      "utf8",
+    )
+    .digest("hex");
 }
 
 async function reofferCount(db: E2eDatabase, slotId: string): Promise<number> {
@@ -658,15 +694,28 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     await expect(grace.page.getByTestId("absence-proof-query")).toContainText(
       "FROM notification",
     );
-    await expect(grace.page.getByTestId("absence-proof-digest")).toHaveText(
-      /^[0-9a-f]{64}$/,
-    );
+
+    const recipe = grace.page.getByTestId("absence-proof-recipe");
+    await expect(recipe).toContainText(/SHA-256/i);
+    await expect(recipe).toContainText(/no scheduled job/i);
+    await expect(recipe).toContainText(/this time's id/i);
+    await expect(recipe).toContainText(/count/i);
+    await expect(recipe).toContainText(/written time/i);
+    await expect(recipe).toContainText(/not a signature/i);
+    await expect(recipe).not.toContainText(/anyone can check/i);
 
     const proofs = await absenceProofs(db, QUIET_EXPIRE_SLOT);
     expect(proofs).toHaveLength(1);
     expect(Number(proofs[0].caregiver_outbox_count)).toBe(0);
     expect(proofs[0].query_text).toBe(ABSENCE_PROOF_QUERY_TEXT);
     expect(proofs[0].digest).toMatch(/^[0-9a-f]{64}$/);
+
+    // The stored digest is the documented recipe over this row, and the card
+    // renders that exact digest rather than a constant.
+    expect(recomputeAbsenceProofDigest(proofs[0])).toBe(proofs[0].digest);
+    await expect(grace.page.getByTestId("absence-proof-digest")).toHaveText(
+      proofs[0].digest,
+    );
 
     expect(await slotStatus(db, QUIET_EXPIRE_SLOT)).toBe("expired_unclaimed");
     expect(await notificationCountFor(db, QUIET_EXPIRE_SLOT)).toBe(0);

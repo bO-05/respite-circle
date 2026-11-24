@@ -20,6 +20,7 @@ import {
   reofferWindow,
   validateCoverageCall,
 } from "../../src/server/domain/coverage";
+import { computeAbsenceProofDigest } from "../../src/server/domain/absence-proof";
 
 /**
  * VAL-FAILURE-001 / -002 / -003 / -006 at the domain boundary.
@@ -246,13 +247,20 @@ describe("the call vocabulary", () => {
 });
 
 describe("the absence proof", () => {
-  it("names the outbox query and digests to 64 hex characters", () => {
+  it("names the outbox query and binds it with the slot, count, and time", () => {
     expect(ABSENCE_PROOF_QUERY_TEXT).toContain("FROM notification");
     expect(ABSENCE_PROOF_QUERY_TEXT).toContain("slot_id");
     expect(ABSENCE_PROOF_QUERY_TEXT).toContain("caregiver_outbox_count");
 
-    const digest = hash(ABSENCE_PROOF_QUERY_TEXT);
+    const digest = computeAbsenceProofDigest({
+      slotId: "0f000000-0000-4000-8000-000000000001",
+      caregiverOutboxCount: 0,
+      queryText: ABSENCE_PROOF_QUERY_TEXT,
+      generatedAt: NOW,
+    });
     expect(digest).toMatch(/^[0-9a-f]{64}$/);
+    // The old recipe hashed the four-line constant and proved nothing.
+    expect(digest).not.toBe(hash(ABSENCE_PROOF_QUERY_TEXT));
   });
 });
 

@@ -28,6 +28,7 @@ import {
   ABSENCE_PROOF_QUERY_TEXT,
   coverageMessageCountLine,
 } from "../../src/server/domain/coverage";
+import { computeAbsenceProofDigest } from "../../src/server/domain/absence-proof";
 import type { TypedAnswer } from "../../src/server/domain/slots";
 import { approveClaim } from "../../src/server/repositories/claim-review";
 import { claimSlot } from "../../src/server/repositories/claims";
@@ -240,6 +241,32 @@ async function absenceProofRows(t: TestDatabase, slotId: string) {
     .select()
     .from(absenceProof)
     .where(eq(absenceProof.slotId, slotId));
+}
+
+/**
+ * The documented recipe, rebuilt here from the published format rather than
+ * calling the implementation. If either the documentation or the canonical
+ * string drifts, this recomputation stops matching the stored digest.
+ */
+function recomputeAbsenceProofDigestFromRow(row: {
+  slotId: string;
+  caregiverOutboxCount: number;
+  queryText: string;
+  createdAt: Date;
+}): string {
+  return createHash("sha256")
+    .update(
+      [
+        "absence-proof/v1",
+        `slot_id:${row.slotId.toLowerCase()}`,
+        `caregiver_outbox_count:${row.caregiverOutboxCount}`,
+        `generated_at:${row.createdAt.toISOString()}`,
+        "query_text:",
+        row.queryText,
+      ].join("\n"),
+      "utf8",
+    )
+    .digest("hex");
 }
 
 async function auditRows(
@@ -635,7 +662,13 @@ describe("the coverage watch and the failure-path proof", () => {
     expect(outcome.caregiverOutboxCount).toBe(0);
     expect(outcome.askClosed).toBe(true);
     expect(outcome.askStatus).toBe("closed");
-    expect(outcome.digest).toBe(sha256Hex(ABSENCE_PROOF_QUERY_TEXT));
+    const expectedDigest = computeAbsenceProofDigest({
+      slotId: homeId,
+      caregiverOutboxCount: 0,
+      queryText: ABSENCE_PROOF_QUERY_TEXT,
+      generatedAt: CALLED_AT,
+    });
+    expect(outcome.digest).toBe(expectedDigest);
     expect(outcome.absenceProofId).toBeTruthy();
 
     const [closedSlot] = await t.db
@@ -649,10 +682,9 @@ describe("the coverage watch and the failure-path proof", () => {
     expect(proofs).toHaveLength(1);
     expect(proofs[0].caregiverOutboxCount).toBe(0);
     expect(proofs[0].queryText).toBe(ABSENCE_PROOF_QUERY_TEXT);
+    expect(proofs[0].digest).toBe(expectedDigest);
     expect(proofs[0].digest).toBe(
-      createHash("sha256")
-        .update(ABSENCE_PROOF_QUERY_TEXT, "utf8")
-        .digest("hex"),
+      recomputeAbsenceProofDigestFromRow(proofs[0]),
     );
     expect(proofs[0].createdAt).toEqual(CALLED_AT);
 
@@ -696,6 +728,59 @@ describe("the coverage watch and the failure-path proof", () => {
     if (!again.ok) expect(again.code).toBe("not_open");
     expect(await absenceProofRows(t, homeId)).toHaveLength(1);
     expect(await listCoverageWatch(GRACE, t.db, CALLED_AT)).toHaveLength(0);
+  });
+
+  it("gives two proofs from different times different digests that each recompute from the row", async () => {
+    const { companionId, homeId } = await publishedAsk(t);
+
+    const first = await expireSlotUnclaimed(GRACE, homeId, t.db, CALLED_AT);
+    if (!first.ok) throw new Error(first.message);
+    expect(first.digest).not.toBe(sha256Hex(ABSENCE_PROOF_QUERY_TEXT));
+
+    const later = new Date(CALLED_AT.getTime() + 60 * 60 * 1000);
+    const second = await expireSlotUnclaimed(
+      GRACE,
+      companionId,
+      t.db,
+      later,
+    );
+    if (!second.ok) throw new Error(second.message);
+
+    const [homeProof] = await absenceProofRows(t, homeId);
+    const [companionProof] = await absenceProofRows(t, companionId);
+
+    expect(homeProof.slotId).not.toBe(companionProof.slotId);
+    expect(homeProof.caregiverOutboxCount).toBe(0);
+    expect(companionProof.caregiverOutboxCount).toBe(0);
+    expect(homeProof.digest).not.toBe(companionProof.digest);
+    expect(homeProof.digest).not.toBe(sha256Hex(ABSENCE_PROOF_QUERY_TEXT));
+    expect(companionProof.digest).not.toBe(
+      sha256Hex(ABSENCE_PROOF_QUERY_TEXT),
+    );
+
+    // The documented recipe reproduces each digest from its own stored row.
+    for (const proof of [homeProof, companionProof]) {
+      expect(proof.queryText).toBe(ABSENCE_PROOF_QUERY_TEXT);
+      expect(proof.digest).toBe(recomputeAbsenceProofDigestFromRow(proof));
+    }
+
+    expect(first.digest).toBe(homeProof.digest);
+    expect(second.digest).toBe(companionProof.digest);
+
+    // The same slot id at a different written instant is a different proof.
+    expect(
+      computeAbsenceProofDigest({
+        slotId: homeProof.slotId,
+        caregiverOutboxCount: homeProof.caregiverOutboxCount,
+        queryText: homeProof.queryText,
+        generatedAt: new Date(homeProof.createdAt.getTime() + 1),
+      }),
+    ).not.toBe(homeProof.digest);
+
+    const [homeAudit] = await auditRows(t, homeId, [
+      "slot_expired_unclaimed",
+    ]);
+    expect(homeAudit.detail).toMatchObject({ digest: homeProof.digest });
   });
 
   it("refuses to write the proof when any notification row exists", async () => {
@@ -747,7 +832,12 @@ describe("the coverage watch and the failure-path proof", () => {
           slotId: homeId,
           caregiverOutboxCount: 1,
           queryText: ABSENCE_PROOF_QUERY_TEXT,
-          digest: sha256Hex(ABSENCE_PROOF_QUERY_TEXT),
+          digest: computeAbsenceProofDigest({
+            slotId: homeId,
+            caregiverOutboxCount: 1,
+            queryText: ABSENCE_PROOF_QUERY_TEXT,
+            generatedAt: CALLED_AT,
+          }),
         }),
       /absence_proof_zero_outbox|check constraint/i,
     );

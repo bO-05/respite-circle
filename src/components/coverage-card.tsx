@@ -240,9 +240,18 @@ export function CoverageCard({
           >
             {coverageMessageCountLine(proof.caregiverOutboxCount)}
           </p>
-          <p className="max-w-prose text-base leading-relaxed text-ink">
-            This count came from a live query when the time closed. The query
-            and its digest are stored with the proof, so anyone can check it.
+          <p
+            data-testid="absence-proof-recipe"
+            className="max-w-prose text-base leading-relaxed text-ink"
+          >
+            A coordinator writes this proof when they close the time (the app
+            has no scheduled job), and the digest is SHA-256 over a version
+            tag, the query below, this time&apos;s id, the count, and the
+            written time. The query, the id, the count, and the time are all
+            on the stored row, so a coordinator or auditor can recompute the
+            digest; an edited count, a changed query, or a proof copied from
+            another time no longer matches. It is not a signature and does not
+            prove who closed the time.
           </p>
           <pre
             data-testid="absence-proof-query"

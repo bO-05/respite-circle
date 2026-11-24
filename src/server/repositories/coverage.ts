@@ -20,6 +20,7 @@ import {
   type Actor,
 } from "@/server/auth/policy";
 import { isUuid } from "@/server/domain/claim";
+import { computeAbsenceProofDigest } from "@/server/domain/absence-proof";
 import {
   ABSENCE_PROOF_QUERY_TEXT,
   callAfterOpenHoursFromPolicy,
@@ -41,7 +42,6 @@ import {
   partsInZone,
 } from "@/server/domain/time-zone";
 import { getPolicyInForce } from "@/server/repositories/policy";
-import { sha256Hex } from "@/server/services/decision-contract";
 import { closeAskIfFinished } from "./ask-lifecycle";
 import type {
   AppDatabase,
@@ -62,7 +62,9 @@ import type {
  *     closed outcome vocabulary, and an optional note;
  *   - expiring writes `absence_proof` only when that live count is exactly
  *     zero, and the database's CHECK refuses a non-zero row even from a
- *     direct caller;
+ *     direct caller; the digest binds the slot id, that count, the written
+ *     instant, and the query text under the documented `absence-proof/v1`
+ *     recipe;
  *   - expiring the last live time closes the ask in the same transaction, so
  *     it can never be stranded in `approved`.
  *
@@ -899,7 +901,8 @@ export async function reofferSlot(
  *
  * Inside one transaction: lock the time, count every notification row for it,
  * refuse loudly if that count is not zero, write the zero-row `absence_proof`
- * with the exact query text and its digest, audit the closure, and close the
+ * with the exact query text and a digest bound to this slot, this count, and
+ * this written instant (`absence-proof/v1`), audit the closure, and close the
  * ask if this was its last live time. No notification is created here.
  */
 export async function expireSlotUnclaimed(
@@ -1007,7 +1010,12 @@ export async function expireSlotUnclaimed(
       }
 
       const queryText = ABSENCE_PROOF_QUERY_TEXT;
-      const digest = sha256Hex(queryText);
+      const digest = computeAbsenceProofDigest({
+        slotId,
+        caregiverOutboxCount,
+        queryText,
+        generatedAt: now,
+      });
 
       const updated = await tx
         .update(slot)
