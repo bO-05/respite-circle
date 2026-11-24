@@ -253,7 +253,7 @@ npm run build
 ## Calibration
 
 `npm run calibrate` runs the 33 slot-kind and safety cases in
-`data/calibration.json` plus the 10 personal-care cases in
+`data/calibration.json` plus the 16 personal-care cases in
 `data/personal-care-cases.json`. With a provider key it calls the live model and
 writes `data/calibration-results.json` and `CALIBRATION.md`; with no key it runs
 the labelled deterministic baseline.

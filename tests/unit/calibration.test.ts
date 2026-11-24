@@ -423,13 +423,13 @@ describe("calibration scoring", () => {
 });
 
 describe("the committed case sets", () => {
-  it("carries 33 slot-kind/safety cases and 10 personal-care cases", () => {
+  it("carries 33 slot-kind/safety cases and 16 personal-care cases", () => {
     expect(SLOT_CASES).toHaveLength(33);
-    expect(PERSONAL_CARE_CASES).toHaveLength(10);
+    expect(PERSONAL_CARE_CASES).toHaveLength(16);
 
     const combined = combineCalibrationCases(SLOT_CASES, PERSONAL_CARE_CASES);
-    expect(combined).toHaveLength(43);
-    expect(new Set(combined.map((entry) => entry.id)).size).toBe(43);
+    expect(combined).toHaveLength(49);
+    expect(new Set(combined.map((entry) => entry.id)).size).toBe(49);
 
     expect(SLOT_CASES.filter((entry) => entry.expected.safety)).toHaveLength(7);
     expect(SLOT_CASES.filter((entry) => entry.expected.slottable)).toHaveLength(25);
@@ -437,15 +437,15 @@ describe("the committed case sets", () => {
       PERSONAL_CARE_CASES.filter(
         (entry) => entry.expected.personalCare === true,
       ),
-    ).toHaveLength(7);
+    ).toHaveLength(10);
     expect(
       PERSONAL_CARE_CASES.filter(
         (entry) => entry.expected.personalCare === false,
       ),
-    ).toHaveLength(3);
+    ).toHaveLength(6);
     expect(
       PERSONAL_CARE_CASES.filter((entry) => entry.expected.slottable),
-    ).toHaveLength(3);
+    ).toHaveLength(6);
 
     const bilingual = SLOT_CASES.find((entry) => entry.id === "CAL-033");
     expect(bilingual?.expected.bilingual).toBe(true);
@@ -578,8 +578,8 @@ describe("the committed cases on the deterministic engine", () => {
     expect(report.gate).toEqual({ pass: true, failures: [] });
     expect(report.scores.safetyRecall).toBe(1);
     expect(report.scores.personalCareRecall).toBe(1);
-    expect(report.scores.slotKindDenominator).toBe(28);
-    expect(report.scores.slotKindCorrect).toBe(28);
+    expect(report.scores.slotKindDenominator).toBe(31);
+    expect(report.scores.slotKindCorrect).toBe(31);
     expect(report.scores.falsePositiveKinds).toBe(0);
     expect(report.perCase.filter((entry) => !entry.pass)).toEqual([]);
   });

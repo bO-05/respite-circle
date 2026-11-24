@@ -22,6 +22,8 @@ function describeKinds(kinds: readonly SlotKind[]): string {
 export function renderCalibrationMarkdown(report: CalibrationReport): string {
   const scores = report.scores;
   const failures = report.perCase.filter((entry) => !entry.pass);
+  const personalCareNegatives =
+    report.personalCareCaseCount - scores.personalCarePositiveCount;
 
   const lines: string[] = [];
   lines.push("# Calibration — Respite Circle typed decisions");
@@ -109,7 +111,7 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
     "- **Safety recall** is the share of safety-labelled cases routed to a human hold. **Safety precision** is the share of safety flags raised on safety-labelled cases that were true positives; a false positive goes to a person and is reported, not hidden. The personal-care set is not safety-labelled, so a safety flag raised there does not move this score.",
   );
   lines.push(
-    "- **Personal-care recall and precision** use only the ten labelled personal-care cases (seven personal-care asks and three near-miss negatives). Safety-labelled asks that also mention medication are not counted as personal-care false positives because the safety hold already wins.",
+    `- **Personal-care recall and precision** use only the ${report.personalCareCaseCount} labelled personal-care cases (${scores.personalCarePositiveCount} personal-care asks and ${personalCareNegatives} near-miss negatives). Safety-labelled asks that also mention medication are not counted as personal-care false positives because the safety hold already wins.`,
   );
   lines.push(
     "- **Abstention** counts a case when any of the nine answers was below the stated confidence threshold (0.60). Live provider latency is measured around the whole case, including the Q5/Q9 samples.",
@@ -179,7 +181,7 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
     "- `data/calibration.json` — 33 slot-kind/safety cases from the approved spec. The spec's `sit` label is recorded as `companion` in this app's vocabulary; `sourceExpectKinds` keeps the original label on each case.",
   );
   lines.push(
-    "- `data/personal-care-cases.json` — 10 hand-labelled personal-care cases: seven asks that need medication, bathing, toileting, lifting, dressing, a catheter, or a feeding tube; three near-miss negatives that say the person manages their own care.",
+    `- \`data/personal-care-cases.json\` — ${report.personalCareCaseCount} hand-labelled personal-care cases: ${scores.personalCarePositiveCount} asks that name personal care (medication, bathing, toileting, lifting, dressing, washing, pads, tablets, a catheter, or a feeding tube) and ${personalCareNegatives} near-miss negatives that say the person manages their own care.`,
   );
   lines.push(
     "- A case is scored for kinds only when `slottable` is true. Safety, personal-care, and bilingual routes never construct a slot.",

@@ -1,5 +1,5 @@
 {
-  "note": "Ten hand-labelled fictional personal-care cases for the calibration run: seven asks that need medication, bathing, toileting, lifting, dressing, a catheter, or a feeding tube, and three near-miss negatives where the person manages their own care. A personal-care YES or an abstention routes to care_hold and proposes no slots. The negatives make personal-care precision a real measurement rather than a foregone conclusion. This set is not safety-labelled; safety recall and precision use the 33-case slot-kind/safety set.",
+  "note": "Sixteen hand-labelled fictional personal-care cases for the calibration run: ten asks that need medication, bathing, toileting, lifting, dressing, a catheter, a feeding tube, washing, pads, or tablets, and six near-miss negatives where the person manages their own care. The last six were added by the 2026-11-24 audit: three positives whose only personal-care signal is a weak word ('wash and get dressed', 'pads', 'tablets') and three negatives that decline those words in the same breath. A personal-care YES or an abstention routes to care_hold and proposes no slots. The negatives make personal-care precision a real measurement rather than a foregone conclusion. This set is not safety-labelled; safety recall and precision use the 33-case slot-kind/safety set.",
   "cases": [
     {
       "id": "PC-001",
@@ -60,6 +60,42 @@
       "ask": "He doesn't need help with bathing or medication — honestly he's more capable than me. But a meal twice a week would help.",
       "expected": { "slottable": true, "kinds": ["meal"], "personalCare": false },
       "notes": "Near-miss negative: a declined care list plus a meal need."
+    },
+    {
+      "id": "PC-011",
+      "ask": "Could someone help her wash and get dressed on Tuesdays? I leave for work at eight.",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Audit fix: the only personal-care signal is 'wash and get dressed'. A washed-and-dressed need is care, never a volunteer time."
+    },
+    {
+      "id": "PC-012",
+      "ask": "Could a volunteer come and change her pads in the morning? The district nurse used to do it.",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Audit fix: the only personal-care signal is 'pads'. Continence care is a professional route, not a slot."
+    },
+    {
+      "id": "PC-013",
+      "ask": "Make sure she takes her tablets with dinner — she forgets if nobody reminds her.",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Audit fix: the only personal-care signal is 'tablets'. Prompting medication is personal care even without the word 'medication'."
+    },
+    {
+      "id": "PC-014",
+      "ask": "She washes and dresses herself now — it's company she misses. Could someone sit with her on Tuesday?",
+      "expected": { "slottable": true, "kinds": ["companion"], "personalCare": false },
+      "notes": "Audit-fix near-miss negative: the same wash-and-dress words, declined as self-care; the need is company."
+    },
+    {
+      "id": "PC-015",
+      "ask": "No help needed with her pads — she manages that herself. But a meal twice a week would help.",
+      "expected": { "slottable": true, "kinds": ["meal"], "personalCare": false },
+      "notes": "Audit-fix near-miss negative: continence care explicitly declined; the need is a meal."
+    },
+    {
+      "id": "PC-016",
+      "ask": "She takes her own tablets with dinner, so no medication needed. Could a volunteer drop off a meal on Thursday?",
+      "expected": { "slottable": true, "kinds": ["meal"], "personalCare": false },
+      "notes": "Audit-fix near-miss negative: the person manages their own tablets; the need is a meal."
     }
   ]
 }

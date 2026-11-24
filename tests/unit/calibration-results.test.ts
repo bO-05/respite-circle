@@ -67,7 +67,7 @@ describe("the published calibration contract", () => {
     const cases = readCases();
     const run = await runCalibrationCases({ cases, mode: "baseline", env: {} });
 
-    expect(run.outcomes).toHaveLength(43);
+    expect(run.outcomes).toHaveLength(49);
 
     const report = scoreCalibration(cases, run.outcomes, {
       source: "deterministic-baseline",
@@ -85,13 +85,13 @@ describe("the published calibration contract", () => {
 
     expect(report.engine).toBe("deterministic-baseline");
     expect(report.source).toBe("deterministic-baseline");
-    expect(report.caseCount).toBe(43);
-    expect(report.slottableCaseCount).toBe(28);
+    expect(report.caseCount).toBe(49);
+    expect(report.slottableCaseCount).toBe(31);
     expect(report.safetyCaseCount).toBe(7);
-    expect(report.personalCareCaseCount).toBe(10);
-    expect(report.perCase).toHaveLength(43);
-    expect(report.scores.slotKindDenominator).toBe(28);
-    expect(report.scores.slotKindCorrect).toBe(28);
+    expect(report.personalCareCaseCount).toBe(16);
+    expect(report.perCase).toHaveLength(49);
+    expect(report.scores.slotKindDenominator).toBe(31);
+    expect(report.scores.slotKindCorrect).toBe(31);
     expect(report.gate).toEqual({ pass: true, failures: [] });
 
     for (const entry of report.perCase) {

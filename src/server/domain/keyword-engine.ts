@@ -132,11 +132,29 @@ const MOBILITY_POSITIVE =
 const MOBILITY_NEGATIVE =
   /\b(doesn'?t need (help )?(walking|moving)|walks fine|no mobility (issues|problems)|gets around fine)\b/i;
 
-// Q9 — personal care
-const PERSONAL_CARE_POSITIVE =
-  /\b(medication|medications|meds|medicine|bathing|bathe|bathes|bath|shower(?:ing|s)?|toileting|toilet|incontinent|incontinence|diaper|nappy|lifting|lift (her|him|them)|transfers?|dressing|undressing|feeding|feeding tube|tube feed(?:ing)?|catheter|wound care|insulin|administer)\b/i;
-const PERSONAL_CARE_NEGATIVE =
-  /\b(no personal care|not personal care|no medication|no meds|(?:doesn'?t|does not|doesnt) (?:need|take) (?:help with )?medication|(?:doesn'?t|does not|doesnt) need help with (bathing|medication|toileting|dressing|feeding)|no lifting|can (bathe|dress|feed) (herself|himself|themselves)|(?:showers?|bathes?|dresses?|feeds?|toilets?) (?:herself|himself|themselves)|(?:manages?|handles?) (?:her|his|their) own (?:shower|showering|bath|bathing|medication|medications|meds|medicine|tablets|pills|dressing|toileting)|takes? (?:her|his|their) own (?:medication|medications|meds|medicine|tablets|pills))\b/i;
+// Q9 — personal care.
+// The audit at 410cc1b found weak words missing: pills, tablets, wash, "get
+// dressed", bathroom, pads, briefs, and hygiene all named care while the rule
+// answered a confident NO. They are one shared fragment precisely because the
+// positive rule and every strip that governs it must move together; a word
+// added to one list and forgotten in another turns "she takes her own tablets"
+// into a care hold. "briefs" is plural deliberately: a "brief visit" is not care.
+const WEAK_CARE_WORDS =
+  String.raw`pills?|tablets?|wash(?:es|ed|ing)?|bathroom|pads?|briefs|hygiene|get(?:s|ting)? dressed`;
+
+// A third-person self-care verb that can take a reflexive pronoun, including
+// the compound "washes and dresses herself".
+const SELF_CARE_VERBS = String.raw`showers?|bathes?|washes?|dresses?|feeds?|toilets?|get(?:s|ting)? dressed`;
+const SELF_CARE_REFLEXIVE = String.raw`\b(?:${SELF_CARE_VERBS})(?:\s+(?:and|,)\s+(?:${SELF_CARE_VERBS}))*\s+(?:herself|himself|themselves)\b`;
+
+const PERSONAL_CARE_POSITIVE = new RegExp(
+  String.raw`\b(medication|medications|meds|medicine|bathing|bathe|bathes|bath|shower(?:ing|s)?|toileting|toilet|incontinent|incontinence|diaper|nappy|lifting|lift (her|him|them)|transfers?|dressing|undressing|feeding|feeding tube|tube feed(?:ing)?|catheter|wound care|insulin|administer|${WEAK_CARE_WORDS})\b`,
+  "i",
+);
+const PERSONAL_CARE_NEGATIVE = new RegExp(
+  String.raw`\b(no personal care|not personal care|no (?:medication|meds|pills?|tablets?|bathing|washing|hygiene|toileting|dressing|feeding|lifting)|(?:doesn'?t|does not|doesnt) (?:need|take) (?:help with )?(?:medication|meds|pills?|tablets?)|(?:doesn'?t|does not|doesnt) need help with (?:bathing|medication|toileting|dressing|feeding|washing|hygiene|pills?|tablets?|pads?|briefs|the bathroom|getting dressed)|no help (?:needed )?(?:with |in |to )?(?:the )?(?:bathroom|pills?|tablets?|pads?|briefs|washing|hygiene)|no lifting|can (?:bathe|dress|feed|wash|get dressed) (?:herself|himself|themselves)|${SELF_CARE_REFLEXIVE}|(?:manages?|handles?|takes?|changes?|do(?:es)?) (?:her|his|their) own (?:shower|showering|bath|bathing|medication|medications|meds|medicine|tablets|pills|dressing|toileting|washing|hygiene|pads?|briefs)|takes? (?:her|his|their) own (?:medication|medications|meds|medicine|tablets|pills))\b`,
+  "i",
+);
 
 /**
  * Strip phrases where a care term is explicitly negated before running the
@@ -144,8 +162,10 @@ const PERSONAL_CARE_NEGATIVE =
  * "does not need help with medication" is not personal care, while "no falls,
  * but she wanders at night" still leaves the wandering signal intact.
  */
-const NEGATED_CARE_TERM =
-  /\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without|hasn'?t|haven'?t)\b[^.;]{0,32}?\b(?:falls?|fallen|falling|injur(?:y|ed|ies)|hurt|unsafe|danger|emergency|medication|medications|meds|medicine|bathing|toileting|lifting|transfers?|dressing|feeding|personal care|walking|moving|mobility|stairs|steps)\b/gi;
+const NEGATED_CARE_TERM = new RegExp(
+  String.raw`\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without|hasn'?t|haven'?t)\b[^.;]{0,32}?\b(?:falls?|fallen|falling|injur(?:y|ed|ies)|hurt|unsafe|danger|emergency|medication|medications|meds|medicine|bathing|toileting|lifting|transfers?|dressing|feeding|personal care|walking|moving|mobility|stairs|steps|${WEAK_CARE_WORDS})\b`,
+  "gi",
+);
 
 function withoutNegatedCareTerms(text: string): string {
   return text.replace(NEGATED_CARE_TERM, " omitted ");
@@ -158,12 +178,16 @@ function withoutNegatedCareTerms(text: string): string {
  * manages it themselves ("she manages her own shower"). None of those is a
  * personal-care need, so they are removed before the positive rule runs.
  */
-const PERSONAL_CARE_DECLINED_CLAUSE =
-  /\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without)\b[^.;]{0,80}?\b(?:personal care|medication|medications|meds|medicine|bathing|bathe|toileting|lifting|transfers?|dressing|feeding)\b[^.;]{0,48}/gi;
-const SELF_CARE_STATEMENT =
-  /\b(?:manages?|handles?|takes?) (?:her|his|their) own\b[^.;]{0,48}|\b(?:showers?|bathes?|dresses?|feeds?|toilets?) (?:herself|himself|themselves)\b/gi;
+const PERSONAL_CARE_DECLINED_CLAUSE = new RegExp(
+  String.raw`\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without)\b[^.;]{0,80}?\b(?:personal care|medication|medications|meds|medicine|bathing|bathe|toileting|lifting|transfers?|dressing|feeding|${WEAK_CARE_WORDS})\b[^.;]{0,48}`,
+  "gi",
+);
+const SELF_CARE_STATEMENT = new RegExp(
+  String.raw`\b(?:manages?|handles?|takes?|changes?|do(?:es)?) (?:her|his|their) own\b[^.;]{0,48}|${SELF_CARE_REFLEXIVE}`,
+  "gi",
+);
 const CAREGIVER_SELF_CARE =
-  /\b(?:so|while) (?:i|we) (?:can |could )?(?:shower|bathe|sleep|rest|shop|work|go|eat|breathe)\b/gi;
+  /\b(?:so|while) (?:i|we) (?:can |could )?(?:shower|bathe|wash|sleep|rest|shop|work|go|eat|breathe)\b/gi;
 
 function positiveTextForPersonalCare(text: string): string {
   // The declined-clause and self-care strips run first, on the original words:
