@@ -78,15 +78,9 @@ export async function draftSlotAction(
   _previous: DraftActionState,
   formData: FormData,
 ): Promise<DraftActionState> {
-  const authorized = await deskSession();
-  if (!authorized) return errorState(SESSION_ENDED);
-
-  const { session } = authorized;
-  const slotId = text(formData, "slotId").trim();
-  const intent = text(formData, "intent").trim() || "save";
-
-  // React resets an uncontrolled form after its action. Hand the submitted
-  // fields back with a refusal so the coordinator's words stay on screen.
+  // React resets an uncontrolled form after its action. Read the fields before
+  // every check and hand them back with every refusal, so the coordinator's
+  // unsaved words survive a refused Hold, Release, Remove, or Save.
   const submitted: DraftSlotSubmittedValues = {
     kind: text(formData, "kind"),
     label: text(formData, "label"),
@@ -100,16 +94,23 @@ export async function draftSlotAction(
     field: DraftActionState["field"] = "form",
   ) => errorState(message, field, submitted);
 
+  const authorized = await deskSession();
+  if (!authorized) return fail(SESSION_ENDED);
+
+  const { session } = authorized;
+  const slotId = text(formData, "slotId").trim();
+  const intent = text(formData, "intent").trim() || "save";
+
   if (!UUID_PATTERN.test(slotId)) {
-    return errorState("That draft is not available.");
+    return fail("That draft is not available.");
   }
 
   try {
     const context = await getDraftSlotActionContext(session, slotId);
-    if (!context) return errorState("That draft is not available.");
+    if (!context) return fail("That draft is not available.");
 
     if (context.askStatus !== "waiting_coordinator") {
-      return errorState(
+      return fail(
         "This ask is no longer waiting for a coordinator, so its drafts cannot be changed here.",
       );
     }
@@ -119,27 +120,27 @@ export async function draftSlotAction(
         slotId,
         reason: text(formData, "holdReason"),
       });
-      if (!result.ok) return errorState(result.message, "reason");
+      if (!result.ok) return fail(result.message, "reason");
       refresh(result.askId);
       return successState(result.message, slotId);
     }
 
     if (intent === "release") {
       const result = await releaseDraftSlot(session, slotId);
-      if (!result.ok) return errorState(result.message);
+      if (!result.ok) return fail(result.message);
       refresh(result.askId);
       return successState(result.message, slotId);
     }
 
     if (intent === "remove") {
       const result = await removeDraftSlot(session, slotId);
-      if (!result.ok) return errorState(result.message);
+      if (!result.ok) return fail(result.message);
       refresh(result.askId);
       return successState(result.message, slotId);
     }
 
     if (intent !== "save") {
-      return errorState("That action is not one this page offers.");
+      return fail("That action is not one this page offers.");
     }
 
     if (text(formData, "kind") === "drive" && !context.transportEnabled) {

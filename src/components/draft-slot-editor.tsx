@@ -164,7 +164,17 @@ export function DraftSlotCard({
             >
               Kind
             </label>
+            {/*
+              An uncontrolled select keeps the option it mounted with: React
+              only re-seeds defaultSelected when the default moves from null to
+              a value, so a refusal that hands back a different kind would be
+              undone by React's post-action form reset. Re-mounting on the
+              handed-back value makes the coordinator's unsaved choice stick,
+              as it already does for the text inputs, the checkbox, and the
+              note.
+            */}
             <select
+              key={values?.kind ?? "stored-kind"}
               id={`${slot.id}-kind`}
               name="kind"
               data-testid="draft-kind"
