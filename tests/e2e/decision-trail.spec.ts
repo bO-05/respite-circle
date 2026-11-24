@@ -135,7 +135,7 @@ test.describe("decision trail", () => {
       HERO_ASK,
     );
     await expect(page.getByTestId("ask-status")).toHaveText(
-      /waiting — Grace reads this first/i,
+      /with Grace — not read yet/i,
     );
     await expect(
       page.getByText(

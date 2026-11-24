@@ -391,10 +391,12 @@ test("a deputy carries the desk, the switch is audited, and only a meal publishe
       caregiver.page.getByText(/may go on the congregation board/i).first(),
     ).toBeVisible();
     // The status pill is part of the receipt. A time from this ask can already
-    // be on the board, so the pill must not claim the coordinator read it
-    // first (the seeded-church ask spec pins the unqualified off-state pill).
+    // be on the board, so the pill says the words are with Ada and not read
+    // yet: no desk word, and no claim that the coordinator has read them (the
+    // seeded-church ask spec pins the same wording with the switch off).
     const receiptStatus = caregiver.page.getByTestId("ask-status");
-    await expect(receiptStatus).toContainText(/waiting — ada reads this/i);
+    await expect(receiptStatus).toContainText(/with Ada — not read yet/i);
+    await expect(receiptStatus).not.toContainText(/waiting/i);
     await expect(receiptStatus).not.toContainText(/reads this first/i);
     await shot(caregiver.page, "02c-caregiver-qualified-receipt");
 

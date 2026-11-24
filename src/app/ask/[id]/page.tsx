@@ -25,13 +25,15 @@ export const dynamic = "force-dynamic";
  * The caregiver's receipt, extended with the decision trail.
  *
  * The receipt the caregiver already knows stays first: the status pill, the
- * exact words, and the sentence naming the person who reads them. The pill and
- * that sentence qualify themselves only while the ask's signed policy has the
- * low-risk switch on, because a meal time can then reach the congregation
- * board before a person approves it. Below them the page shows the nine typed
- * answers for the *latest* revision only, plus the model metadata, the policy
- * version, and the digest. There is no model prose anywhere on this page, and
- * no edit control for the words.
+ * exact words, and the sentence naming the person who reads them. While the
+ * ask waits for a person, the pill says the words are with her and not read
+ * yet: it never uses the desk's word for that state, and it never claims a
+ * reading that has not happened. The sentence qualifies itself only while the
+ * ask's signed policy has the low-risk switch on, because a meal time can then
+ * reach the congregation board before a person approves it. Below them the
+ * page shows the nine typed answers for the *latest* revision only, plus the
+ * model metadata, the policy version, and the digest. There is no model prose
+ * anywhere on this page, and no edit control for the words.
  */
 
 type StatusCopy = { label: string; tone: "amber" | "green" | "ink" };
@@ -40,21 +42,18 @@ function statusCopy(
   status: AskStatus,
   coordinatorFirstName: string | null,
   sentBackByFirstName: string | null,
-  autoPublishLowRisk: boolean,
 ): StatusCopy {
   const name = coordinatorFirstName ?? "Your coordinator";
 
   switch (status) {
     case "waiting_coordinator":
-      // While the signed low-risk switch is on, a meal time from this ask can
-      // be on the congregation board before the coordinator has read the ask.
-      // "Reads this first" would then be a promise the code no longer keeps.
-      return {
-        label: autoPublishLowRisk
-          ? `Waiting — ${name} reads this`
-          : `Waiting — ${name} reads this first`,
-        tone: "amber",
-      };
+      // The caregiver's own state, in her language. The pill says where the
+      // words are and that a person has not read them yet; it never carries
+      // the desk's noun for the state and never claims a reading that has not
+      // happened. With the low-risk switch on a meal time can be on the board
+      // before the coordinator reads the ask, so "reads this first" would be a
+      // promise the code no longer keeps — "not read yet" is true either way.
+      return { label: `With ${name} — not read yet`, tone: "amber" };
     case "safety_hold":
       return { label: `${name} will call you today`, tone: "amber" };
     case "care_hold":
@@ -119,7 +118,6 @@ export default async function AskReceiptPage({
     receipt.status,
     name,
     receipt.sentBackByFirstName,
-    receipt.autoPublishLowRisk,
   );
   const reader = name ?? "your coordinator";
   const sender = receipt.sentBackByFirstName ?? name ?? "Your coordinator";

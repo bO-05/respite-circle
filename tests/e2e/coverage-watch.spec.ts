@@ -38,6 +38,7 @@ const QUIET_EXPIRE_SLOT = "d2000000-0000-4000-8000-00000000000a";
 const QUIET_REOFFER_SLOT = "d2000000-0000-4000-8000-00000000000b";
 const QUIET_ASK_TWO = "d2000000-0000-4000-8000-00000000000c";
 const QUIET_CLOSURE_SLOT = "d2000000-0000-4000-8000-00000000000d";
+const QUIET_WAITING_ASK = "d2000000-0000-4000-8000-00000000000e";
 
 const QUIET_COORDINATOR_TOKEN = "e2e-coverage-coordinator";
 const QUIET_CAREGIVER_TOKEN = "e2e-coverage-caregiver";
@@ -329,6 +330,13 @@ async function ensureQuietChurch(db: E2eDatabase): Promise<void> {
         ${QUIET_ASK_TWO}, ${QUIET_CHURCH}, ${QUIET_CAREGIVER}, ${QUIET_RECIPIENT},
         ${QUIET_VERBATIM}, 'approved', ${QUIET_POLICY},
         ${QUIET_COORDINATOR}, now()
+      ),
+      (
+        -- The state a caregiver sits in before a person has read her words.
+        -- This row exists so the banned-word scan can run against it.
+        ${QUIET_WAITING_ASK}, ${QUIET_CHURCH}, ${QUIET_CAREGIVER},
+        ${QUIET_RECIPIENT}, ${QUIET_VERBATIM}, 'waiting_coordinator',
+        ${QUIET_POLICY}, NULL, NULL
       )
     ON CONFLICT (id) DO NOTHING
   `;
@@ -801,6 +809,38 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     expect(await totalNotifications(db)).toBe(2);
 
     await grace.context.close();
+    await marta.context.close();
+  });
+
+  test("the waiting receipt carries no desk words and still names the coordinator", async ({
+    browser,
+  }) => {
+    const marta = await signIn(browser, QUIET_CAREGIVER_TOKEN);
+    const response = await marta.page.goto(`/ask/${QUIET_WAITING_ASK}`);
+    expect(response?.status()).toBe(200);
+
+    // The state a caregiver actually sits in: her words are with a named
+    // person and nothing has been decided. It still names her coordinator.
+    const status = marta.page.getByTestId("ask-status");
+    await expect(status).toContainText(/Grace/);
+
+    // The same ban that guards `/care`, the approved receipt and the closed
+    // receipt now guards this state too. The old "Waiting — …" pill fails here.
+    const waitingText = await marta.page.locator("body").innerText();
+    expectNoDeskConcepts(waitingText, "/ask/[id] waiting_coordinator");
+
+    const waitingHtml = await (
+      await marta.page.request.get(`/ask/${QUIET_WAITING_ASK}`)
+    ).text();
+    expect(waitingHtml).not.toMatch(
+      /unclaimed|still waiting|waiting time|declined/i,
+    );
+
+    // It says the words have not been read yet, not that they have.
+    await expect(status).toHaveText(/With Grace — not read yet/i);
+    await expect(status).not.toContainText(/read this first/i);
+    await shot(marta.page, "ask-waiting-not-read-yet");
+
     await marta.context.close();
   });
 });

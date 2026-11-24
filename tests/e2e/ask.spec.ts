@@ -190,7 +190,7 @@ test.describe("caregiver ask intake", () => {
     const askId = page.url().split("/").at(-1) as string;
 
     await expect(page.getByTestId("ask-status")).toContainText(
-      /waiting — Grace reads this first/i,
+      /with Grace — not read yet/i,
     );
     // The switch is off for the seeded church, so the receipt is exactly the
     // sentence that shipped before the switch existed.

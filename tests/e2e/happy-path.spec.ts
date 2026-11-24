@@ -97,7 +97,7 @@ test.describe("the happy path", () => {
     askId = marta.page.url().split("/").at(-1) as string;
 
     await expect(marta.page.getByTestId("ask-status")).toContainText(
-      /waiting — Grace reads this first/i,
+      /with Grace — not read yet/i,
     );
     await expect(marta.page.getByTestId("caregiver-verbatim")).toHaveText(ASK);
 
