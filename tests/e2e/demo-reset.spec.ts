@@ -23,8 +23,21 @@ import { E2E_RESET_PATH, E2E_RESET_TOKEN } from "./helpers/e2e-env";
  * resets, and truncation restoring seeded wording an edit had changed.
  */
 
+type ResetEngine = {
+  askId: string;
+  label: string;
+  engine: "live" | "deterministic" | "mixed" | "none";
+  providers: string[];
+  models: string[];
+  latencyMs: number | null;
+  questionCount: number;
+  fallbackReason: string | null;
+};
+
 type ResetSuccess = {
   reset: true;
+  mode?: "rules" | "live";
+  engines?: ResetEngine[];
   church: string;
   seedDigest: string;
   counts: Record<string, number>;
@@ -145,6 +158,21 @@ test.describe("VAL-CROSS-006 and VAL-DEMO-001 — demo reset", () => {
     expect(ok.counts.session_template).toBe(1);
     expect(ok.counts.ask).toBe(4);
     expect(ok.counts.slot).toBe(3);
+
+    // The reset names the engine behind every ask. This asserts the shape and
+    // the count, never which engine answered: the suite runs the rules
+    // baseline, while a live run is proven separately.
+    expect(ok.engines).toHaveLength(4);
+    for (const engine of ok.engines ?? []) {
+      expect(engine.askId).toMatch(/^[0-9a-f-]{36}$/);
+      expect(engine.label.length).toBeGreaterThan(0);
+      expect(["live", "deterministic", "mixed", "none"]).toContain(
+        engine.engine,
+      );
+      expect(engine.questionCount).toBe(9);
+      expect(engine.providers.length).toBeGreaterThan(0);
+      expect(engine.models.length).toBeGreaterThan(0);
+    }
   });
 
   test("VAL-DEMO-001 and VAL-CROSS-002 — leaves a demo-ready board and preserves the failure path", async ({

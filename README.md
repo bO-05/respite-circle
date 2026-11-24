@@ -133,6 +133,7 @@ dashboard. Only `NEXT_PUBLIC_APP_URL` is public, and nothing secret carries a
 | `RC_OPENROUTER_MODEL` | optional | Model id used when the OpenRouter key is selected. |
 | `RC_DEMO_MODE` | yes | `true` or `1` exposes `/demo` and enables the demo reset route. |
 | `RC_DEMO_RESET_TOKEN` | for demo | Required by `POST /api/demo/reset`. Production has a distinct random value. |
+| `RC_DEMO_LIVE_AI` | optional | `true` or `1` makes the demo reset decide its four demo asks with the configured model instead of the seeded rules baseline. Empty or `0` keeps the honest rules label. A missing, failing, or hanging provider falls back to the rules engine; the reset's `engines` output says which engine answered each ask. |
 | `NEXT_PUBLIC_APP_URL` | yes | `http://localhost:3130` locally, the Vercel origin in production. |
 
 ### Local and test only
@@ -181,7 +182,7 @@ truncate the demo a judge is about to see.
 | Command | What it writes | What `/circle` shows |
 |---|---|---|
 | `npm run db:seed` | The church, the fictional cast (three caregivers, four volunteers, the coordinator and deputy), one policy version, the session template, and four upcoming Tuesday Respite Morning sessions. Insert-only. | **Empty on a fresh database.** It writes no asks or slots, so the board shows its calm empty state. |
-| `npm run db:reset` | Truncates the demo tables, writes the same cast, then four demo asks and three open slots: a companion place, a gated home visit, and a meal. It verifies twelve assertions and prints a seed digest. | The demo-ready board: three open cards, one ask waiting on the desk, one safety hold. |
+| `npm run db:reset` | Truncates the demo tables, writes the same cast, then four demo asks and three open slots: a companion place, a gated home visit, and a meal. It verifies twelve assertions, prints the engine behind each ask, and prints a seed digest. | The demo-ready board: three open cards, one ask waiting on the desk, one safety hold. |
 
 On a database that has run only `npm run db:seed`, `/circle` is empty by design
 — that is the honest state of a church week with no asks. Run `npm run db:reset`
@@ -223,6 +224,19 @@ curl.exe -s -X POST https://respite-circle.vercel.app/api/demo/reset `
 ```json
 {
   "reset": true,
+  "mode": "rules",
+  "engines": [
+    {
+      "askId": "...",
+      "label": "Marta's hero ask",
+      "engine": "deterministic",
+      "providers": ["deterministic"],
+      "models": ["rules-baseline-v1"],
+      "latencyMs": 12,
+      "questionCount": 9,
+      "fallbackReason": null
+    }
+  ],
   "church": "Grace Community Church",
   "seedDigest": "sha256:...",
   "counts": { "ask": 4, "slot": 3, "notification": 0 },
@@ -232,7 +246,33 @@ curl.exe -s -X POST https://respite-circle.vercel.app/api/demo/reset `
 
 If any assertion fails it answers 500 with `reset: false` and the failed
 assertion ids; it never reports a success it could not verify. The local
-equivalent is `npm run db:reset`, which prints the same counts and seed digest.
+equivalent is `npm run db:reset`, which prints the same engines, counts, and
+seed digest.
+
+#### Live decisions in the demo reset
+
+With `RC_DEMO_LIVE_AI=1` and a provider key configured, the reset decides the
+four demo asks through the same typed-decision path as caregiver intake — the
+same prompt, the same strict schema, the same `decision` and `audit_event`
+rows. A receipt a judge opens then shows the model's name, the stated
+confidence on every answer, and its latency, and no "Auto-filled by rules, not
+AI" banner. The reset's `engines` array names the engine per ask:
+
+```powershell
+$env:RC_DEMO_LIVE_AI = "1"
+npm run db:reset
+# Marta's hero ask: live — mistral / mistral-small-latest, 9 answers, 2140 ms
+```
+
+The demo's prepared structure (Marta's approval, the queued ask, the safety
+hold, the failure-path meal) is the fixture and is never changed by a model
+answer. If the provider is absent, throws, hangs, or answers in a way that
+would move an approved or queued ask into a safety or personal-care hold, that
+ask falls back to the labelled rules engine, `mode` stays `live`, the engine
+entry records the fallback reason, and the twelve assertions still pass. The
+switch never changes an assertion or the seed digest; only the engine name and
+the answer values change. Leave it unset on a production deploy unless the demo
+is meant to depend on the provider being reachable.
 
 ## Tests
 
@@ -310,9 +350,11 @@ push to `main` auto-deploys production from Git. `package.json` pins
 Set these in the Vercel Production environment: `DATABASE_URL`,
 `DATABASE_URL_UNPOOLED`, `SESSION_SECRET`, `RC_DEMO_MODE`,
 `RC_DEMO_RESET_TOKEN`, `NEXT_PUBLIC_APP_URL`, and, for live decisions, a
-provider key with `LLM_PROVIDER` and `RC_MODEL`. The deployed app uses the app
-database `neondb`; never point it at `respite_circle_e2e`, and never put the
-`E2E_*` variables, `RC_DB_BRANCH`, or `RC_SEED_ALLOW_REMOTE` in Vercel.
+provider key with `LLM_PROVIDER` and `RC_MODEL`. Add `RC_DEMO_LIVE_AI=1` only
+when the demo reset should decide its four asks with that model; the reset
+output names the engine that actually answered each ask. The deployed app uses
+the app database `neondb`; never point it at `respite_circle_e2e`, and never
+put the `E2E_*` variables, `RC_DB_BRANCH`, or `RC_SEED_ALLOW_REMOTE` in Vercel.
 
 Apply migrations and the baseline seed to the deployed database from a shell,
 never from the build:

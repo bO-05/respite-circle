@@ -1,6 +1,8 @@
+import { inArray } from "drizzle-orm";
 import { DEMO_IDS, seedDemoState, type DemoStateSummary } from "@/db/demo-state";
 import { readAllTableCounts, type TableCounts } from "@/db/counts";
 import { resetDemoDatabase } from "@/db/reset";
+import { session } from "@/db/schema";
 import {
   seedChurch,
   seedIds,
@@ -11,7 +13,16 @@ import {
 } from "@/db/seed-data";
 import type { SeedDb } from "@/db/seed-core";
 import { verifySeed } from "@/db/verify";
+import { nextOccurrences } from "@/server/domain/session-calendar";
 import { sha256Hex } from "./decision-contract";
+import {
+  DEMO_DECISION_ASKS,
+  decideDemoAsks,
+  isDemoLiveAiEnabled,
+  type DemoAskEngine,
+  type DemoDecisionMode,
+} from "./demo-decisions";
+import type { DecisionProvider, EnvLike } from "./providers";
 
 /**
  * The deterministic demo reset.
@@ -58,6 +69,28 @@ export type DemoResetResult = {
     failed: string[];
   };
   failures: DemoAssertionFailure[];
+  /**
+   * The engine that actually decided each demo ask, read back from the stored
+   * decision rows. `live` means a model answered; `deterministic` means the
+   * labelled rules engine did. Never part of an assertion or the seed digest.
+   */
+  engines: DemoAskEngine[];
+  /** `live` when `RC_DEMO_LIVE_AI` asked for a model run; the engines say what answered. */
+  mode: DemoDecisionMode;
+};
+
+export type DemoResetOptions = {
+  now?: Date;
+  fault?: DemoResetFault | null;
+  /** Force a mode for a test or a local proof. Default: `RC_DEMO_LIVE_AI`. */
+  decisionMode?: DemoDecisionMode;
+  /** Inject the live provider (tests and fault injection). */
+  provider?: DecisionProvider;
+  env?: EnvLike;
+  /** Per-provider-call cap for the live run. */
+  liveTimeoutMs?: number;
+  /** Total time the live run may spend before the rules engine finishes. */
+  liveBudgetMs?: number;
 };
 
 type ResetFacts = {
@@ -109,6 +142,13 @@ type ResetFacts = {
     verbatim_text: string;
   }>;
   decisionCounts: Array<{ ask_revision_id: string; count: number }>;
+  decisionEngines: Array<{
+    ask_id: string;
+    provider: string;
+    model: string;
+    latency_ms: number | null;
+    count: number;
+  }>;
 };
 
 async function readFacts(db: SeedDb): Promise<ResetFacts> {
@@ -125,6 +165,7 @@ async function readFacts(db: SeedDb): Promise<ResetFacts> {
     candidates,
     revisions,
     decisionCounts,
+    decisionEngines,
   ] = await Promise.all([
     readAllTableCounts(db),
     db.$client<{ name: string; timezone: string }[]>`
@@ -174,6 +215,16 @@ async function readFacts(db: SeedDb): Promise<ResetFacts> {
        GROUP BY ask_revision_id
        ORDER BY ask_revision_id
     `,
+    db.$client<ResetFacts["decisionEngines"]>`
+      SELECT ask_id,
+             provider,
+             model,
+             MAX(latency_ms)::int AS latency_ms,
+             COUNT(*)::int AS count
+        FROM decision
+       GROUP BY ask_id, provider, model
+       ORDER BY ask_id, provider, model
+    `,
   ]);
 
   return {
@@ -189,6 +240,7 @@ async function readFacts(db: SeedDb): Promise<ResetFacts> {
     candidates,
     revisions,
     decisionCounts,
+    decisionEngines,
   };
 }
 
@@ -233,6 +285,60 @@ function buildSeedDigest(facts: ResetFacts): string {
   };
 
   return `sha256:${sha256Hex(canonicalJson(manifest))}`;
+}
+
+/**
+ * Name the engine behind each demo ask from its stored decision rows.
+ *
+ * Read back rather than remembered: the output describes the database, so it
+ * cannot claim a live run that did not persist. The demo has one engine per
+ * ask by construction; `mixed` and `none` exist so a bug is reported plainly
+ * instead of being rounded to a passing label.
+ */
+function summariseDecisionEngines(
+  facts: ResetFacts,
+  outcomes: ReadonlyArray<{
+    askId: string;
+    fallbackReason: DemoAskEngine["fallbackReason"];
+  }>,
+): DemoAskEngine[] {
+  const reasons = new Map(
+    outcomes.map((outcome) => [outcome.askId, outcome.fallbackReason]),
+  );
+
+  return DEMO_DECISION_ASKS.map((ask) => {
+    const rows = facts.decisionEngines.filter(
+      (row) => row.ask_id === ask.askId,
+    );
+    const providers = Array.from(
+      new Set(rows.map((row) => row.provider)),
+    ).sort();
+    const models = Array.from(new Set(rows.map((row) => row.model))).sort();
+    const latencies = rows
+      .map((row) => row.latency_ms)
+      .filter((value): value is number => typeof value === "number");
+
+    let engine: DemoAskEngine["engine"] = "none";
+    if (rows.length > 0) {
+      engine =
+        providers.length === 1
+          ? providers[0] === "deterministic"
+            ? "deterministic"
+            : "live"
+          : "mixed";
+    }
+
+    return {
+      askId: ask.askId,
+      label: ask.label,
+      engine,
+      providers,
+      models,
+      latencyMs: latencies.length > 0 ? Math.max(...latencies) : null,
+      questionCount: rows.reduce((total, row) => total + row.count, 0),
+      fallbackReason: reasons.get(ask.askId) ?? null,
+    };
+  });
 }
 
 /**
@@ -519,17 +625,97 @@ async function applyFault(
 }
 
 /**
+ * Move the four seeded Respite Mornings onto the next four Tuesdays from `now`.
+ *
+ * `seedSessions` is pinned to a reference date so the baseline fixture is
+ * deterministic, but a demo reset must always show a future calendar: after
+ * the first seeded Tuesday has passed, the reset would find three future
+ * sessions and fail its own seventh assertion. The ids, weekday, and wall time
+ * stay the same, so the companion slot keeps pointing at the same session.
+ */
+async function rollSessionsForward(db: SeedDb, now: Date): Promise<void> {
+  const occurrences = nextOccurrences(
+    seedSessionTemplate,
+    now,
+    seedChurch.timezone,
+    4,
+  );
+  if (occurrences.length !== 4) {
+    throw new Error(
+      "The demo reset could not place four future Respite Mornings from the weekly template.",
+    );
+  }
+
+  // Delete then insert, not four UPDATEs: the unique (template_id, starts_at)
+  // index rejects a transient collision while one row still holds a date a
+  // later row is about to take. Nothing references a session before the demo
+  // asks and slots are written, so the ids can be reused safely.
+  await db
+    .delete(session)
+    .where(inArray(session.id, [...seedIds.sessions]));
+  await db.insert(session).values(
+    occurrences.map((occurrence, index) => ({
+      id: seedIds.sessions[index],
+      churchId: seedChurch.id,
+      templateId: seedSessionTemplate.id,
+      startsAt: occurrence.startsAt,
+      endsAt: occurrence.endsAt,
+      capacity: seedSessionTemplate.capacity,
+      status: "scheduled" as const,
+    })),
+  );
+}
+
+/**
  * Wipe, reseed, write the demo-ready rows, verify twelve assertions, and return
  * a stable digest. The caller (CLI or route) reports success only when `ok`.
+ *
+ * `decisionMode` defaults to `RC_DEMO_LIVE_AI`: with it on, the four asks are
+ * decided through the same `decide()` + `persistDecisionRun()` path as intake,
+ * and the result names the engine behind each ask. Off, or with a provider
+ * that is absent, erroring, or answering against the demo's prepared
+ * structure, the labelled rules engine completes the run. No assertion and no
+ * part of the seed digest depends on which engine answered.
  */
 export async function runDemoReset(
   db: SeedDb,
-  options: { now?: Date; fault?: DemoResetFault | null } = {},
+  options: DemoResetOptions = {},
 ): Promise<DemoResetResult> {
   const now = options.now ?? new Date();
+  const env = options.env ?? process.env;
+  const mode: DemoDecisionMode =
+    options.decisionMode ?? (isDemoLiveAiEnabled(env) ? "live" : "rules");
 
   await resetDemoDatabase(db);
-  const demo = await seedDemoState(db, { now });
+  // The demo calendar must move with the wall clock; the seeded fixture cannot.
+  await rollSessionsForward(db, now);
+  const demo = await seedDemoState(db, {
+    now,
+    writeDecisions: mode === "rules",
+  });
+
+  let outcomes: Array<{
+    askId: string;
+    fallbackReason: DemoAskEngine["fallbackReason"];
+  }> = [];
+  if (mode === "live") {
+    try {
+      const decided = await decideDemoAsks({
+        database: db,
+        provider: options.provider,
+        env,
+        timeoutMs: options.liveTimeoutMs,
+        budgetMs: options.liveBudgetMs,
+      });
+      outcomes = decided.outcomes;
+    } catch {
+      // decide() and persistDecisionRun() are already total. This guard only
+      // covers a programming error: the verification below will report the
+      // missing answers instead of the reset claiming a state it did not write.
+      outcomes = [];
+    }
+  }
+
   await applyFault(db, options.fault);
 
   const baseVerification = await verifySeed(db);
@@ -563,5 +749,7 @@ export async function runDemoReset(
       failed: failedIds,
     },
     failures,
+    engines: summariseDecisionEngines(facts, outcomes),
+    mode,
   };
 }

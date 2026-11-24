@@ -49,6 +49,9 @@ export default async function setup(): Promise<void> {
       ...process.env,
       DATABASE_URL_UNPOOLED: url,
       RC_DB_BRANCH: "e2e",
+      // The fixture is the labelled rules baseline. A developer's shell flag
+      // must not turn the suite's setup into twelve provider calls.
+      RC_DEMO_LIVE_AI: "0",
     },
   });
 

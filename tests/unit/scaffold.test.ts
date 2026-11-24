@@ -163,6 +163,7 @@ describe("environment contract", () => {
     "SESSION_SECRET",
     "RC_DEMO_MODE",
     "RC_DEMO_RESET_TOKEN",
+    "RC_DEMO_LIVE_AI",
     "RC_SEED_ALLOW_REMOTE",
     "NEXT_PUBLIC_APP_URL",
   ])("documents %s", (name) => {

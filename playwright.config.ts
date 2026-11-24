@@ -77,6 +77,9 @@ export default defineConfig({
       RC_E2E: "1",
       RC_DEMO_MODE: "1",
       RC_DEMO_RESET_TOKEN: E2E_RESET_TOKEN,
+      // The reset fixture stays on the labelled rules baseline in the suite;
+      // the live-model reset is proven separately and is never a gate.
+      RC_DEMO_LIVE_AI: "0",
       // A fixed, recognisable value so `secrets.spec.ts` can prove this exact
       // string never reaches `.next/static`. Test-only; never used in prod.
       SESSION_SECRET: E2E_SESSION_SECRET,

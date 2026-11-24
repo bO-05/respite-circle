@@ -21,6 +21,12 @@ import {
  * after the reseed, and a single failed assertion returns 500 with
  * `reset: false` — there is no code path that reports success after a failure.
  *
+ * With `RC_DEMO_LIVE_AI=1` the four demo asks are decided by the configured
+ * model through the same intake path (`decide()` + `persistDecisionRun()`);
+ * when the flag is off or the provider is absent or erroring, the labelled
+ * rules engine answers. The success body's `mode` and `engines` array name
+ * what actually decided each ask. No assertion depends on the engine.
+ *
  * `x-demo-reset-fault` is a test-only probe, honoured only when `RC_E2E=1`
  * (the same switch as `/error-probe`). It breaks one seeded fact after the
  * seed so the suite can prove the refusal is real rather than the happy path
@@ -89,6 +95,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         reset: true,
+        mode: result.mode,
+        engines: result.engines,
         church: result.church,
         seedDigest: result.seedDigest,
         counts: result.counts,

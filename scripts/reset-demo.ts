@@ -53,6 +53,19 @@ async function main(): Promise<void> {
     console.log(
       `Assertions: ${result.assertions.passed}/${result.assertions.total} passed.`,
     );
+    console.log(`Decision mode: ${result.mode}.`);
+    for (const engine of result.engines) {
+      const provider = engine.providers.join(", ") || "none";
+      const model = engine.models.join(", ") || "none";
+      const latency =
+        engine.latencyMs === null ? "latency not recorded" : `${engine.latencyMs} ms`;
+      const fallback = engine.fallbackReason
+        ? ` · fallback: ${engine.fallbackReason}`
+        : "";
+      console.log(
+        `  ${engine.label}: ${engine.engine} — ${provider} / ${model}, ${engine.questionCount} answers, ${latency}${fallback}`,
+      );
+    }
     console.log(`Seed digest: ${result.seedDigest}`);
   } finally {
     await client.end();

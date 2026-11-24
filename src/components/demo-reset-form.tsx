@@ -2,8 +2,21 @@
 
 import { useState, type FormEvent } from "react";
 
+type ResetEngine = {
+  askId: string;
+  label: string;
+  engine: "live" | "deterministic" | "mixed" | "none";
+  providers: string[];
+  models: string[];
+  latencyMs: number | null;
+  questionCount: number;
+  fallbackReason: string | null;
+};
+
 type ResetSuccess = {
   reset: true;
+  mode?: "rules" | "live";
+  engines?: ResetEngine[];
   church: string;
   seedDigest: string;
   assertions: { passed: number; total: number; failed: string[] };
@@ -29,7 +42,27 @@ type Feedback =
  * embedded in the page or the client bundle. A failure keeps the response's
  * failed assertion ids on screen, because a reset that cannot verify the seed
  * must say so instead of showing a green tick.
+ *
+ * A success also names the engine behind each demo ask, read back from the
+ * stored answers: a live model run and the labelled rules fallback are both
+ * possible, and the operator should know which one a judge is about to see.
  */
+function engineLine(engine: ResetEngine): string {
+  const who =
+    engine.engine === "live"
+      ? `live model (${engine.providers.join(", ") || "unknown"} / ${engine.models.join(", ") || "unknown"})`
+      : engine.engine === "deterministic"
+        ? `rules engine (${engine.models.join(", ") || "rules-baseline-v1"})`
+        : engine.engine === "mixed"
+          ? `mixed engines (${engine.providers.join(", ")})`
+          : "no stored answers";
+  const latency =
+    engine.latencyMs === null ? "" : `, ${engine.latencyMs} ms`;
+  const fallback = engine.fallbackReason
+    ? ` — fell back: ${engine.fallbackReason.replaceAll("_", " ")}`
+    : "";
+  return `${who}${latency}${fallback}`;
+}
 export function DemoResetForm() {
   const [token, setToken] = useState("");
   const [feedback, setFeedback] = useState<Feedback>({ kind: "idle" });
@@ -132,6 +165,18 @@ export function DemoResetForm() {
             {feedback.payload.assertions.passed} of{" "}
             {feedback.payload.assertions.total} seed assertions passed.
           </p>
+          {feedback.payload.engines?.length ? (
+            <div data-testid="demo-reset-engines" className="mt-2">
+              <p className="font-semibold">Who decided each ask:</p>
+              <ul className="mt-1 flex list-disc flex-col gap-1 pl-5">
+                {feedback.payload.engines.map((engine) => (
+                  <li key={engine.askId}>
+                    {engine.label}: {engineLine(engine)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <p className="mt-2 break-words">
             Seed digest:{" "}
             <code data-testid="demo-reset-digest">

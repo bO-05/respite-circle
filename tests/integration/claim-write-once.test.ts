@@ -328,7 +328,7 @@ describe("the claim is write-once in the database", () => {
   });
 
   it("applies the seed and the demo reset cleanly under the constraint", async () => {
-    const result = await runDemoReset(t.db, { now: NOW });
+    const result = await runDemoReset(t.db, { now: NOW, decisionMode: "rules" });
 
     expect(result.failures).toEqual([]);
     expect(result.ok).toBe(true);

@@ -309,12 +309,19 @@ export type DemoStateSummary = {
 /**
  * Insert the demo-ready rows. Caller has already truncated and run the base
  * seed; this never deletes anything and uses fixed ids.
+ *
+ * `writeDecisions` defaults to true and writes the curated rules-baseline
+ * answers plus their `ai_decision` audit rows. The live-AI reset passes false:
+ * every answer is then produced by `decideDemoAsks()` through the same
+ * persistence path the caregiver intake uses, so a live receipt and a rules
+ * receipt are written identically. The audit-row count is the same either way.
  */
 export async function seedDemoState(
   db: SeedDb,
-  options: { now: Date },
+  options: { now: Date; writeDecisions?: boolean },
 ): Promise<DemoStateSummary> {
   const now = options.now;
+  const writeDecisions = options.writeDecisions ?? true;
   const timeZone = seedChurch.timezone;
 
   const [nextSession] = await db
@@ -443,36 +450,38 @@ export async function seedDemoState(
       },
     ]);
 
-    await tx.insert(decision).values([
-      ...buildDecisionRows({
-        askId: DEMO_IDS.askHero,
-        revisionId: DEMO_IDS.heroRevision,
-        askText: DEMO_TEXT.hero,
-        answers: DEMO_ANSWER_ROWS.hero,
-        createdAt: heroCreatedAt,
-      }),
-      ...buildDecisionRows({
-        askId: DEMO_IDS.askWaiting,
-        revisionId: DEMO_IDS.waitingRevision,
-        askText: DEMO_TEXT.waiting,
-        answers: DEMO_ANSWER_ROWS.waiting,
-        createdAt: waitingCreatedAt,
-      }),
-      ...buildDecisionRows({
-        askId: DEMO_IDS.askSafetyHold,
-        revisionId: DEMO_IDS.safetyHoldRevision,
-        askText: DEMO_TEXT.safetyHold,
-        answers: DEMO_ANSWER_ROWS.safetyHold,
-        createdAt: holdCreatedAt,
-      }),
-      ...buildDecisionRows({
-        askId: DEMO_IDS.askFailure,
-        revisionId: DEMO_IDS.failureRevision,
-        askText: DEMO_TEXT.failure,
-        answers: DEMO_ANSWER_ROWS.failure,
-        createdAt: failureCreatedAt,
-      }),
-    ]);
+    if (writeDecisions) {
+      await tx.insert(decision).values([
+        ...buildDecisionRows({
+          askId: DEMO_IDS.askHero,
+          revisionId: DEMO_IDS.heroRevision,
+          askText: DEMO_TEXT.hero,
+          answers: DEMO_ANSWER_ROWS.hero,
+          createdAt: heroCreatedAt,
+        }),
+        ...buildDecisionRows({
+          askId: DEMO_IDS.askWaiting,
+          revisionId: DEMO_IDS.waitingRevision,
+          askText: DEMO_TEXT.waiting,
+          answers: DEMO_ANSWER_ROWS.waiting,
+          createdAt: waitingCreatedAt,
+        }),
+        ...buildDecisionRows({
+          askId: DEMO_IDS.askSafetyHold,
+          revisionId: DEMO_IDS.safetyHoldRevision,
+          askText: DEMO_TEXT.safetyHold,
+          answers: DEMO_ANSWER_ROWS.safetyHold,
+          createdAt: holdCreatedAt,
+        }),
+        ...buildDecisionRows({
+          askId: DEMO_IDS.askFailure,
+          revisionId: DEMO_IDS.failureRevision,
+          askText: DEMO_TEXT.failure,
+          answers: DEMO_ANSWER_ROWS.failure,
+          createdAt: failureCreatedAt,
+        }),
+      ]);
+    }
 
     await tx.insert(slot).values([
       {
@@ -550,24 +559,28 @@ export async function seedDemoState(
         },
         createdAt: heroCreatedAt,
       }),
-      audit({
-        id: DEMO_IDS.auditHeroDecided,
-        actorType: "ai",
-        actorId: null,
-        action: "ai_decision",
-        entity: "ask",
-        entityId: DEMO_IDS.askHero,
-        detail: {
-          revisionId: DEMO_IDS.heroRevision,
-          provider: DEMO_PROVIDER,
-          model: DEMO_MODEL,
-          engine: "deterministic",
-          questionCount: 9,
-          abstainedCount: 0,
-          policyVersionId: seedPolicy.id,
-        },
-        createdAt: heroCreatedAt,
-      }),
+      ...(writeDecisions
+        ? [
+            audit({
+              id: DEMO_IDS.auditHeroDecided,
+              actorType: "ai",
+              actorId: null,
+              action: "ai_decision",
+              entity: "ask",
+              entityId: DEMO_IDS.askHero,
+              detail: {
+                revisionId: DEMO_IDS.heroRevision,
+                provider: DEMO_PROVIDER,
+                model: DEMO_MODEL,
+                engine: "deterministic",
+                questionCount: 9,
+                abstainedCount: 0,
+                policyVersionId: seedPolicy.id,
+              },
+              createdAt: heroCreatedAt,
+            }),
+          ]
+        : []),
       audit({
         id: DEMO_IDS.auditHeroApproved,
         actorType: "human",
@@ -625,24 +638,28 @@ export async function seedDemoState(
         },
         createdAt: waitingCreatedAt,
       }),
-      audit({
-        id: DEMO_IDS.auditWaitingDecided,
-        actorType: "ai",
-        actorId: null,
-        action: "ai_decision",
-        entity: "ask",
-        entityId: DEMO_IDS.askWaiting,
-        detail: {
-          revisionId: DEMO_IDS.waitingRevision,
-          provider: DEMO_PROVIDER,
-          model: DEMO_MODEL,
-          engine: "deterministic",
-          questionCount: 9,
-          abstainedCount: 0,
-          policyVersionId: seedPolicy.id,
-        },
-        createdAt: waitingCreatedAt,
-      }),
+      ...(writeDecisions
+        ? [
+            audit({
+              id: DEMO_IDS.auditWaitingDecided,
+              actorType: "ai",
+              actorId: null,
+              action: "ai_decision",
+              entity: "ask",
+              entityId: DEMO_IDS.askWaiting,
+              detail: {
+                revisionId: DEMO_IDS.waitingRevision,
+                provider: DEMO_PROVIDER,
+                model: DEMO_MODEL,
+                engine: "deterministic",
+                questionCount: 9,
+                abstainedCount: 0,
+                policyVersionId: seedPolicy.id,
+              },
+              createdAt: waitingCreatedAt,
+            }),
+          ]
+        : []),
       audit({
         id: DEMO_IDS.auditHoldSubmitted,
         actorType: "human",
@@ -658,24 +675,28 @@ export async function seedDemoState(
         },
         createdAt: holdCreatedAt,
       }),
-      audit({
-        id: DEMO_IDS.auditHoldDecided,
-        actorType: "ai",
-        actorId: null,
-        action: "ai_decision",
-        entity: "ask",
-        entityId: DEMO_IDS.askSafetyHold,
-        detail: {
-          revisionId: DEMO_IDS.safetyHoldRevision,
-          provider: DEMO_PROVIDER,
-          model: DEMO_MODEL,
-          engine: "deterministic",
-          questionCount: 9,
-          abstainedCount: 2,
-          policyVersionId: seedPolicy.id,
-        },
-        createdAt: holdCreatedAt,
-      }),
+      ...(writeDecisions
+        ? [
+            audit({
+              id: DEMO_IDS.auditHoldDecided,
+              actorType: "ai",
+              actorId: null,
+              action: "ai_decision",
+              entity: "ask",
+              entityId: DEMO_IDS.askSafetyHold,
+              detail: {
+                revisionId: DEMO_IDS.safetyHoldRevision,
+                provider: DEMO_PROVIDER,
+                model: DEMO_MODEL,
+                engine: "deterministic",
+                questionCount: 9,
+                abstainedCount: 2,
+                policyVersionId: seedPolicy.id,
+              },
+              createdAt: holdCreatedAt,
+            }),
+          ]
+        : []),
       audit({
         id: DEMO_IDS.auditFailureSubmitted,
         actorType: "human",
@@ -691,24 +712,28 @@ export async function seedDemoState(
         },
         createdAt: failureCreatedAt,
       }),
-      audit({
-        id: DEMO_IDS.auditFailureDecided,
-        actorType: "ai",
-        actorId: null,
-        action: "ai_decision",
-        entity: "ask",
-        entityId: DEMO_IDS.askFailure,
-        detail: {
-          revisionId: DEMO_IDS.failureRevision,
-          provider: DEMO_PROVIDER,
-          model: DEMO_MODEL,
-          engine: "deterministic",
-          questionCount: 9,
-          abstainedCount: 0,
-          policyVersionId: seedPolicy.id,
-        },
-        createdAt: failureCreatedAt,
-      }),
+      ...(writeDecisions
+        ? [
+            audit({
+              id: DEMO_IDS.auditFailureDecided,
+              actorType: "ai",
+              actorId: null,
+              action: "ai_decision",
+              entity: "ask",
+              entityId: DEMO_IDS.askFailure,
+              detail: {
+                revisionId: DEMO_IDS.failureRevision,
+                provider: DEMO_PROVIDER,
+                model: DEMO_MODEL,
+                engine: "deterministic",
+                questionCount: 9,
+                abstainedCount: 0,
+                policyVersionId: seedPolicy.id,
+              },
+              createdAt: failureCreatedAt,
+            }),
+          ]
+        : []),
       audit({
         id: DEMO_IDS.auditFailureApproved,
         actorType: "human",

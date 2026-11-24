@@ -253,12 +253,14 @@ export async function verifySeed(db: SeedDb): Promise<VerifySeedResult> {
       iso_dow: number;
       local_start: string;
       local_end: string;
+      status: string;
     }[]
   >`SELECT id,
            starts_at,
            EXTRACT(ISODOW FROM starts_at AT TIME ZONE 'America/New_York')::int AS iso_dow,
            to_char(starts_at AT TIME ZONE 'America/New_York', 'HH24:MI') AS local_start,
-           to_char(ends_at AT TIME ZONE 'America/New_York', 'HH24:MI') AS local_end
+           to_char(ends_at AT TIME ZONE 'America/New_York', 'HH24:MI') AS local_end,
+           status
       FROM session
      ORDER BY starts_at`;
 
@@ -268,14 +270,18 @@ export async function verifySeed(db: SeedDb): Promise<VerifySeedResult> {
       failures.push(`missing session: ${expected.startsAt.toISOString()}`);
       continue;
     }
+    // The weekday and wall time are the promise; the calendar date is not.
+    // `runDemoReset` rolls the four seeded ids onto the next four Tuesdays so a
+    // reset after the reference date still leaves a future calendar. Pinning
+    // the exact instant here would make that roll an assertion failure.
     if (found.iso_dow !== 2) {
       failures.push(`session ${expected.id} is not a Tuesday`);
     }
     if (found.local_start !== "10:00" || found.local_end !== "14:00") {
       failures.push(`session ${expected.id} is not 10:00â€“14:00 church time`);
     }
-    if (new Date(found.starts_at).getTime() !== expected.startsAt.getTime()) {
-      failures.push(`session ${expected.id} does not start when expected`);
+    if (found.status !== "scheduled") {
+      failures.push(`session ${expected.id} is ${found.status}, not scheduled`);
     }
   }
 
