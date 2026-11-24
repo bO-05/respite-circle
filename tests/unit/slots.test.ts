@@ -4,6 +4,7 @@ import {
   buildDraftSlots,
   buildManualDraft,
   canPublishDraft,
+  constructionBlockedForStatus,
   formatWindowLabel,
   nextWindowForPreference,
   parseWallTimeInput,
@@ -417,6 +418,70 @@ describe("editing rules", () => {
     expect(result.value.label).toBe("Saturday visit at home");
     expect(result.value.tier).toBe("in_home");
     expect(result.value.gated).toBe(true);
+  });
+
+  it("refuses personal-care text in the label, scoped to the label", () => {
+    const result = validateDraftSlotInput({
+      ...valid,
+      label: "Change her pads",
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.field).toBe("label");
+    // The same sentence the Q9 hold shows; one personal-care message.
+    expect(result.message).toBe(
+      constructionBlockedForStatus("care_hold")?.message,
+    );
+  });
+
+  it("refuses personal-care text in the orientation note, scoped to the note", () => {
+    const result = validateDraftSlotInput({
+      ...valid,
+      orientationNote: "Could a volunteer change her pads in the morning?",
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.field).toBe("orientationNote");
+    expect(result.message).toBe(
+      constructionBlockedForStatus("care_hold")?.message,
+    );
+  });
+
+  it("still accepts a legitimate orientation note", () => {
+    const result = validateDraftSlotInput({
+      ...valid,
+      orientationNote: "Two people for the first visit.",
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.orientationNote).toBe(
+      "Two people for the first visit.",
+    );
+  });
+
+  it("lets every built-in default label and note through the screen", () => {
+    for (const kind of ["companion", "home", "drive", "meal"] as const) {
+      const built = buildManualDraft({
+        kind,
+        recipientFirstName: "Elena",
+        sessions: [sessionOption("session-1", "2026-11-24T15:00:00.000Z")],
+        now: NOW,
+        timeZone: TIME_ZONE,
+        transportEnabled: true,
+      });
+      expect(built.ok, kind).toBe(true);
+      if (!built.ok) continue;
+
+      const result = validateDraftSlotInput({
+        kind: built.proposal.kind,
+        label: built.proposal.label,
+        windowStart: built.proposal.windowStart,
+        windowEnd: built.proposal.windowEnd,
+        gated: built.proposal.gated,
+        orientationNote: built.proposal.orientationNote,
+      });
+      expect(result.ok, kind).toBe(true);
+    }
   });
 
   it("refuses an unknown kind, an empty label, reversed windows, and a long note", () => {

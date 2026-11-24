@@ -201,6 +201,20 @@ function positiveTextForPersonalCare(text: string): string {
   );
 }
 
+/**
+ * True when the text names a personal-care need.
+ *
+ * Q9 uses this evidence, and so does the coordinator's draft editor: a label or
+ * an orientation note may not carry personal-care instructions onto a volunteer
+ * slot. Running the same positive rule over the same declining-clause strips is
+ * what keeps the two in agreement — the built-in default notes ("no medication",
+ * "no bathing or toileting") still pass, and "she takes her own tablets" is not
+ * a care need.
+ */
+export function mentionsPersonalCare(text: string): boolean {
+  return matches(positiveTextForPersonalCare(text), PERSONAL_CARE_POSITIVE);
+}
+
 function resolveWindow(text: string): PickOutcome {
   if (matches(text, /\bsaturdays?\b/i)) {
     return { answer: "saturday", confidence: POSITIVE_CONFIDENCE };

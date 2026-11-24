@@ -7,6 +7,7 @@ import {
   parseWallTimeInput,
   validateDraftSlotInput,
   type DraftActionState,
+  type DraftSlotSubmittedValues,
 } from "@/server/domain/slots";
 import {
   addDraftSlot,
@@ -41,8 +42,9 @@ const UUID_PATTERN =
 function errorState(
   message: string,
   field: DraftActionState["field"] = "form",
+  values?: DraftSlotSubmittedValues,
 ): DraftActionState {
-  return { status: "error", message, field };
+  return { status: "error", message, field, values };
 }
 
 function successState(message: string, slotId?: string): DraftActionState {
@@ -82,6 +84,21 @@ export async function draftSlotAction(
   const { session } = authorized;
   const slotId = text(formData, "slotId").trim();
   const intent = text(formData, "intent").trim() || "save";
+
+  // React resets an uncontrolled form after its action. Hand the submitted
+  // fields back with a refusal so the coordinator's words stay on screen.
+  const submitted: DraftSlotSubmittedValues = {
+    kind: text(formData, "kind"),
+    label: text(formData, "label"),
+    windowStart: text(formData, "windowStart"),
+    windowEnd: text(formData, "windowEnd"),
+    gated: formData.get("gated") === "on",
+    orientationNote: text(formData, "orientationNote"),
+  };
+  const fail = (
+    message: string,
+    field: DraftActionState["field"] = "form",
+  ) => errorState(message, field, submitted);
 
   if (!UUID_PATTERN.test(slotId)) {
     return errorState("That draft is not available.");
@@ -126,7 +143,7 @@ export async function draftSlotAction(
     }
 
     if (text(formData, "kind") === "drive" && !context.transportEnabled) {
-      return errorState(
+      return fail(
         "A drive can only be offered after the church signs its volunteer-driver policy. No change was saved.",
         "kind",
       );
@@ -136,13 +153,13 @@ export async function draftSlotAction(
       text(formData, "windowStart"),
       context.timeZone,
     );
-    if (!start.ok) return errorState(start.message, "window");
+    if (!start.ok) return fail(start.message, "window");
 
     const end = parseWallTimeInput(
       text(formData, "windowEnd"),
       context.timeZone,
     );
-    if (!end.ok) return errorState(end.message, "window");
+    if (!end.ok) return fail(end.message, "window");
 
     const validated = validateDraftSlotInput({
       kind: text(formData, "kind"),
@@ -153,18 +170,18 @@ export async function draftSlotAction(
       orientationNote: text(formData, "orientationNote"),
     });
 
-    if (!validated.ok) return errorState(validated.message, validated.field);
+    if (!validated.ok) return fail(validated.message, validated.field);
 
     const result = await updateDraftSlot(session, {
       slotId,
       ...validated.value,
     });
-    if (!result.ok) return errorState(result.message);
+    if (!result.ok) return fail(result.message);
 
     refresh(result.askId);
     return successState(result.message, slotId);
   } catch {
-    return errorState(GENERIC_FAILURE);
+    return errorState(GENERIC_FAILURE, "form", submitted);
   }
 }
 

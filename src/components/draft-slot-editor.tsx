@@ -87,6 +87,10 @@ export function DraftSlotCard({
   );
 
   const held = Boolean(slot.holdReason);
+  // A refusal hands back the fields exactly as submitted. React resets an
+  // uncontrolled form after its action, so these defaults are what keeps the
+  // coordinator's typed words on screen instead of discarding them.
+  const values = state.status === "error" ? state.values : undefined;
   const fieldError = (field: DraftActionState["field"]) =>
     state.status === "error" && state.field === field;
 
@@ -164,7 +168,7 @@ export function DraftSlotCard({
               id={`${slot.id}-kind`}
               name="kind"
               data-testid="draft-kind"
-              defaultValue={slot.kind}
+              defaultValue={values?.kind ?? slot.kind}
               className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
               aria-describedby={
                 fieldError("kind") ? `${slot.id}-kind-error` : undefined
@@ -206,7 +210,7 @@ export function DraftSlotCard({
               data-testid="draft-label"
               type="text"
               maxLength={120}
-              defaultValue={slot.label}
+              defaultValue={values?.label ?? slot.label}
               className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
               aria-describedby={
                 fieldError("label") ? `${slot.id}-label-error` : undefined
@@ -234,7 +238,7 @@ export function DraftSlotCard({
               name="windowStart"
               data-testid="draft-window-start"
               type="datetime-local"
-              defaultValue={slot.windowStartLocal}
+              defaultValue={values?.windowStart ?? slot.windowStartLocal}
               className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
               aria-describedby={
                 fieldError("window") ? `${slot.id}-window-error` : undefined
@@ -254,7 +258,7 @@ export function DraftSlotCard({
               name="windowEnd"
               data-testid="draft-window-end"
               type="datetime-local"
-              defaultValue={slot.windowEndLocal}
+              defaultValue={values?.windowEnd ?? slot.windowEndLocal}
               className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
               aria-describedby={
                 fieldError("window") ? `${slot.id}-window-error` : undefined
@@ -282,7 +286,7 @@ export function DraftSlotCard({
             name="gated"
             data-testid="draft-gated-flag"
             type="checkbox"
-            defaultChecked={slot.gated}
+            defaultChecked={values?.gated ?? slot.gated}
             className="mt-1 size-11 rounded border border-line"
           />
           <label htmlFor={`${slot.id}-gated`} className="text-base text-ink">
@@ -304,7 +308,7 @@ export function DraftSlotCard({
             data-testid="draft-orientation"
             rows={5}
             maxLength={2_000}
-            defaultValue={slot.orientationNote}
+            defaultValue={values?.orientationNote ?? slot.orientationNote}
             className="rounded-md border border-line bg-paper px-3 py-2 text-base leading-relaxed text-ink"
             aria-describedby={
               fieldError("orientationNote")

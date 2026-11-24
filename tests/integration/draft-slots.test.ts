@@ -19,6 +19,8 @@ import {
 import { AuthError, type Actor } from "../../src/server/auth/policy";
 import {
   canPublishDraft,
+  constructionBlockedForStatus,
+  validateDraftSlotInput,
   type TypedAnswer,
 } from "../../src/server/domain/slots";
 import {
@@ -640,6 +642,120 @@ describe("draft slot construction", () => {
       t.db,
     );
     expect(foreign.ok).toBe(false);
+  });
+
+  /**
+   * VAL-AUDITFIX-003 at the data layer.
+   *
+   * `saveFromEditor` mirrors the server action's order exactly: validate the
+   * submitted fields, and only then call the repository. Before the screen
+   * existed, the validation passed and `updateDraftSlot` wrote "change her
+   * pads" verbatim; the unchanged-row assertions below are what failed.
+   */
+  it("refuses a personal-care edit and leaves the stored row unchanged", async () => {
+    const { askId } = await insertAskWithAnswers(t);
+    await constructDraftSlots({
+      askId,
+      churchId: seedIds.church,
+      database: t.db,
+      now: NOW,
+    });
+    const home = (await readSlots(t, askId)).find((row) => row.kind === "home");
+    if (!home) throw new Error("expected a home draft");
+
+    const careMessage = constructionBlockedForStatus("care_hold")?.message;
+    const refusedLabel = "Change her pads";
+    const refusedNote =
+      "Could a volunteer change her pads in the morning?";
+
+    async function saveFromEditor(raw: {
+      kind: unknown;
+      label: unknown;
+      windowStart: Date | null;
+      windowEnd: Date | null;
+      gated: unknown;
+      orientationNote: unknown;
+    }) {
+      const validated = validateDraftSlotInput(raw);
+      if (!validated.ok) return validated;
+      await updateDraftSlot(
+        GRACE,
+        { slotId: home!.id, ...validated.value },
+        t.db,
+      );
+      return validated;
+    }
+
+    const base = {
+      kind: "home" as const,
+      label: home.label,
+      windowStart: home.windowStart,
+      windowEnd: home.windowEnd,
+      gated: home.gated,
+      orientationNote: home.orientationNote,
+    };
+
+    const refusedNoteResult = await saveFromEditor({
+      ...base,
+      orientationNote: refusedNote,
+    });
+    expect(refusedNoteResult.ok).toBe(false);
+    if (refusedNoteResult.ok) return;
+    expect(refusedNoteResult.field).toBe("orientationNote");
+    expect(refusedNoteResult.message).toBe(careMessage);
+
+    const refusedLabelResult = await saveFromEditor({
+      ...base,
+      label: refusedLabel,
+    });
+    expect(refusedLabelResult.ok).toBe(false);
+    if (refusedLabelResult.ok) return;
+    expect(refusedLabelResult.field).toBe("label");
+    expect(refusedLabelResult.message).toBe(careMessage);
+
+    // Nothing was written: the stored label, note, and status are untouched.
+    const [unchanged] = await t.db
+      .select()
+      .from(slot)
+      .where(eq(slot.id, home.id));
+    expect(unchanged.label).toBe(home.label);
+    expect(unchanged.orientationNote).toBe(home.orientationNote);
+    expect(unchanged.status).toBe("draft");
+    expect(await auditCount(t, "draft_slot_edited", home.id)).toBe(0);
+
+    // No row anywhere holds the refused words, and nothing is publishable.
+    const [carrying] = await t.client<{ count: number }[]>`
+      SELECT COUNT(*)::int AS count
+        FROM slot
+       WHERE church_id = ${seedIds.church}
+         AND (label ILIKE '%pads%' OR orientation_note ILIKE '%pads%'
+              OR label ILIKE '%wash and get dressed%'
+              OR orientation_note ILIKE '%wash and get dressed%')
+    `;
+    expect(carrying.count).toBe(0);
+
+    const [published] = await t.client<{ count: number }[]>`
+      SELECT COUNT(*)::int AS count
+        FROM slot
+       WHERE ask_id = ${askId}
+         AND status IN ('open', 'claimed', 'covered', 'done')
+    `;
+    expect(published.count).toBe(0);
+
+    // The same form still saves a legitimate note.
+    const saved = await saveFromEditor({
+      ...base,
+      orientationNote: "Two people for the first visit.",
+    });
+    expect(saved.ok).toBe(true);
+
+    const [edited] = await t.db
+      .select()
+      .from(slot)
+      .where(eq(slot.id, home.id));
+    expect(edited.orientationNote).toBe("Two people for the first visit.");
+    expect(edited.label).toBe(home.label);
+    expect(await auditCount(t, "draft_slot_edited", home.id)).toBe(1);
   });
 
   it("refuses to turn a draft into a drive without the signed driver policy", async () => {

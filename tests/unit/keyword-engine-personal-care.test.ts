@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { seedQuestionSet } from "@/db/seed-data";
-import { runKeywordEngine } from "@/server/domain/keyword-engine";
+import {
+  mentionsPersonalCare,
+  runKeywordEngine,
+} from "@/server/domain/keyword-engine";
 
 /**
  * VAL-AUDITFIX-009 — the offline personal-care lexicon.
@@ -92,6 +95,22 @@ const WEAK_WORD_CASES = [
   },
 ] as const;
 
+/**
+ * The built-in slot notes (companion, home, drive, meal) are read by a
+ * volunteer after they claim. They say "no medication", "no bathing or
+ * toileting", and "no personal care" on purpose; the lexicon must keep treating
+ * those as a clear NO or every published slot would trip the same screen the
+ * Q9 hold uses. VAL-AUDITFIX-003 runs these exact notes through the draft
+ * editor's screen too, so they live here once.
+ */
+const BUILT_IN_NOTES = [
+  "You will be with Elena at Respite Morning. Elena is most comfortable with people they already know, so please introduce yourself by name and stay near their table. This is company, not personal care — no medication and no lifting.",
+  "You will be with Elena at Respite Morning. Introduce yourself by name, sit near their table, and let them set the pace. This is company, not personal care — no medication and no lifting.",
+  "A visit at home with Elena. Companionship only — no medication, no bathing or toileting, and no lifting. Two hours at most. The first visit is two people, or your coordinator introduces you. Check in and out with your coordinator.",
+  "A ride for Elena. Wait at the appointment and bring them home. No personal care and no lifting. Check the volunteer-driver insurance note with your coordinator before you drive.",
+  "A meal for Elena, left at the door. It needs to reheat well. Label the dish and any allergens, and there is no need to go inside.",
+] as const;
+
 describe("the fallback personal-care lexicon catches weak words (VAL-AUDITFIX-009)", () => {
   for (const { word, positive, declining } of WEAK_WORD_CASES) {
     it(`flags personal care when the ask names ${word}`, () => {
@@ -127,32 +146,8 @@ describe("the fallback personal-care lexicon catches weak words (VAL-AUDITFIX-00
     expectPersonalCareNotFlagged("No medication needed.");
   });
 
-  /**
-   * The four built-in slot notes (companion, home, drive, meal) are read by a
-   * volunteer after they claim. They say "no medication", "no bathing or
-   * toileting", and "no personal care" on purpose; the lexicon must keep
-   * treating those as a clear NO or every published slot would trip the same
-   * screen the Q9 hold uses.
-   */
   it("keeps the four built-in slot notes out of the personal-care predicate", () => {
-    const companionFamiliar =
-      "You will be with Elena at Respite Morning. Elena is most comfortable with people they already know, so please introduce yourself by name and stay near their table. This is company, not personal care — no medication and no lifting.";
-    const companionUnfamiliar =
-      "You will be with Elena at Respite Morning. Introduce yourself by name, sit near their table, and let them set the pace. This is company, not personal care — no medication and no lifting.";
-    const home =
-      "A visit at home with Elena. Companionship only — no medication, no bathing or toileting, and no lifting. Two hours at most. The first visit is two people, or your coordinator introduces you. Check in and out with your coordinator.";
-    const drive =
-      "A ride for Elena. Wait at the appointment and bring them home. No personal care and no lifting. Check the volunteer-driver insurance note with your coordinator before you drive.";
-    const meal =
-      "A meal for Elena, left at the door. It needs to reheat well. Label the dish and any allergens, and there is no need to go inside.";
-
-    for (const note of [
-      companionFamiliar,
-      companionUnfamiliar,
-      home,
-      drive,
-      meal,
-    ]) {
+    for (const note of BUILT_IN_NOTES) {
       expectPersonalCareNotFlagged(note);
     }
   });
@@ -164,5 +159,51 @@ describe("the fallback personal-care lexicon catches weak words (VAL-AUDITFIX-00
     expectPersonalCareFlagged(
       "He needs lifting from the bed to his wheelchair every morning.",
     );
+  });
+});
+
+/**
+ * VAL-AUDITFIX-003 — the draft editor's screen.
+ *
+ * `mentionsPersonalCare` is the predicate the label and orientation note are
+ * refused by, so it must catch the same weak words the Q9 rule catches while
+ * leaving the built-in default notes alone. It is deliberately the same
+ * positive rule after the same declining-clause strips: the screen and the care
+ * hold may never disagree about what personal care is.
+ */
+describe("the draft editor's personal-care predicate (VAL-AUDITFIX-003)", () => {
+  it("catches a personal-care instruction in a label", () => {
+    expect(mentionsPersonalCare("Change her pads")).toBe(true);
+    expect(mentionsPersonalCare("Help her wash and get dressed")).toBe(true);
+  });
+
+  it("catches a personal-care instruction in an orientation note", () => {
+    expect(
+      mentionsPersonalCare("Could a volunteer change her pads in the morning?"),
+    ).toBe(true);
+    expect(
+      mentionsPersonalCare("Make sure she takes her tablets with dinner."),
+    ).toBe(true);
+    expect(
+      mentionsPersonalCare("Help her wash and get dressed on Tuesdays."),
+    ).toBe(true);
+  });
+
+  it("accepts a legitimate orientation note", () => {
+    expect(mentionsPersonalCare("Two people for the first visit.")).toBe(false);
+    expect(
+      mentionsPersonalCare("Leave the dish at the door and text the coordinator."),
+    ).toBe(false);
+  });
+
+  it("accepts the built-in default notes", () => {
+    for (const note of BUILT_IN_NOTES) {
+      expect(mentionsPersonalCare(note), note).toBe(false);
+    }
+  });
+
+  it("keeps a declining clause out of the screen, exactly as Q9 does", () => {
+    expect(mentionsPersonalCare("She takes her own tablets.")).toBe(false);
+    expect(mentionsPersonalCare("No medication needed.")).toBe(false);
   });
 });

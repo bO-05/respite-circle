@@ -28,6 +28,7 @@ import {
   zonedWallTimeToUtc,
   type ZonedParts,
 } from "./time-zone";
+import { mentionsPersonalCare } from "./keyword-engine";
 
 export const SLOT_KINDS = ["companion", "home", "drive", "meal"] as const;
 export type SlotKind = (typeof SLOT_KINDS)[number];
@@ -203,10 +204,17 @@ const SAFETY_BLOCK: ConstructionBlock = {
     "A safety question was answered yes or left uncertain. A person calls today; no times are proposed.",
 };
 
+/**
+ * The one personal-care sentence. Q9's hold, the manual add path, and the draft
+ * editor's label/note screen all say exactly this; a coordinator who sees it
+ * twice on two screens must not read two different claims.
+ */
+export const PERSONAL_CARE_MESSAGE =
+  "The ask mentions personal care. A person connects the family with professional help; no personal-care slot is ever created.";
+
 const PERSONAL_CARE_BLOCK: ConstructionBlock = {
   reason: "personal_care_flag",
-  message:
-    "The ask mentions personal care. A person connects the family with professional help; no personal-care slot is ever created.",
+  message: PERSONAL_CARE_MESSAGE,
 };
 
 const NOT_REVIEWABLE_BLOCK: ConstructionBlock = {
@@ -970,6 +978,18 @@ export type DraftValidation =
   | { ok: true; value: ValidatedDraftSlot }
   | { ok: false; field: "kind" | "label" | "window" | "gated" | "orientationNote"; message: string };
 
+/**
+ * The single screen every coordinator-authored label and orientation note
+ * passes before it is written.
+ *
+ * Personal care is refused with the same sentence the Q9 hold uses, scoped to
+ * the field the coordinator typed in. This is the one insertion point that
+ * closes create, edit, and publish: `addDraftSlot` writes the KIND_LABEL
+ * constant rather than free text, and `updateDraftSlot` is the only other
+ * writer of either field, reached only through this validator from the desk
+ * action. There is no override and no warning state — a coordinator who needs
+ * to describe personal care picks up the phone.
+ */
 export function validateDraftSlotInput(
   input: DraftSlotInput,
 ): DraftValidation {
@@ -995,6 +1015,13 @@ export function validateDraftSlotInput(
       ok: false,
       field: "label",
       message: `Keep the label under ${LABEL_MAX_LENGTH} characters.`,
+    };
+  }
+  if (mentionsPersonalCare(label)) {
+    return {
+      ok: false,
+      field: "label",
+      message: PERSONAL_CARE_MESSAGE,
     };
   }
 
@@ -1035,6 +1062,13 @@ export function validateDraftSlotInput(
       ok: false,
       field: "orientationNote",
       message: `Keep the orientation note under ${ORIENTATION_NOTE_MAX_LENGTH} characters.`,
+    };
+  }
+  if (mentionsPersonalCare(rawNote)) {
+    return {
+      ok: false,
+      field: "orientationNote",
+      message: PERSONAL_CARE_MESSAGE,
     };
   }
   const orientationNote = rawNote.trim().length > 0 ? rawNote : null;
@@ -1152,11 +1186,26 @@ export type DraftActionField =
   | "reason"
   | "form";
 
+/**
+ * The editor's fields exactly as the coordinator submitted them. React resets
+ * an uncontrolled form after its action, so a refusal must hand these back or
+ * the typed words are lost — the same failure the send-back note fixed.
+ */
+export type DraftSlotSubmittedValues = {
+  kind?: string;
+  label?: string;
+  windowStart?: string;
+  windowEnd?: string;
+  gated?: boolean;
+  orientationNote?: string;
+};
+
 export type DraftActionState = {
   status: "idle" | "success" | "error";
   message: string;
   field?: DraftActionField;
   slotId?: string;
+  values?: DraftSlotSubmittedValues;
 };
 
 export const IDLE_DRAFT_ACTION: DraftActionState = {
