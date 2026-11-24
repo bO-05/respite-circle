@@ -32,10 +32,55 @@ export const REQUIRED_BANNED_CLAIMS = [
   "zero-touch",
 ] as const;
 
+/** Why every report-implication phrase is refused, in the lint's own words. */
+export const REPORT_CLAIM_MESSAGE =
+  "Report claim: the app may say that no report was made. It may never say or imply that one was. Reporting is a person's decision, made on a phone call.";
+
 /**
- * The required list plus the extra claims `statistics.md` bans in the same
- * spirit. A church that says "fully automated" is promising something no
- * coordinated care can keep.
+ * Phrases that say or imply a report was made to the authorities.
+ *
+ * The mission's audit names "we reported", "a report was submitted", "we
+ * contacted APS", "it has been reported", "authorities were notified", and
+ * "mandated report"; the safety e2e's own report scan adds "we have reported",
+ * "report has been filed", "has been reported to", "notified the police",
+ * "notified the authorities", "APS has been notified", and "filed a report".
+ * The article-led and bare passive forms are both listed so the lint keeps the
+ * article in what it reports ("A report was submitted") while still catching a
+ * sentence that starts mid-phrase.
+ *
+ * A denial is not a claim. `NEGATED_BEFORE` below lets the safety card keep its
+ * honest sentence ("No report has been made from this screen") while refusing
+ * the same construction with an affirmative subject.
+ */
+export const REPORT_IMPLICATION_CLAIMS = [
+  "we reported",
+  "we have reported",
+  "we contacted APS",
+  "contacted APS",
+  "a report was submitted",
+  "report was submitted",
+  "a report was made",
+  "report was made",
+  "a report has been made",
+  "report has been made",
+  "a report has been filed",
+  "report has been filed",
+  "a report was filed",
+  "report was filed",
+  "filed a report",
+  "it has been reported",
+  "has been reported to",
+  "authorities were notified",
+  "notified the authorities",
+  "notified the police",
+  "APS has been notified",
+  "mandated report",
+] as const;
+
+/**
+ * The required list, the extra marketing claims `statistics.md` bans in the
+ * same spirit, and the report-implication family. A church that says "fully
+ * automated" is promising something no coordinated care can keep.
  */
 export const BANNED_CLAIMS = [
   ...REQUIRED_BANNED_CLAIMS,
@@ -44,7 +89,10 @@ export const BANNED_CLAIMS = [
   "no staff needed",
   "reduces headcount",
   "guaranteed safe",
+  ...REPORT_IMPLICATION_CLAIMS,
 ] as const;
+
+const REPORT_CLAIM_SET: ReadonlySet<string> = new Set(REPORT_IMPLICATION_CLAIMS);
 
 export type CopyHit = {
   /** The banned phrase, spelled as it is on the list. */
@@ -76,6 +124,54 @@ const PATTERNS = BANNED_CLAIMS.map((claim) => ({
   pattern: patternFor(claim),
 }));
 
+/**
+ * A report phrase directly after a negation is a denial, not a claim. The
+ * window is short on purpose: "No, we reported it" still fails, because the
+ * comma breaks the negation and the sentence asserts the report.
+ */
+const NEGATED_BEFORE =
+  /\b(?:no|no[\s-]+one|not|never|nothing|nobody|none|neither|nor|cannot|can't|isn't|wasn't|weren't|hasn't|haven't|hadn't|didn't|doesn't|don't)\s*$/i;
+
+function isNegatedReportClaim(claim: string, text: string, index: number): boolean {
+  if (!REPORT_CLAIM_SET.has(claim)) return false;
+  return NEGATED_BEFORE.test(text.slice(Math.max(0, index - 32), index));
+}
+
+/**
+ * The list carries article-led and bare forms of the same phrase, so a
+ * sentence can produce two hits at overlapping spans. Keep the longer hit when
+ * one span contains the other (so "A report was submitted" is reported with its
+ * article) and leave partially overlapping phrases to be reported separately.
+ */
+function dropContainedHits(hits: readonly CopyHit[]): CopyHit[] {
+  const ordered = [...hits].sort(
+    (a, b) =>
+      a.line - b.line ||
+      a.column - b.column ||
+      b.matched.length - a.matched.length ||
+      a.claim.localeCompare(b.claim),
+  );
+
+  const kept: CopyHit[] = [];
+  for (const hit of ordered) {
+    const end = hit.column + hit.matched.length;
+    const covered = kept.some((other) => {
+      const otherEnd = other.column + other.matched.length;
+      return (
+        other.line === hit.line &&
+        other.column <= hit.column &&
+        otherEnd >= end
+      );
+    });
+    if (!covered) kept.push(hit);
+  }
+
+  return kept.sort(
+    (a, b) =>
+      a.line - b.line || a.column - b.column || a.claim.localeCompare(b.claim),
+  );
+}
+
 /** Every banned claim found in `text`, in reading order. */
 export function scanCopy(text: string): CopyHit[] {
   const hits: CopyHit[] = [];
@@ -84,6 +180,8 @@ export function scanCopy(text: string): CopyHit[] {
     pattern.lastIndex = 0;
     for (const match of text.matchAll(pattern)) {
       const index = match.index ?? 0;
+      if (isNegatedReportClaim(claim, text, index)) continue;
+
       const before = text.slice(0, index);
       const lines = before.split("\n");
       hits.push({
@@ -95,9 +193,12 @@ export function scanCopy(text: string): CopyHit[] {
     }
   }
 
-  return hits.sort(
-    (a, b) => a.line - b.line || a.column - b.column || a.claim.localeCompare(b.claim),
-  );
+  return dropContainedHits(hits);
+}
+
+/** The rule behind a claim, when the list has more to say than its name. */
+export function claimMessage(claim: string): string | null {
+  return REPORT_CLAIM_SET.has(claim) ? REPORT_CLAIM_MESSAGE : null;
 }
 
 /** One-line report, for a script or a log. */

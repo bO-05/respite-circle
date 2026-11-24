@@ -1,6 +1,11 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import { describeHit, scanCopy, type CopyHit } from "../src/server/domain/copy-lint";
+import {
+  claimMessage,
+  describeHit,
+  scanCopy,
+  type CopyHit,
+} from "../src/server/domain/copy-lint";
 
 /**
  * The copy lint. Fails the run when a banned claim reaches UI copy, a code
@@ -75,8 +80,14 @@ function main(): void {
   const hits = scan(files);
 
   if (hits.length > 0) {
+    const messages = new Set<string>();
     for (const hit of hits) {
       console.error(describeHit(relative(REPO_ROOT, hit.file), hit));
+      const message = claimMessage(hit.claim);
+      if (message) messages.add(message);
+    }
+    for (const message of messages) {
+      console.error(`\n${message}`);
     }
     console.error(
       `\ncopy lint failed: ${hits.length} banned claim(s) in ${files.length} scanned file(s).`,

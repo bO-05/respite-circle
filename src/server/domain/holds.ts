@@ -101,7 +101,7 @@ const LOCAL_LINE_NAME = "Your church's local line";
 const NO_LOCAL_LINE_DETAIL =
   "No local line is saved yet. 988 stands in until your church adds one.";
 
-/** The sentence that keeps the app from implying a report was made. */
+/** The sentence that keeps the app from implying one was made. */
 export const NO_REPORT_SENTENCE =
   "No report has been made from this screen, and the app does not contact the police or Adult Protective Services. If someone is in immediate danger, call 911. Your coordinator follows the church's written safeguarding policy and state law.";
 

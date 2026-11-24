@@ -250,7 +250,21 @@ export function AskHoldBanner({
           you. No time is offered until a person has spoken with you.
         </p>
         <p className="mt-2 max-w-prose text-base leading-relaxed">
-          If someone is in danger right now, call 911.
+          If someone is in danger right now, call{" "}
+          <a
+            href="tel:911"
+            className="underline decoration-accent underline-offset-4"
+          >
+            911
+          </a>
+          . For a mental-health crisis, call or text{" "}
+          <a
+            href="tel:988"
+            className="underline decoration-accent underline-offset-4"
+          >
+            988
+          </a>
+          .
         </p>
       </section>
     );

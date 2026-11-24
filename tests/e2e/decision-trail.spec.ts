@@ -380,6 +380,15 @@ test.describe("decision trail", () => {
     await expect(banner).toContainText("Safety comes first.");
     await expect(banner).toContainText("Next step: Grace calls you today");
     await expect(banner).toContainText("call 911");
+    await expect(banner).toContainText("call or text 988");
+    await expect(banner.getByRole("link", { name: "988" })).toHaveAttribute(
+      "href",
+      "tel:988",
+    );
+    await expect(banner.getByRole("link", { name: "911" })).toHaveAttribute(
+      "href",
+      "tel:911",
+    );
     await expect(page.getByTestId("care-banner")).toHaveCount(0);
     await expect(page.getByTestId("ask-status")).toContainText(
       "Grace will call you today",

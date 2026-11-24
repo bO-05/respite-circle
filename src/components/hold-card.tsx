@@ -12,7 +12,7 @@ import type { HeldAskCard } from "@/server/repositories/holds";
  * or professional referrals to hand over, and the two deliberate actions —
  * close with your own words, or (for safety only) convert the hold with a
  * confirmation and a reason. No control on this card can create a volunteer
- * time, and no sentence suggests that a report has been made.
+ * time, and no sentence here implies one was made.
  */
 
 function CrisisEntry({ entry }: { entry: HoldCardEntry }) {

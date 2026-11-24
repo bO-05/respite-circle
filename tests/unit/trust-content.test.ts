@@ -15,9 +15,14 @@ import {
 } from "@/lib/trust-content";
 import {
   BANNED_CLAIMS,
+  REPORT_CLAIM_MESSAGE,
+  REPORT_IMPLICATION_CLAIMS,
   REQUIRED_BANNED_CLAIMS,
+  claimMessage,
+  describeHit,
   scanCopy,
 } from "@/server/domain/copy-lint";
+import { NO_REPORT_SENTENCE } from "@/server/domain/holds";
 
 const REPO_ROOT = resolve(__dirname, "../..");
 
@@ -106,6 +111,80 @@ describe("the banned-claim list", () => {
     expect(hits).toHaveLength(1);
     expect(hits[0]?.line).toBe(2);
     expect(hits[0]?.claim).toBe("vetted");
+  });
+});
+
+/**
+ * The audit's four planted sentences, plus the variants the safety e2e's own
+ * report scan lists. This is the spec for the report-implication lint.
+ */
+const REPORT_SENTENCES: ReadonlyArray<readonly [string, string]> = [
+  ["We have reported this to the authorities.", "we have reported"],
+  ["A report was submitted.", "a report was submitted"],
+  ["We contacted APS.", "we contacted APS"],
+  ["It has been reported.", "it has been reported"],
+  ["We reported it last week.", "we reported"],
+  ["The report has been filed.", "report has been filed"],
+  ["It has been reported to the police.", "it has been reported"],
+  ["The authorities were notified.", "authorities were notified"],
+  ["We notified the authorities.", "notified the authorities"],
+  ["We notified the police.", "notified the police"],
+  ["APS has been notified.", "APS has been notified"],
+  ["I filed a report last week.", "filed a report"],
+  ["This is a mandated report.", "mandated report"],
+];
+
+describe("report-implication claims", () => {
+  it("keeps every report phrase on the banned list", () => {
+    for (const claim of REPORT_IMPLICATION_CLAIMS) {
+      expect(BANNED_CLAIMS, claim).toContain(claim);
+    }
+  });
+
+  it("fails on each report-implication sentence and names the phrase", () => {
+    for (const [sentence, claim] of REPORT_SENTENCES) {
+      const hits = scanCopy(sentence);
+      expect(hits.length, sentence).toBeGreaterThan(0);
+      expect(hits.map((hit) => hit.claim), sentence).toContain(claim);
+    }
+  });
+
+  it("reports an article-led phrase once, with the article", () => {
+    const hits = scanCopy("A report was submitted.");
+    expect(hits).toHaveLength(1);
+    expect(hits[0]?.claim).toBe("a report was submitted");
+    expect(hits[0]?.matched).toBe("A report was submitted");
+  });
+
+  it("carries the rule for a report claim", () => {
+    const [hit] = scanCopy("We have reported this to the authorities.");
+    expect(hit).toBeDefined();
+    if (!hit) return;
+
+    expect(describeHit("src/example.tsx", hit)).toBe(
+      'src/example.tsx:1:1 — "We have reported" (we have reported)',
+    );
+    expect(claimMessage(hit.claim)).toBe(REPORT_CLAIM_MESSAGE);
+    expect(claimMessage("vetted")).toBeNull();
+  });
+
+  it("keeps the safety card's plain denial publishable", () => {
+    expect(scanCopy(NO_REPORT_SENTENCE)).toEqual([]);
+    expect(scanCopy("No report was made from this screen.")).toEqual([]);
+    expect(scanCopy("No report has been made from this screen.")).toEqual([]);
+    expect(scanCopy("No one filed a report.")).toEqual([]);
+  });
+
+  it("does not let punctuation or a new clause hide a claim", () => {
+    // The negation must sit directly before the phrase to count as a denial.
+    expect(scanCopy("No, we reported it.").map((hit) => hit.claim)).toContain(
+      "we reported",
+    );
+    expect(
+      scanCopy("We were asked whether a report was submitted.").map(
+        (hit) => hit.claim,
+      ),
+    ).toContain("a report was submitted");
   });
 });
 

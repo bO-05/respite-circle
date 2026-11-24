@@ -180,6 +180,17 @@ describe("hold banners", () => {
     expect(banner).toHaveTextContent("Safety comes first.");
     expect(banner).toHaveTextContent("Next step: Grace calls you today");
     expect(banner).toHaveTextContent("call 911");
+    expect(banner).toHaveTextContent(
+      "For a mental-health crisis, call or text 988",
+    );
+    expect(within(banner).getByRole("link", { name: "911" })).toHaveAttribute(
+      "href",
+      "tel:911",
+    );
+    expect(within(banner).getByRole("link", { name: "988" })).toHaveAttribute(
+      "href",
+      "tel:988",
+    );
   });
 
   it("shows a personal-care banner with the next human step and no slot", () => {
