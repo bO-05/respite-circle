@@ -56,7 +56,7 @@ const SARA: Actor = {
 /** The base seed plus the demo-ready board: open times with no claim on them. */
 async function seedDemoBoard(t: TestDatabase): Promise<void> {
   await truncateAll(t.db);
-  await seedDatabase(t.db);
+  await seedDatabase(t.db, { now: NOW });
   await seedDemoState(t.db, { now: NOW });
 }
 

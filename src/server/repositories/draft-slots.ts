@@ -12,6 +12,7 @@ import {
   slot,
   slotCandidate,
 } from "@/db/schema";
+import { resolveNow } from "@/lib/clock";
 import {
   DESK_ROLES,
   requireRoleSession,
@@ -140,7 +141,7 @@ function draftIsEditable(actor: Actor) {
 export async function listSessionOptions(
   churchId: string,
   database: AppDatabase = appDb,
-  from: Date = new Date(),
+  from: Date = resolveNow(),
 ): Promise<SessionOption[]> {
   const rows = await database
     .select({
@@ -387,7 +388,7 @@ export async function updateDraftSlot(
   // companion links the next morning with room (never a full one); changing it
   // away clears the session link. A companion draft already on a morning keeps
   // its own place even when that morning is otherwise full.
-  const now = new Date();
+  const now = resolveNow();
   let sessionId: string | null = null;
   let windowStart = input.windowStart;
   let windowEnd = input.windowEnd;
@@ -685,7 +686,7 @@ export async function addDraftSlot(
   actor: Actor,
   input: { askId: string; kind: unknown },
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<DraftWriteResult> {
   requireRoleSession(actor, DESK_ROLES);
 

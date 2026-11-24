@@ -243,7 +243,7 @@ describe("a volunteer's own claims", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("lists only the viewer's claims with an allow-listed projection", async () => {

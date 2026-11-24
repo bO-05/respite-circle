@@ -210,7 +210,7 @@ describe("Respite Morning calendar and cancellation", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("plans the four future Tuesdays from the weekly template", async () => {

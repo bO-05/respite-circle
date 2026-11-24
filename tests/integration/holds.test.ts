@@ -210,7 +210,7 @@ describe("human-only routes", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("gives a safety hold a script, 988 and the signed local line, and no slot", async () => {

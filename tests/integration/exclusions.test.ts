@@ -282,7 +282,7 @@ describe("candidate exclusion evaluation", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("records one row for every active volunteer on every draft slot", async () => {

@@ -148,13 +148,15 @@ dashboard. Only `NEXT_PUBLIC_APP_URL` is public, and nothing secret carries a
 | `RC_CALIBRATION_SOURCE` | `live` or `deterministic-baseline` for `npm run calibrate`. |
 | `RC_E2E` | `1` enables the test-only `/error-probe` route. Never set in Vercel. |
 | `PW_REUSE` | `1` makes Playwright reuse an already-running local server. |
+| `RC_FAKE_NOW` | An ISO instant the seed, the desk calendar, and slot construction treat as now, so a later run date can be proved without moving the machine clock. Leave empty except while testing. |
 
 Vercel provides `VERCEL_GIT_COMMIT_SHA`, `VERCEL_DEPLOYMENT_ID`, and `VERCEL`.
 `/api/health` reports the first seven characters of the commit (or the
 deployment id) as `version`.
 
 Never set the `E2E_*` variables, `RC_DB_BRANCH`, `RC_SEED_ALLOW_REMOTE`,
-`RC_LIVE_MODEL`, `RC_CALIBRATION_SOURCE`, `RC_E2E`, or `PW_REUSE` in Vercel.
+`RC_LIVE_MODEL`, `RC_CALIBRATION_SOURCE`, `RC_E2E`, `RC_FAKE_NOW`, or
+`PW_REUSE` in Vercel.
 
 ## Database
 

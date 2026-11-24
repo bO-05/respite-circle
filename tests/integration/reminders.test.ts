@@ -250,7 +250,7 @@ describe("the one reminder for a covered time", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("writes exactly one reminder inside the window, from the human template", async () => {

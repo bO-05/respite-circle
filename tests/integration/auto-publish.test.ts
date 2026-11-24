@@ -281,7 +281,7 @@ describe("the deputy and the low-risk auto-publish setting", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("is off by default, so a meal draft waits for a person", async () => {

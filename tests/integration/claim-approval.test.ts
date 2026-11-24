@@ -266,7 +266,7 @@ describe("claim approval and the one confirmation", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("writes no message when a volunteer claims, and the desk sees the claim", async () => {

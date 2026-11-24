@@ -212,7 +212,7 @@ describe("approve, publish, and send back", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("publishes exactly the non-held drafts and moves the ask to approved", async () => {

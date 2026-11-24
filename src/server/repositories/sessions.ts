@@ -12,6 +12,7 @@ import {
   sessionTemplate,
   slot,
 } from "@/db/schema";
+import { resolveNow } from "@/lib/clock";
 import {
   DESK_ROLES,
   requireRoleSession,
@@ -137,7 +138,7 @@ export async function listTemplateSchedules(
 export async function listCalendarSessionRows(
   churchId: string,
   database: AppDatabase = appDb,
-  from: Date = new Date(),
+  from: Date = resolveNow(),
 ): Promise<CalendarSessionRow[]> {
   const rows = await database
     .select({
@@ -176,7 +177,7 @@ export async function listCalendarSessionRows(
 export async function getDeskSessionOverview(
   actor: Actor,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<SessionOverview> {
   requireRoleSession(actor, DESK_ROLES);
 
@@ -202,7 +203,7 @@ export async function getDeskSessionOverview(
 export async function readCalendarGuard(
   churchId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<CalendarGuard> {
   const [schedules, sessions, timeZone] = await Promise.all([
     listTemplateSchedules(churchId, database),
@@ -258,7 +259,7 @@ export async function materialiseSessionsForChurch(input: {
   actor?: Actor;
 }): Promise<MaterialiseOutcome> {
   const database = input.database ?? appDb;
-  const now = input.now ?? new Date();
+  const now = input.now ?? resolveNow();
 
   const [schedules, timeZone] = await Promise.all([
     listTemplateSchedules(input.churchId, database, true),
@@ -329,7 +330,7 @@ export async function cancelSessionForCoordinator(
   actor: Actor,
   sessionId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<SessionCancelOutcome> {
   requireRoleSession(actor, DESK_ROLES);
 
@@ -489,7 +490,7 @@ export async function restoreSessionForCoordinator(
   actor: Actor,
   sessionId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<SessionRestoreOutcome> {
   requireRoleSession(actor, DESK_ROLES);
 
@@ -618,7 +619,7 @@ export async function markCallTaskDone(
   actor: Actor,
   slotId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<CallTaskOutcome> {
   requireRoleSession(actor, DESK_ROLES);
 

@@ -11,6 +11,7 @@ import {
   slotCandidate,
   volunteer,
 } from "@/db/schema";
+import { resolveNow } from "@/lib/clock";
 import {
   DESK_ROLES,
   requireRoleSession,
@@ -87,7 +88,7 @@ export async function evaluateCandidatesForSlots(
   database: AppDatabase,
   input: CandidateEvaluationInput,
 ): Promise<CandidateEvaluationResult> {
-  const now = input.now ?? new Date();
+  const now = input.now ?? resolveNow();
   const slotIds = [...new Set(input.slotIds)];
   if (slotIds.length === 0) return EMPTY_RESULT;
 
@@ -332,7 +333,7 @@ export async function reevaluateExclusions(
   actor: Actor,
   askId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<ReevaluationResult> {
   requireRoleSession(actor, DESK_ROLES);
 

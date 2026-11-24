@@ -223,7 +223,7 @@ describe("draft slot construction", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("writes a companion place at the next Respite Morning and a gated home Saturday visit", async () => {

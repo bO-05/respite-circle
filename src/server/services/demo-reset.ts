@@ -1,8 +1,6 @@
-import { inArray } from "drizzle-orm";
 import { DEMO_IDS, seedDemoState, type DemoStateSummary } from "@/db/demo-state";
 import { readAllTableCounts, type TableCounts } from "@/db/counts";
 import { resetDemoDatabase } from "@/db/reset";
-import { session } from "@/db/schema";
 import {
   seedChurch,
   seedIds,
@@ -13,7 +11,7 @@ import {
 } from "@/db/seed-data";
 import type { SeedDb } from "@/db/seed-core";
 import { verifySeed } from "@/db/verify";
-import { nextOccurrences } from "@/server/domain/session-calendar";
+import { resolveNow } from "@/lib/clock";
 import { sha256Hex } from "./decision-contract";
 import {
   DEMO_DECISION_ASKS,
@@ -625,50 +623,14 @@ async function applyFault(
 }
 
 /**
- * Move the four seeded Respite Mornings onto the next four Tuesdays from `now`.
- *
- * `seedSessions` is pinned to a reference date so the baseline fixture is
- * deterministic, but a demo reset must always show a future calendar: after
- * the first seeded Tuesday has passed, the reset would find three future
- * sessions and fail its own seventh assertion. The ids, weekday, and wall time
- * stay the same, so the companion slot keeps pointing at the same session.
- */
-async function rollSessionsForward(db: SeedDb, now: Date): Promise<void> {
-  const occurrences = nextOccurrences(
-    seedSessionTemplate,
-    now,
-    seedChurch.timezone,
-    4,
-  );
-  if (occurrences.length !== 4) {
-    throw new Error(
-      "The demo reset could not place four future Respite Mornings from the weekly template.",
-    );
-  }
-
-  // Delete then insert, not four UPDATEs: the unique (template_id, starts_at)
-  // index rejects a transient collision while one row still holds a date a
-  // later row is about to take. Nothing references a session before the demo
-  // asks and slots are written, so the ids can be reused safely.
-  await db
-    .delete(session)
-    .where(inArray(session.id, [...seedIds.sessions]));
-  await db.insert(session).values(
-    occurrences.map((occurrence, index) => ({
-      id: seedIds.sessions[index],
-      churchId: seedChurch.id,
-      templateId: seedSessionTemplate.id,
-      startsAt: occurrence.startsAt,
-      endsAt: occurrence.endsAt,
-      capacity: seedSessionTemplate.capacity,
-      status: "scheduled" as const,
-    })),
-  );
-}
-
-/**
  * Wipe, reseed, write the demo-ready rows, verify twelve assertions, and return
  * a stable digest. The caller (CLI or route) reports success only when `ok`.
+ *
+ * `now` defaults to the app clock (`RC_FAKE_NOW` when set, else the wall
+ * clock). The truncate-and-reseed writes the four Respite Mornings as the next
+ * four Tuesdays from that instant with the same `buildSeedSessions` helper
+ * `db:seed` uses, so a demo reset always shows a future calendar and can never
+ * disagree with the construction guard about which Tuesdays are expected.
  *
  * `decisionMode` defaults to `RC_DEMO_LIVE_AI`: with it on, the four asks are
  * decided through the same `decide()` + `persistDecisionRun()` path as intake,
@@ -681,14 +643,14 @@ export async function runDemoReset(
   db: SeedDb,
   options: DemoResetOptions = {},
 ): Promise<DemoResetResult> {
-  const now = options.now ?? new Date();
+  const now = options.now ?? resolveNow();
   const env = options.env ?? process.env;
   const mode: DemoDecisionMode =
     options.decisionMode ?? (isDemoLiveAiEnabled(env) ? "live" : "rules");
 
-  await resetDemoDatabase(db);
-  // The demo calendar must move with the wall clock; the seeded fixture cannot.
-  await rollSessionsForward(db, now);
+  // The reseed is the demo calendar: it places the four Respite Mornings on
+  // the next four Tuesdays from this same `now`.
+  await resetDemoDatabase(db, { now });
   const demo = await seedDemoState(db, {
     now,
     writeDecisions: mode === "rules",

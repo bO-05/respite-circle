@@ -7,6 +7,7 @@ import {
   seedCaregivers,
   seedChurch,
   seedCrisisScript,
+  seedIds,
   seedLocalCrisisLine,
   seedPeople,
   seedPolicy,
@@ -14,7 +15,6 @@ import {
   seedReferralResources,
   seedSafeguardingPromises,
   seedSessionTemplate,
-  seedSessions,
   seedVolunteers,
 } from "./seed-data";
 
@@ -156,7 +156,7 @@ export async function verifySeed(db: SeedDb): Promise<VerifySeedResult> {
     const questionIds = seededPolicy.question_set.map((question) => question.id);
     if (questionIds.join(",") !== seedQuestionSet.map((q) => q.id).join(",")) {
       failures.push(
-        "policy version 1 must carry the nine typed questions Q1â€“Q9 in order",
+        "policy version 1 must carry the nine typed questions Q1–Q9 in order",
       );
     }
     for (const question of seededPolicy.question_set) {
@@ -243,7 +243,7 @@ export async function verifySeed(db: SeedDb): Promise<VerifySeedResult> {
       row.end_time === "14:00",
   );
   if (!template) {
-    failures.push("missing Respite Morning template (Tuesday 10:00â€“14:00)");
+    failures.push("missing Respite Morning template (Tuesday 10:00–14:00)");
   }
 
   const sessions = await db.$client<
@@ -264,24 +264,25 @@ export async function verifySeed(db: SeedDb): Promise<VerifySeedResult> {
       FROM session
      ORDER BY starts_at`;
 
-  for (const expected of seedSessions) {
-    const found = sessions.find((row) => row.id === expected.id);
+  for (const expectedId of seedIds.sessions) {
+    const found = sessions.find((row) => row.id === expectedId);
     if (!found) {
-      failures.push(`missing session: ${expected.startsAt.toISOString()}`);
+      failures.push(`missing session: ${expectedId}`);
       continue;
     }
     // The weekday and wall time are the promise; the calendar date is not.
-    // `runDemoReset` rolls the four seeded ids onto the next four Tuesdays so a
-    // reset after the reference date still leaves a future calendar. Pinning
-    // the exact instant here would make that roll an assertion failure.
+    // The seed and `runDemoReset` both derive the four dates from the clock
+    // with `buildSeedSessions`, so a reset after the reference date still
+    // leaves a future calendar. Pinning the exact instant here would make that
+    // roll an assertion failure.
     if (found.iso_dow !== 2) {
-      failures.push(`session ${expected.id} is not a Tuesday`);
+      failures.push(`session ${expectedId} is not a Tuesday`);
     }
     if (found.local_start !== "10:00" || found.local_end !== "14:00") {
-      failures.push(`session ${expected.id} is not 10:00â€“14:00 church time`);
+      failures.push(`session ${expectedId} is not 10:00–14:00 church time`);
     }
     if (found.status !== "scheduled") {
-      failures.push(`session ${expected.id} is ${found.status}, not scheduled`);
+      failures.push(`session ${expectedId} is ${found.status}, not scheduled`);
     }
   }
 

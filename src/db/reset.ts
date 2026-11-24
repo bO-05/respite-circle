@@ -32,8 +32,11 @@ export async function truncateAll(db: SeedDb): Promise<void> {
   await db.$client.unsafe(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE`);
 }
 
-/** Wipe the demo data and reseed the deterministic cast. */
-export async function resetDemoDatabase(db: SeedDb) {
+/** Wipe the demo data and reseed the deterministic cast at the given clock. */
+export async function resetDemoDatabase(
+  db: SeedDb,
+  options: { now?: Date } = {},
+) {
   await truncateAll(db);
-  return seedDatabase(db);
+  return seedDatabase(db, options);
 }

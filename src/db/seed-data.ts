@@ -1,3 +1,4 @@
+import { nextOccurrences } from "../server/domain/session-calendar";
 import type { PolicyQuestion, ReferralResource } from "./schema";
 
 /**
@@ -10,11 +11,16 @@ import type { PolicyQuestion, ReferralResource } from "./schema";
 
 export const CHURCH_TIMEZONE = "America/New_York";
 
-/** A fixed Tuesday, so four sessions are always computable without wall clock. */
+/**
+ * A fixed Tuesday used by tests that need one anchor for window arithmetic.
+ *
+ * It is **not** the seed's calendar. The four seeded Respite Mornings derive
+ * from the clock the app is running under (see `buildSeedSessions`), because
+ * the construction guard only ever counts the next four Tuesdays from now; a
+ * fixture pinned to this date would stop offering a companion place as soon as
+ * the fourth Tuesday passed.
+ */
 export const SEED_REFERENCE_DATE = new Date("2026-11-17T15:00:00.000Z");
-
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const SESSION_MS = 4 * 60 * 60 * 1000;
 
 export const seedIds = {
   church: "c0000000-0000-4000-8000-000000000001",
@@ -373,17 +379,46 @@ export const seedSessionTemplate = {
   active: true,
 } as const;
 
-/** Four Tuesdays after the fixed reference date, 10:00–14:00 America/New_York. */
-export const seedSessions = [1, 2, 3, 4].map((week) => {
-  const startsAt = new Date(SEED_REFERENCE_DATE.getTime() + week * WEEK_MS);
-  return {
-    id: seedIds.sessions[week - 1],
-    startsAt,
-    endsAt: new Date(startsAt.getTime() + SESSION_MS),
+export type SeedSession = {
+  id: string;
+  startsAt: Date;
+  endsAt: Date;
+  capacity: number;
+  status: "scheduled";
+};
+
+/**
+ * The four seeded Respite Mornings: the next four Tuesdays 10:00–14:00 in the
+ * church's time zone, strictly after `now`.
+ *
+ * This is the same `nextOccurrences` helper the construction guard and the demo
+ * reset use. Sharing it is the point: a seeded calendar can never disagree with
+ * the guard about which Tuesdays are expected, at any run date. The ids stay
+ * fixed, so a later demo reset and every seeded slot keep pointing at the same
+ * four rows.
+ */
+export function buildSeedSessions(now: Date): SeedSession[] {
+  const occurrences = nextOccurrences(
+    seedSessionTemplate,
+    now,
+    CHURCH_TIMEZONE,
+    seedIds.sessions.length,
+  );
+
+  if (occurrences.length !== seedIds.sessions.length) {
+    throw new Error(
+      "The seeded calendar needs one weekly Respite Morning template that plans four Tuesdays ahead.",
+    );
+  }
+
+  return occurrences.map((occurrence, index) => ({
+    id: seedIds.sessions[index]!,
+    startsAt: occurrence.startsAt,
+    endsAt: occurrence.endsAt,
     capacity: seedSessionTemplate.capacity,
-    status: "scheduled" as const,
-  };
-});
+    status: "scheduled",
+  }));
+}
 
 /**
  * Expected counts after one seed run. Shared by `verify-seed.ts` and tests.

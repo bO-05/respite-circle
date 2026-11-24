@@ -10,6 +10,7 @@ import {
   policy,
   slot,
 } from "@/db/schema";
+import { resolveNow } from "@/lib/clock";
 import {
   DESK_ROLES,
   requireRoleSession,
@@ -98,7 +99,7 @@ export async function constructDraftSlots(
   input: ConstructDraftSlotsInput,
 ): Promise<ConstructDraftSlotsResult> {
   const database = input.database ?? appDb;
-  const now = input.now ?? new Date();
+  const now = input.now ?? resolveNow();
 
   const askRows = await database
     .select({
@@ -412,7 +413,7 @@ export async function proposeDraftsForAsk(
   actor: Actor,
   askId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<ConstructDraftSlotsResult> {
   requireRoleSession(actor, DESK_ROLES);
 

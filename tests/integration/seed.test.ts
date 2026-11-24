@@ -6,6 +6,7 @@ import {
   seedDatabase,
 } from "../../src/db/seed";
 import {
+  buildSeedSessions,
   expectedSeedCounts,
   SEED_REFERENCE_DATE,
   seedChurch,
@@ -16,7 +17,6 @@ import {
   seedQuestionSet,
   seedReferralResources,
   seedSafeguardingPromises,
-  seedSessions,
 } from "../../src/db/seed-data";
 import type { Actor } from "../../src/server/auth/policy";
 import { createPolicyVersion } from "../../src/server/repositories/policy";
@@ -39,7 +39,7 @@ describe("deterministic seed", () => {
   });
 
   it("seeds the full fictional cast, one policy version, and four sessions", async () => {
-    const counts = await seedDatabase(t.db);
+    const counts = await seedDatabase(t.db, { now: SEED_REFERENCE_DATE });
 
     expect(counts).toMatchObject(expectedSeedCounts);
     expect(counts.ask).toBe(0);
@@ -76,17 +76,28 @@ describe("deterministic seed", () => {
     expect(sessions).toHaveLength(4);
   });
 
-  it("is idempotent: a second run leaves every count unchanged", async () => {
-    const first = await seedDatabase(t.db);
-    const second = await seedDatabase(t.db);
+  it("is idempotent: a second run leaves every count and every date unchanged", async () => {
+    const now = SEED_REFERENCE_DATE;
+    const first = await seedDatabase(t.db, { now });
+    const dates = async () =>
+      (
+        await t.client<{ id: string; starts_at: Date }[]>`
+          SELECT id, starts_at FROM session ORDER BY id
+        `
+      ).map((row) => [row.id, new Date(row.starts_at).toISOString()] as const);
+
+    const before = await dates();
+    const second = await seedDatabase(t.db, { now });
 
     expect(second).toEqual(first);
     expect(formatSeedCounts(second)).toBe(formatSeedCounts(first));
     expect(await readSeedCounts(t.db)).toEqual(first);
+    expect(await dates()).toEqual(before);
   });
 
-  it("puts four future Tuesday sessions at 10:00–14:00 church time", async () => {
-    await seedDatabase(t.db);
+  it("puts four future Tuesday sessions at 10:00–14:00 church time, named by the clock", async () => {
+    const now = SEED_REFERENCE_DATE;
+    await seedDatabase(t.db, { now });
 
     const sessions = await t.client<
       {
@@ -106,19 +117,63 @@ describe("deterministic seed", () => {
        ORDER BY starts_at
     `;
 
+    const expected = buildSeedSessions(now);
     expect(sessions).toHaveLength(4);
-    expect(sessions.map((row) => row.id)).toEqual([...seedSessions.map((s) => s.id)]);
+    expect(sessions.map((row) => row.id)).toEqual(expected.map((s) => s.id));
 
-    for (const row of sessions) {
+    for (const [index, row] of sessions.entries()) {
       expect(row.iso_dow, `${row.id} must fall on a Tuesday`).toBe(2);
       expect(row.local_start).toBe("10:00");
       expect(row.local_end).toBe("14:00");
+      expect(new Date(row.starts_at).getTime()).toBe(
+        expected[index]!.startsAt.getTime(),
+      );
+      expect(new Date(row.starts_at).getTime()).toBeGreaterThan(now.getTime());
     }
 
-    const reference = SEED_REFERENCE_DATE.getTime();
-    expect(new Date(sessions[0].starts_at).getTime()).toBeGreaterThan(reference);
-    expect(new Date(sessions[3].starts_at).getTime()).toBeGreaterThan(
-      new Date(sessions[2].starts_at).getTime(),
+    expect(new Date(sessions[3]!.starts_at).getTime()).toBeGreaterThan(
+      new Date(sessions[2]!.starts_at).getTime(),
+    );
+  });
+
+  it("rolls the four sessions onto the next four Tuesdays from a later clock", async () => {
+    // Tuesday 5 January 2027, 09:00 in New York. The first Tuesday after it is
+    // that same morning, so the four seeded ids land on 5, 12, 19, and 26 Jan.
+    const later = new Date("2027-01-05T14:00:00.000Z");
+    await seedDatabase(t.db, { now: later });
+
+    const sessions = await t.client<{ id: string; starts_at: Date }[]>`
+      SELECT id, starts_at FROM session ORDER BY starts_at
+    `;
+
+    const expected = buildSeedSessions(later);
+    expect(expected.map((s) => s.startsAt.toISOString())).toEqual([
+      "2027-01-05T15:00:00.000Z",
+      "2027-01-12T15:00:00.000Z",
+      "2027-01-19T15:00:00.000Z",
+      "2027-01-26T15:00:00.000Z",
+    ]);
+    expect(sessions.map((row) => row.id)).toEqual(expected.map((s) => s.id));
+    expect(sessions.map((row) => new Date(row.starts_at).toISOString())).toEqual(
+      expected.map((s) => s.startsAt.toISOString()),
+    );
+  });
+
+  it("honours RC_FAKE_NOW when no clock is passed", async () => {
+    const previous = process.env.RC_FAKE_NOW;
+    process.env.RC_FAKE_NOW = "2027-01-05T14:00:00.000Z";
+    try {
+      await seedDatabase(t.db);
+    } finally {
+      if (previous === undefined) delete process.env.RC_FAKE_NOW;
+      else process.env.RC_FAKE_NOW = previous;
+    }
+
+    const [first] = await t.client<{ starts_at: Date }[]>`
+      SELECT starts_at FROM session ORDER BY starts_at LIMIT 1
+    `;
+    expect(new Date(first!.starts_at).toISOString()).toBe(
+      "2027-01-05T15:00:00.000Z",
     );
   });
 

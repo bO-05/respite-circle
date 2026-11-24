@@ -277,7 +277,7 @@ describe("closure", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("closes the last published time and the ask in one transaction, sending nothing", async () => {

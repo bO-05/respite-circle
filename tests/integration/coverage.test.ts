@@ -332,7 +332,7 @@ describe("the coverage watch and the failure-path proof", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("lists a published time past the threshold with a live zero count", async () => {

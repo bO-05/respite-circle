@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { resolveNow } from "@/lib/clock";
 import { requireAction } from "@/server/auth/guards";
 import { DESK_ROLES } from "@/server/auth/policy";
 import {
@@ -65,7 +66,7 @@ export async function fillCalendarAction(): Promise<SessionActionState> {
     const outcome = await materialiseSessionsForChurch({
       churchId: authorized.session.churchId,
       actor: authorized.session,
-      now: new Date(),
+      now: resolveNow(),
     });
 
     refreshCalendar();
@@ -97,7 +98,7 @@ export async function cancelSessionAction(
       authorized.session,
       sessionId,
       undefined,
-      new Date(),
+      resolveNow(),
     );
     if (!result.ok) return errorState(result.message);
 
@@ -123,7 +124,7 @@ export async function restoreSessionAction(
       authorized.session,
       sessionId,
       undefined,
-      new Date(),
+      resolveNow(),
     );
     if (!result.ok) return errorState(result.message);
 
@@ -151,7 +152,7 @@ export async function markCalledAction(
       authorized.session,
       slotId,
       undefined,
-      new Date(),
+      resolveNow(),
     );
     if (!result.ok) return errorState(result.message);
 

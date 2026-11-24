@@ -395,7 +395,7 @@ describe("the atomic claim and its gate", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("claims a real published slot once and records the winner in the audit trail", async () => {

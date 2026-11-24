@@ -1,7 +1,9 @@
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { Sql } from "postgres";
+import { resolveNow } from "../lib/clock";
 import * as schema from "./schema";
 import {
+  buildSeedSessions,
   seedCareRecipients,
   seedCaregivers,
   seedChurch,
@@ -10,7 +12,6 @@ import {
   seedPeople,
   seedPolicy,
   seedSessionTemplate,
-  seedSessions,
   seedVolunteers,
 } from "./seed-data";
 
@@ -45,8 +46,22 @@ export type SeedCounts = {
  * Insert the deterministic demo cast. Every statement uses
  * `ON CONFLICT DO NOTHING` keyed on stable ids, so running the seed twice
  * leaves the same rows. Returns the resulting row counts.
+ *
+ * The four seeded Respite Mornings are the exception to "insert-only content",
+ * and only in where they are computed: they are the next four Tuesdays from
+ * `options.now` (the app clock by default), so a fresh seed on any run date
+ * gives the construction guard four mornings to offer. The ids never change,
+ * and `ON CONFLICT DO NOTHING` means a database seeded on an earlier date keeps
+ * its rows; `npm run db:reset` (truncate, reseed, verify) is the way to roll
+ * that calendar forward.
  */
-export async function seedDatabase(db: SeedDb): Promise<SeedCounts> {
+export async function seedDatabase(
+  db: SeedDb,
+  options: { now?: Date } = {},
+): Promise<SeedCounts> {
+  const now = options.now ?? resolveNow();
+  const sessions = buildSeedSessions(now);
+
   await db.transaction(async (tx) => {
     await tx
       .insert(schema.church)
@@ -160,7 +175,7 @@ export async function seedDatabase(db: SeedDb): Promise<SeedCounts> {
     await tx
       .insert(schema.session)
       .values(
-        seedSessions.map((s) => ({
+        sessions.map((s) => ({
           id: s.id,
           churchId: seedIds.church,
           templateId: seedSessionTemplate.id,

@@ -226,7 +226,7 @@ describe("the congregation board projection", () => {
 
   beforeEach(async () => {
     await truncateAll(t.db);
-    await seedDatabase(t.db);
+    await seedDatabase(t.db, { now: NOW });
   });
 
   it("returns exactly the allow-listed keys and no story", async () => {
