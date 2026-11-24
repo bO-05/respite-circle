@@ -101,7 +101,7 @@ export default async function DeskPage() {
       person={person}
       role={session.role}
       title="Coordinator desk"
-      lead="A person reads every ask before a neighbour sees a time. Safety and personal-care asks stay pinned in their own groups."
+      lead="A person reads every ask, and a signed low-risk policy can let a meal publish itself first; every other kind of time waits for that person. Safety and personal-care asks stay pinned in their own groups."
     >
       <SessionCalendarStrip overview={overview} />
 

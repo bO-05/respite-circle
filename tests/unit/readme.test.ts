@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -107,5 +107,61 @@ describe("VAL-AUDITFIX-011 — every approval claim names the meal exception", (
         /low-risk|auto_low_risk|reheatable meal/i,
       );
     }
+  });
+});
+
+/**
+ * The desk lead is the coordinator's first sentence about the human gate. It
+ * may not promise that a person sees a time before a neighbour does, because
+ * a signed low-risk policy with the switch on lets a meal publish at intake
+ * (`published_via = auto_low_risk`, logged as `slot_auto_published`). Pin the
+ * qualified sentence here so the old absolute cannot return through a copy
+ * edit that no other test reads.
+ */
+const deskDir = join(root, "src", "app", "desk");
+
+function walkDeskSources(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = join(dir, entry.name);
+    if (entry.isDirectory()) return walkDeskSources(absolute);
+    return /\.(tsx|ts)$/.test(entry.name) ? [absolute] : [];
+  });
+}
+
+describe("VAL-AUDITFIX-011 — the desk lead names the meal exception", () => {
+  const deskPage = readFileSync(join(deskDir, "page.tsx"), "utf8");
+  const lead = /lead="([^"]+)"/.exec(deskPage)?.[1] ?? "";
+
+  it("found the coordinator desk lead to check", () => {
+    expect(lead).not.toBe("");
+  });
+
+  it("keeps the person-reads promise and names the signed low-risk meal in the same passage", () => {
+    expect(lead).toMatch(/^A person reads every ask\b/);
+    expect(lead).toMatch(
+      /a signed low-risk policy can let a meal publish itself first/i,
+    );
+    expect(lead).toMatch(/every other kind of time waits for that person/i);
+  });
+
+  it("no longer claims a person reads every ask before a neighbour sees a time", () => {
+    expect(lead).not.toMatch(/before a neighbour sees a time/i);
+  });
+
+  it("does not carry the unqualified absolute anywhere on the desk", () => {
+    const files = walkDeskSources(deskDir);
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      expect(
+        readFileSync(file, "utf8"),
+        `${file} must not restore the unqualified approval absolute`,
+      ).not.toMatch(/reads every ask before a neighbour sees a time/i);
+    }
+  });
+
+  it("keeps safety and personal-care asks pinned in their own groups", () => {
+    expect(lead).toMatch(
+      /Safety and personal-care asks stay pinned in their own groups\./,
+    );
   });
 });
