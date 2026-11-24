@@ -1,9 +1,13 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { AccessLinkList } from "@/components/access-link-list";
 import { InviteComposer } from "@/components/invite-composer";
 import { RolePage } from "@/components/role-page";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
+import { resolveAccessLinkOrigin } from "@/server/domain/access-links";
 import { formatWindowLabel } from "@/server/domain/slots";
+import { listChurchAccessLinks } from "@/server/repositories/access-links";
 import {
   listInvitableFamilies,
   listRecentInvites,
@@ -18,13 +22,30 @@ export const dynamic = "force-dynamic";
  * sentence if they wish, and sends it. The row keeps the body, the author, and
  * the instant it was written. It is in-app only: no email, no SMS, no board
  * post, no broadcast. The family reads it the first time they open their link.
+ *
+ * The same screen hands over the sign-in link itself. Every person has one
+ * already, and the coordinator is the one who passes it on, the way they
+ * already reach that person. The list is read through the same desk role and
+ * church scope as the composer, so a caregiver or another church's session
+ * never sees a token.
  */
 export default async function DeskInvitePage() {
   const { person, session } = await requirePage(DESK_ROLES);
-  const [families, recent] = await Promise.all([
+
+  const [families, recent, links, headerList] = await Promise.all([
     listInvitableFamilies(session),
     listRecentInvites(session),
+    listChurchAccessLinks(session),
+    headers(),
   ]);
+
+  const origin = resolveAccessLinkOrigin({
+    host: headerList.get("host"),
+    forwardedHost: headerList.get("x-forwarded-host"),
+    forwardedProto: headerList.get("x-forwarded-proto"),
+    configuredUrl: process.env.NEXT_PUBLIC_APP_URL,
+    httpsOnly: Boolean(process.env.VERCEL),
+  });
 
   return (
     <RolePage
@@ -60,6 +81,8 @@ export default async function DeskInvitePage() {
           coordinatorFirstName={person.firstName}
         />
       )}
+
+      <AccessLinkList links={links} origin={origin} />
 
       <section
         aria-labelledby="invite-recent-heading"

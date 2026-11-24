@@ -1,0 +1,275 @@
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { seedAccessTokens, seedIds, seedPeople } from "../../src/db/seed-data";
+import { church, person } from "../../src/db/schema";
+import { ACCESS_LINK_SEND_LINE } from "../../src/server/domain/access-links";
+import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
+import { E2E_BASE_URL } from "./helpers/e2e-env";
+
+/**
+ * VAL-AUDITFIX-014 on the real surface.
+ *
+ * Grace opens the invite screen and finds every person in her own church with
+ * the sign-in link that person already holds, a copy control, and one plain
+ * sentence saying she sends it herself. The copied URL is opened in a brand-new
+ * browser context with no cookies: it signs Marta in and lands her on `/ask`.
+ *
+ * A caregiver's session is refused before the page renders, and a coordinator
+ * from another church reads only their own church's links. Neither response
+ * carries a token from Grace Community Church.
+ */
+
+const EVIDENCE_DIR = path.join(
+  process.cwd(),
+  ".research",
+  "validation-runs",
+  "access-links",
+);
+
+const ALL_SEEDED_TOKENS = Object.values(seedAccessTokens);
+
+const FOREIGN = {
+  churchId: "c5555555-5555-4555-8555-555555555551",
+  coordinatorId: "a5555555-5555-4555-8555-555555555551",
+  caregiverId: "a5555555-5555-4555-8555-555555555552",
+  coordinatorToken: "outside-coordinator-9e9e",
+  caregiverToken: "outside-caregiver-4d4d",
+} as const;
+
+async function signIn(
+  browser: Browser,
+  token: string,
+): Promise<{ context: BrowserContext; page: Page }> {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const response = await page.goto(`/enter/${token}`);
+  expect(response?.status()).toBe(200);
+  await expect(page.getByTestId("signed-in-person")).toBeVisible();
+  return { context, page };
+}
+
+async function shot(page: Page, name: string): Promise<void> {
+  await mkdir(EVIDENCE_DIR, { recursive: true });
+  await page.screenshot({
+    path: path.join(EVIDENCE_DIR, `${name}.png`),
+    fullPage: true,
+  });
+}
+
+function accessLinkInput(page: Page, personId: string) {
+  return page.locator(
+    `[data-testid="access-link-row"][data-person-id="${personId}"] [data-testid="access-link-value"]`,
+  );
+}
+
+async function insertForeignChurch(db: E2eDatabase): Promise<void> {
+  await db.db
+    .insert(church)
+    .values({
+      id: FOREIGN.churchId,
+      name: "Outside Community Church",
+      timezone: "America/New_York",
+      demoMode: false,
+    })
+    .onConflictDoNothing();
+
+  await db.db
+    .insert(person)
+    .values([
+      {
+        id: FOREIGN.coordinatorId,
+        churchId: FOREIGN.churchId,
+        firstName: "Rosa",
+        lastName: "Outside",
+        roles: ["coordinator"],
+        accessToken: FOREIGN.coordinatorToken,
+      },
+      {
+        id: FOREIGN.caregiverId,
+        churchId: FOREIGN.churchId,
+        firstName: "Ana",
+        lastName: "Outside",
+        roles: ["caregiver"],
+        accessToken: FOREIGN.caregiverToken,
+      },
+    ])
+    .onConflictDoNothing();
+}
+
+async function deleteForeignChurch(db: E2eDatabase): Promise<void> {
+  await db.client`DELETE FROM person WHERE church_id = ${FOREIGN.churchId}`;
+  await db.client`DELETE FROM church WHERE id = ${FOREIGN.churchId}`;
+}
+
+test.describe.configure({ timeout: 240_000 });
+
+test.describe("VAL-AUDITFIX-014 — the desk can see and copy a person's sign-in link", () => {
+  let db: E2eDatabase;
+
+  test.beforeAll(async () => {
+    db = await openE2eDatabase();
+    await insertForeignChurch(db);
+  });
+
+  test.afterAll(async () => {
+    if (!db) return;
+    await deleteForeignChurch(db);
+    await db.client.end();
+  });
+
+  test("the coordinator sees every seeded person's own link, the copy control, and one sending sentence", async ({
+    browser,
+  }) => {
+    const grace = await signIn(browser, seedAccessTokens.grace);
+    await grace.page.goto("/desk/invite");
+
+    await expect(
+      grace.page.getByRole("heading", {
+        name: "Sign-in links for your church",
+      }),
+    ).toBeVisible();
+
+    await expect(grace.page.getByTestId("access-links-send-line")).toHaveText(
+      ACCESS_LINK_SEND_LINE,
+    );
+
+    const rows = grace.page.getByTestId("access-link-row");
+    await expect(rows).toHaveCount(seedPeople.length);
+
+    for (const seeded of seedPeople) {
+      const input = accessLinkInput(grace.page, seeded.id);
+      await expect(input).toBeVisible();
+      await expect(input).toHaveValue(
+        new RegExp(`/enter/${seeded.accessToken}$`),
+      );
+
+      const copyButton = grace.page
+        .locator(
+          `[data-testid="access-link-row"][data-person-id="${seeded.id}"]`,
+        )
+        .getByTestId("copy-access-link");
+      await expect(copyButton).toBeVisible();
+      const box = await copyButton.boundingBox();
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+      expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+    }
+
+    await shot(grace.page, "desk-invite-access-links");
+
+    const daniel = await signIn(browser, seedAccessTokens.daniel);
+    await daniel.page.goto("/desk/invite");
+    await expect(daniel.page.getByTestId("access-link-row")).toHaveCount(
+      seedPeople.length,
+    );
+    await expect(
+      accessLinkInput(daniel.page, seedIds.people.marta),
+    ).toHaveValue(new RegExp(`/enter/${seedAccessTokens.marta}$`));
+
+    await daniel.context.close();
+    await grace.context.close();
+  });
+
+  test("the copied URL opens in a fresh context, signs Marta in, and lands on her home", async ({
+    browser,
+  }) => {
+    const grace = await signIn(browser, seedAccessTokens.grace);
+    await grace.context.grantPermissions(
+      ["clipboard-read", "clipboard-write"],
+      { origin: E2E_BASE_URL },
+    );
+
+    await grace.page.goto("/desk/invite");
+
+    const martaRow = grace.page.locator(
+      `[data-testid="access-link-row"][data-person-id="${seedIds.people.marta}"]`,
+    );
+    await martaRow.getByTestId("copy-access-link").click();
+
+    await expect(martaRow.getByTestId("access-link-status")).toHaveText(
+      /copied/i,
+    );
+
+    const copied = await grace.page.evaluate(() =>
+      navigator.clipboard.readText(),
+    );
+    const expected = await accessLinkInput(
+      grace.page,
+      seedIds.people.marta,
+    ).inputValue();
+
+    expect(copied).toBe(expected);
+    expect(copied).toMatch(
+      new RegExp(`^https?://[^/]+/enter/${seedAccessTokens.marta}$`),
+    );
+
+    // A brand-new context: no Grace cookie, no desk session, nothing shared.
+    const fresh = await browser.newContext();
+    const martaPage = await fresh.newPage();
+    const response = await martaPage.goto(copied);
+
+    expect(response?.status()).toBe(200);
+    await expect(martaPage).toHaveURL(/\/ask$/);
+    await expect(martaPage.getByTestId("signed-in-person")).toHaveText(
+      "Marta Alvarez",
+    );
+    await shot(martaPage, "marta-from-copied-link");
+
+    await fresh.close();
+    await grace.context.close();
+  });
+
+  test("a caregiver's session is refused and receives no token", async ({
+    browser,
+  }) => {
+    const marta = await signIn(browser, seedAccessTokens.marta);
+
+    const response = await marta.page.goto("/desk/invite");
+    expect(response?.status()).toBe(403);
+
+    await expect(
+      marta.page.getByRole("heading", {
+        name: /isn't part of your role/i,
+      }),
+    ).toBeVisible();
+    await expect(marta.page).not.toHaveTitle(/Invite a family/i);
+
+    const html = await marta.page.content();
+    expect(html).not.toContain("access-link-row");
+    for (const token of ALL_SEEDED_TOKENS) {
+      expect(html).not.toContain(token);
+    }
+
+    await shot(marta.page, "caregiver-refused");
+
+    await marta.context.close();
+  });
+
+  test("another church's coordinator sees only their own church's links", async ({
+    browser,
+  }) => {
+    const outside = await signIn(browser, FOREIGN.coordinatorToken);
+    await outside.page.goto("/desk/invite");
+
+    await expect(
+      outside.page.getByRole("heading", {
+        name: "Sign-in links for your church",
+      }),
+    ).toBeVisible();
+    await expect(outside.page.getByTestId("access-link-row")).toHaveCount(2);
+    await expect(
+      accessLinkInput(outside.page, FOREIGN.caregiverId),
+    ).toHaveValue(new RegExp(`/enter/${FOREIGN.caregiverToken}$`));
+
+    const html = await outside.page.content();
+    for (const token of ALL_SEEDED_TOKENS) {
+      expect(html).not.toContain(token);
+    }
+    expect(html).not.toContain(seedIds.people.marta);
+    expect(html).not.toContain("Grace Community Church");
+
+    await shot(outside.page, "other-church-links");
+
+    await outside.context.close();
+  });
+});
