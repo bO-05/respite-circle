@@ -417,8 +417,11 @@ Next.js 16 App Router — server components, server actions, route handlers
 - **Database-enforced invariants.** `ask.verbatim_text` is immutable (a
   column-scoped trigger, with deletes rejected), append-only tables reject
   update and delete, a caregiver notification requires a covered slot, and a
-  partial unique index caps confirmations and reminders. Safety and
-  personal-care asks never produce slots.
+  partial unique index caps confirmations and reminders. The claim is
+  write-once: a status/claim CHECK keeps `open`, `claimed`, `covered`, `done`
+  and `expired_unclaimed` coherent, and a trigger refuses a second claimant or
+  a rewritten confirmation; `cancelled` keeps the claim so cancelling a morning
+  never erases who said yes. Safety and personal-care asks never produce slots.
 - **The failure path.** An unclaimed slot creates no notification at all.
   Coverage watch writes an `absence_proof` from the live zero-row query and its
   digest, and the coordinator logs the call.

@@ -124,6 +124,10 @@ export async function insertSlot(
   db: SeedDb,
   status: "draft" | "open" | "claimed" | "covered" | "done" | "cancelled" | "expired_unclaimed",
 ): Promise<void> {
+  const claimed =
+    status === "claimed" || status === "covered" || status === "done";
+  const confirmed = status === "covered" || status === "done";
+
   await db.insert(slot).values({
     id: FIXTURE.slotId,
     askId: FIXTURE.askId,
@@ -133,10 +137,11 @@ export async function insertSlot(
     tier: "public_event",
     label: "Companion place at Respite Morning",
     status,
-    claimedBy: status === "covered" || status === "done" ? FIXTURE.volunteerId : null,
-    claimedAt:
-      status === "covered" || status === "done"
-        ? new Date("2026-11-20T15:00:00.000Z")
-        : null,
+    claimedBy: claimed ? FIXTURE.volunteerId : null,
+    claimedAt: claimed ? new Date("2026-11-20T15:00:00.000Z") : null,
+    claimConfirmedBy: confirmed ? FIXTURE.coordinatorId : null,
+    claimConfirmedAt: confirmed
+      ? new Date("2026-11-20T16:00:00.000Z")
+      : null,
   });
 }

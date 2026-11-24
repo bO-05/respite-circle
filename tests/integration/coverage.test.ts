@@ -616,7 +616,13 @@ describe("the coverage watch and the failure-path proof", () => {
     // The companion time finished; the home time is the last live one.
     await t.db
       .update(slot)
-      .set({ status: "done", claimedBy: seedIds.people.ruth, claimedAt: NOW })
+      .set({
+        status: "done",
+        claimedBy: seedIds.people.ruth,
+        claimedAt: NOW,
+        claimConfirmedBy: seedIds.people.grace,
+        claimConfirmedAt: NOW,
+      })
       .where(eq(slot.id, companionId));
     const start = new Date(NOW.getTime() + 12 * 3_600_000);
     await makeAtRisk(t, homeId, start, new Date(start.getTime() + 2 * 3_600_000));
@@ -693,25 +699,21 @@ describe("the coverage watch and the failure-path proof", () => {
   });
 
   it("refuses to write the proof when any notification row exists", async () => {
-    const { homeId } = await publishedAsk(t);
+    const { companionId, homeId } = await publishedAsk(t);
     const start = new Date(NOW.getTime() + 12 * 3_600_000);
     await makeAtRisk(t, homeId, start, new Date(start.getTime() + 2 * 3_600_000));
 
-    // The trigger only allows a caregiver row while the time is covered, so a
-    // bad state can only arise from a covered time being reopened. Reproduce
-    // that state directly and prove the expiry refuses it loudly.
-    await t.db.update(slot).set({ status: "covered" }).where(eq(slot.id, homeId));
-    await t.db.insert(notification).values({
-      churchId: seedIds.church,
-      slotId: homeId,
-      caregiverId: seedIds.people.marta,
-      kind: "confirmation",
-      templateCode: "confirmation.home",
-      body: "A message that should never have existed for an unclaimed time.",
-      status: "queued",
-      createdAt: NOW,
-    });
-    await t.db.update(slot).set({ status: "open" }).where(eq(slot.id, homeId));
+    // The trigger only allows a caregiver row while the time is covered, and a
+    // confirmed time can never be reopened: the claim is write-once, so the
+    // database refuses to clear `claim_confirmed_at`. An open time holding a
+    // message is therefore unreachable through any path. Build that bad state
+    // by moving a real confirmation row onto the open time, and prove the
+    // expiry still refuses it loudly.
+    await claimAndConfirm(t, companionId);
+    await t.db
+      .update(notification)
+      .set({ slotId: homeId })
+      .where(eq(notification.slotId, companionId));
 
     expect(await notificationCount(t, homeId)).toBe(1);
 

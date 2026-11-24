@@ -374,14 +374,33 @@ describe("the one reminder for a covered time", () => {
     expect(unconfirmed.ok).toBe(false);
     if (!unconfirmed.ok) expect(unconfirmed.code).toBe("not_covered");
 
-    // A covered time that later closes in each of the three ways.
+    // A time that has closed as unclaimed is reachable only from `open`: a
+    // confirmed claim can never be rewritten back to unclaimed, because the
+    // database refuses to clear the confirmation. Use a fresh published time.
+    const unclaimed = await publishedAsk(t);
+    await t.db
+      .update(slot)
+      .set({ status: "expired_unclaimed" })
+      .where(eq(slot.id, unclaimed.homeId));
+    const expired = await writeReminder(
+      GRACE,
+      unclaimed.homeId,
+      t.db,
+      IN_WINDOW,
+    );
+    expect(expired.ok).toBe(false);
+    if (!expired.ok) {
+      expect(expired.code).toBe("not_covered");
+      expect(expired.message).not.toMatch(
+        /\bplaces? left\b|\bremaining\b|\bviews?\b|\bdeclines?\b|waiting time|\bunclaimed\b/i,
+      );
+    }
+
+    // A covered time that later closes in each of the two ways a covered time
+    // can: the church cancels the morning, or the visit happens.
     const confirmed = await approveClaim(GRACE, homeId, t.db, CONFIRMED_AT);
     if (!confirmed.ok) throw new Error(confirmed.message);
-    for (const status of [
-      "cancelled",
-      "done",
-      "expired_unclaimed",
-    ] as const) {
+    for (const status of ["cancelled", "done"] as const) {
       await t.db.update(slot).set({ status }).where(eq(slot.id, homeId));
       const outcome = await writeReminder(GRACE, homeId, t.db, IN_WINDOW);
       expect(outcome.ok).toBe(false);

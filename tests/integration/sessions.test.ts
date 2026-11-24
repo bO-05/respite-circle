@@ -169,6 +169,12 @@ async function insertCompanionSlot(
         input.status === "claimed" || input.status === "covered"
           ? new Date("2026-11-20T15:00:00.000Z")
           : null,
+      claimConfirmedBy:
+        input.status === "covered" ? seedIds.people.grace : null,
+      claimConfirmedAt:
+        input.status === "covered"
+          ? new Date("2026-11-21T15:00:00.000Z")
+          : null,
     })
     .returning({ id: slot.id });
 

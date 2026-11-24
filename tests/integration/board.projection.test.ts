@@ -421,7 +421,11 @@ describe("the congregation board projection", () => {
 
     await t.db
       .update(slot)
-      .set({ status: "covered" })
+      .set({
+        status: "covered",
+        claimConfirmedBy: seedIds.people.grace,
+        claimConfirmedAt: NOW,
+      })
       .where(eq(slot.id, home.id));
 
     const coveredBoard = await getBoard(RUTH, t.db, NOW);

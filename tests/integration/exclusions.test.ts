@@ -246,6 +246,12 @@ async function insertCommitment(
       status: input.status ?? "claimed",
       claimedBy: input.volunteerId,
       claimedAt: NOW,
+      claimConfirmedBy:
+        input.status === "covered" || input.status === "done"
+          ? seedIds.people.grace
+          : null,
+      claimConfirmedAt:
+        input.status === "covered" || input.status === "done" ? NOW : null,
     })
     .returning({ id: slot.id });
   return inserted.id;

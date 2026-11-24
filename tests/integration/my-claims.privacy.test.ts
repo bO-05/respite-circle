@@ -201,7 +201,12 @@ async function claim(
 async function cover(t: TestDatabase, slotId: string, note = NOTE_CANARY) {
   await t.db
     .update(slot)
-    .set({ status: "covered", orientationNote: note })
+    .set({
+      status: "covered",
+      orientationNote: note,
+      claimConfirmedBy: seedIds.people.grace,
+      claimConfirmedAt: new Date("2026-11-20T16:00:00.000Z"),
+    })
     .where(eq(slot.id, slotId));
 }
 

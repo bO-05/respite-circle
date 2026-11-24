@@ -685,6 +685,29 @@ export const slot = pgTable(
       "slot_auto_publish_low_risk_only",
       sql`${t.publishedVia} <> 'auto_low_risk' OR (${t.kind} = 'meal' AND ${t.approvedAt} IS NOT NULL AND ${t.approvedBy} IS NULL)`,
     ),
+    /**
+     * The claim is write-once, and a slot's status and claim columns must
+     * agree. This binds every writer below the repositories — a hand-run
+     * UPDATE, a script, a future route — not only the conditional UPDATE in
+     * `claimSlot`.
+     *
+     * `cancelled` is deliberately unconstrained: cancelling a Respite Morning
+     * closes claimed and covered places without erasing who said yes, because
+     * the church still owes that person a call. Do not tighten it.
+     */
+    check(
+      "slot_claim_state_coherent",
+      sql`case ${t.status}
+        when 'open' then ${t.claimedBy} is null and ${t.claimedAt} is null and ${t.claimConfirmedBy} is null and ${t.claimConfirmedAt} is null
+        when 'claimed' then ${t.claimedBy} is not null and ${t.claimedAt} is not null and ${t.claimConfirmedBy} is null and ${t.claimConfirmedAt} is null
+        when 'covered' then ${t.claimedBy} is not null and ${t.claimConfirmedAt} is not null
+        when 'done' then ${t.claimedBy} is not null and ${t.claimConfirmedAt} is not null
+        when 'draft' then ${t.claimedBy} is null and ${t.claimedAt} is null and ${t.claimConfirmedBy} is null and ${t.claimConfirmedAt} is null
+        when 'expired_unclaimed' then ${t.claimedBy} is null and ${t.claimedAt} is null and ${t.claimConfirmedBy} is null and ${t.claimConfirmedAt} is null
+        when 'cancelled' then true
+        else true
+      end`,
+    ),
   ],
 );
 

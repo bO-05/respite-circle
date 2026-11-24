@@ -380,7 +380,11 @@ test.describe("the congregation board", () => {
     await shot(sara.page, "circle-board-claimed");
 
     await db.client`
-      UPDATE slot SET status = 'covered' WHERE id = ${home.id}
+      UPDATE slot
+         SET status = 'covered',
+             claim_confirmed_by = ${seedIds.people.grace},
+             claim_confirmed_at = now()
+       WHERE id = ${home.id}
     `;
     await sara.page.reload();
     const coveredCard = sara.page.locator(

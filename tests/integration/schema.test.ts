@@ -81,6 +81,7 @@ describe("database schema invariants", () => {
         "decision_immutable",
         "notification_requires_covered_slot",
         "policy_immutable",
+        "slot_claim_identity_write_once",
       ]),
     );
   });
@@ -199,7 +200,11 @@ describe("database schema invariants", () => {
 
     await t.client`
       UPDATE slot
-         SET status = 'covered', claimed_by = ${FIXTURE.volunteerId}, claimed_at = now()
+         SET status = 'covered',
+             claimed_by = ${FIXTURE.volunteerId},
+             claimed_at = now(),
+             claim_confirmed_by = ${FIXTURE.coordinatorId},
+             claim_confirmed_at = now()
        WHERE id = ${FIXTURE.slotId}
     `;
 
