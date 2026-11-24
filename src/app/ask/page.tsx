@@ -1,10 +1,14 @@
 import { AskForm } from "@/components/ask-form";
+import { CaregiverAskLinks } from "@/components/caregiver-ask-links";
 import { CaregiverInviteBanner } from "@/components/caregiver-invite";
 import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { askAgainHint } from "@/server/domain/closure";
-import { findCoordinatorFirstName } from "@/server/repositories/asks";
+import {
+  findCoordinatorFirstName,
+  listCaregiverAsks,
+} from "@/server/repositories/asks";
 import {
   listCaregiverInvites,
   markCaregiverInvitesSeen,
@@ -31,10 +35,11 @@ export default async function AskPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { person, session } = await requirePage(CAREGIVER_ROLES);
-  const [coordinatorFirstName, invites, autoPublishLowRisk, query] =
+  const [coordinatorFirstName, invites, asks, autoPublishLowRisk, query] =
     await Promise.all([
       findCoordinatorFirstName(session.churchId),
       listCaregiverInvites(session),
+      listCaregiverAsks(session),
       isAutoPublishLowRiskInForce(session.churchId),
       searchParams,
     ]);
@@ -73,6 +78,14 @@ export default async function AskPage({
           {askAgainHint()}
         </p>
       ) : null}
+      <CaregiverAskLinks
+        asks={asks.slice(0, 1)}
+        heading="You wrote to us before"
+        lead="Your words are kept exactly as you sent them. You can read them, and the nine answers about them, whenever you want."
+        linkLabel="Read your last ask again"
+        testId="ask-previous-link"
+        headingId="ask-previous-heading"
+      />
       <AskForm
         coordinatorFirstName={coordinatorFirstName}
         autoPublishLowRisk={autoPublishLowRisk}

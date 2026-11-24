@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db as appDb } from "@/db/client";
 import {
@@ -7,6 +7,7 @@ import {
   askStatusEnum,
   auditEvent,
   careRecipient,
+  church,
   person,
   policy,
 } from "@/db/schema";
@@ -331,6 +332,54 @@ async function readRevisions(
     .from(askRevision)
     .where(eq(askRevision.askId, askId))
     .orderBy(asc(askRevision.createdAt), asc(askRevision.id));
+}
+
+/**
+ * One row on the caregiver's own list: enough to name the ask and reach it,
+ * and nothing else. The receipt reader is the only path to the words.
+ */
+export type CaregiverAskLink = {
+  id: string;
+  createdAt: Date;
+  careRecipientFirstName: string;
+  /** The church's own time zone for the civil date beside the link. */
+  timeZone: string;
+};
+
+/**
+ * The caregiver's own asks, newest first — the list behind the receipt links
+ * on `/care` and `/ask`.
+ *
+ * This is an explicit allow-list, not a projection that happens to omit the
+ * words: no text, no status, no decision values, and no slot data. Ownership
+ * is the query filter (`caregiver_id = actor.personId` and the church), so the
+ * link's presence is never the enforcement. It returns every ask for one
+ * family, newest first: a cap would make an older receipt unreachable by
+ * clicking, which is the defect this list exists to close.
+ */
+export async function listCaregiverAsks(
+  actor: Actor,
+  database: AppDatabase = appDb,
+): Promise<CaregiverAskLink[]> {
+  requireRoleSession(actor, CAREGIVER_ROLES);
+
+  return database
+    .select({
+      id: ask.id,
+      createdAt: ask.createdAt,
+      careRecipientFirstName: careRecipient.firstName,
+      timeZone: church.timezone,
+    })
+    .from(ask)
+    .innerJoin(careRecipient, eq(careRecipient.id, ask.careRecipientId))
+    .innerJoin(church, eq(church.id, ask.churchId))
+    .where(
+      and(
+        eq(ask.churchId, actor.churchId),
+        eq(ask.caregiverId, actor.personId),
+      ),
+    )
+    .orderBy(desc(ask.createdAt), desc(ask.id));
 }
 
 /** The caregiver's own receipt: only the caregiver whose session it is. */

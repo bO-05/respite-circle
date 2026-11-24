@@ -299,19 +299,27 @@ export default async function AskReceiptPage({
         how the church knows it is you.
       </p>
 
-      <div className="flex flex-wrap gap-3">
-        <Link
-          href="/care"
-          className="inline-flex min-h-11 items-center rounded-md bg-accent px-5 py-2 text-base font-semibold text-accent-foreground"
-        >
-          What&apos;s covered for my family
-        </Link>
-        <Link
-          href="/ask"
-          className="inline-flex min-h-11 items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink"
-        >
-          Tell us about another week
-        </Link>
+      <div className="flex flex-col gap-3">
+        <p className="max-w-prose text-base leading-relaxed text-ink-muted">
+          When you are ready, you can go back to what&apos;s covered for your
+          family.
+        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link
+            href="/care"
+            data-testid="receipt-back-to-care"
+            className="inline-flex min-h-14 w-full items-center justify-center rounded-md bg-accent px-6 py-3 text-xl font-semibold text-accent-foreground sm:w-auto"
+          >
+            What&apos;s covered for my family
+          </Link>
+          <Link
+            href="/ask"
+            data-testid="receipt-another-week"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink sm:w-auto"
+          >
+            Tell us about another week
+          </Link>
+        </div>
       </div>
     </RolePage>
   );

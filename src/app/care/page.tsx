@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CareClosure } from "@/components/care-closure";
+import { CaregiverAskLinks } from "@/components/caregiver-ask-links";
 import { CaregiverInviteList } from "@/components/caregiver-invite";
 import { ClaimFlash } from "@/components/my-claim-flash";
 import { RolePage } from "@/components/role-page";
@@ -12,6 +13,7 @@ import {
 } from "@/server/domain/closure";
 import { formatWindowLabel } from "@/server/domain/slots";
 import { listCaregiverNotes } from "@/server/repositories/ask-review";
+import { listCaregiverAsks } from "@/server/repositories/asks";
 import { listCaregiverConfirmations } from "@/server/repositories/claim-review";
 import { listCaregiverWorkingLines } from "@/server/repositories/coverage";
 import {
@@ -42,13 +44,14 @@ export default async function CarePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { person, session } = await requirePage(CAREGIVER_ROLES);
-  const [notes, confirmations, reminders, working, invites, query] =
+  const [notes, confirmations, reminders, working, invites, asks, query] =
     await Promise.all([
       listCaregiverNotes(session),
       listCaregiverConfirmations(session),
       listCaregiverReminders(session),
       listCaregiverWorkingLines(session),
       listCaregiverInvites(session),
+      listCaregiverAsks(session),
       searchParams,
     ]);
 
@@ -183,6 +186,15 @@ export default async function CarePage({
           </p>
         </section>
       )}
+
+      <CaregiverAskLinks
+        asks={asks}
+        heading="Your words, and the nine answers"
+        lead="Your words are kept exactly as you sent them. Open an ask to read it again, with the nine answers about it."
+        linkLabel="Read your words and the nine answers"
+        testId="care-ask-links"
+        headingId="care-ask-links-heading"
+      />
 
       {reminders.length > 0 ? (
         <section
