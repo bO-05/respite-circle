@@ -1,4 +1,11 @@
 import type { NextConfig } from "next";
+import { assertProductionSessionSecret } from "./src/server/auth/session-secret";
+
+// A production start (and a production build) refuses a published
+// SESSION_SECRET placeholder here, before Next serves a request. The config is
+// loaded inside Next's fatal startup path, so the throw exits non-zero; a
+// missing secret stays a request-time error and does not break a build.
+assertProductionSessionSecret();
 
 const nextConfig: NextConfig = {
   // `forbidden()` renders app/forbidden.tsx with a real 403 status when a

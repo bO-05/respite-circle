@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { ROLES, type Role } from "./policy";
+import { assertProductionSessionSecret } from "./session-secret";
 
 /**
  * Signed, stateless `rc_session` cookie.
@@ -74,6 +75,11 @@ function nowSeconds(): number {
 /**
  * Read SESSION_SECRET lazily so a missing secret fails a request with a clear
  * server error instead of failing at module import (which would break builds).
+ *
+ * The published placeholder is refused when NODE_ENV is production.
+ * `next.config.ts` stops a production start (and a production build) before
+ * Next serves a request, and `src/instrumentation.ts` repeats the assertion for
+ * runtimes that do not load the config at request time.
  */
 export function getSessionSecret(
   env: Readonly<Record<string, string | undefined>> = process.env,
@@ -85,6 +91,8 @@ export function getSessionSecret(
       "SESSION_SECRET is not set. Add a long random value to .env.local or the deployment environment.",
     );
   }
+
+  assertProductionSessionSecret(env);
 
   if (secret.length < 16) {
     throw new Error("SESSION_SECRET must be at least 16 characters long.");

@@ -107,7 +107,7 @@ dashboard. Only `NEXT_PUBLIC_APP_URL` is public, and nothing secret carries a
 |---|---|---|
 | `DATABASE_URL` | yes | Neon **pooled** connection (`-pooler` host). The app runtime connects with `prepare: false` and TLS. |
 | `DATABASE_URL_UNPOOLED` | yes | Neon **direct** connection. Used by migrations, seed, reset, verification, and calibration. Never handed to the app runtime. |
-| `SESSION_SECRET` | yes | Signs the `rc_session` cookie. Production gets its own random value; it is never the local one. |
+| `SESSION_SECRET` | yes | Signs the `rc_session` cookie. At least 16 characters. Production gets its own random value; the published placeholder is refused, and the server will not start with it. |
 | `MISTRAL_API_KEY` | for live decisions | Primary provider key. |
 | `HF_TOKEN` | fallback | Hugging Face router token. |
 | `OPENROUTER_API_KEY` | fallback | Direct OpenRouter key. |

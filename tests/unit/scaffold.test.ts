@@ -174,6 +174,26 @@ describe("environment contract", () => {
     expect(example).not.toMatch(/hf_[A-Za-z0-9]{16,}/);
     expect(example).not.toMatch(/postgres(ql)?:\/\/[^\s/]+:[^\s@]+@/);
   });
+
+  it("leaves SESSION_SECRET empty and states the requirement", () => {
+    expect(example).toMatch(/^SESSION_SECRET=\s*$/m);
+    expect(example).not.toMatch(/change-me/i);
+    expect(example).toMatch(/^# .*random.*$/m);
+  });
+
+  it.each([
+    "MISTRAL_API_KEY",
+    "HF_TOKEN",
+    "OPENROUTER_API_KEY",
+    "DATABASE_URL",
+    "DATABASE_URL_UNPOOLED",
+    "E2E_DATABASE_URL",
+    "E2E_DATABASE_URL_UNPOOLED",
+    "RC_DEMO_RESET_TOKEN",
+    "SESSION_SECRET",
+  ])("leaves the credential %s without a value", (name) => {
+    expect(example).toMatch(new RegExp(`^${name}=\\s*$`, "m"));
+  });
 });
 
 describe("git hygiene", () => {

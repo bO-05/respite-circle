@@ -7,8 +7,12 @@ import {
   sessionCookieOptions,
   verifySessionToken,
 } from "../../src/server/auth/session";
+import { PLACEHOLDER_SESSION_SECRETS } from "../../src/server/auth/session-secret";
 
 const SECRET = "unit-test-secret-that-is-long-enough";
+const REAL_PRODUCTION_SECRET = "unit-test-production-secret-0123456789abcdef";
+/** The value `.env.example` shipped until the audit fix. */
+const SHIPPED_PLACEHOLDER = "change-me-to-a-long-random-value";
 const NOW = 1_800_000_000;
 const PERSON_ID = "11111111-1111-4111-8111-111111111111";
 const CHURCH_ID = "22222222-2222-4222-8222-222222222222";
@@ -157,6 +161,85 @@ describe("signed session tokens", () => {
       /at least 16 characters/,
     );
     expect(getSessionSecret({ SESSION_SECRET: SECRET })).toBe(SECRET);
+  });
+});
+
+function thrownMessage(run: () => unknown): string {
+  try {
+    run();
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+  throw new Error("Expected the call to throw.");
+}
+
+describe("the session secret in production", () => {
+  it("refuses the value .env.example used to ship", () => {
+    expect(() =>
+      getSessionSecret({
+        NODE_ENV: "production",
+        SESSION_SECRET: SHIPPED_PLACEHOLDER,
+      }),
+    ).toThrow(/published placeholder/);
+  });
+
+  it("names the problem without echoing the value", () => {
+    const message = thrownMessage(() =>
+      getSessionSecret({
+        NODE_ENV: "production",
+        SESSION_SECRET: SHIPPED_PLACEHOLDER,
+      }),
+    );
+
+    expect(message).toContain("SESSION_SECRET");
+    expect(message).toMatch(/placeholder/i);
+    expect(message).toMatch(/random/i);
+    expect(message).not.toContain(SHIPPED_PLACEHOLDER);
+    expect(message).not.toMatch(/change-me/i);
+  });
+
+  it.each(
+    PLACEHOLDER_SESSION_SECRETS.filter(
+      (value) => value !== SHIPPED_PLACEHOLDER,
+    ),
+  )("refuses the deny-listed value %s, whatever its case or padding", (value) => {
+    expect(() =>
+      getSessionSecret({
+        NODE_ENV: "production",
+        SESSION_SECRET: `  ${value.toUpperCase()}  `,
+      }),
+    ).toThrow(/published placeholder/);
+  });
+
+  it("accepts a real 32+ character secret", () => {
+    expect(REAL_PRODUCTION_SECRET.length).toBeGreaterThanOrEqual(32);
+    expect(
+      getSessionSecret({
+        NODE_ENV: "production",
+        SESSION_SECRET: REAL_PRODUCTION_SECRET,
+      }),
+    ).toBe(REAL_PRODUCTION_SECRET);
+  });
+
+  it("keeps development working with the placeholder", () => {
+    expect(
+      getSessionSecret({
+        NODE_ENV: "development",
+        SESSION_SECRET: SHIPPED_PLACEHOLDER,
+      }),
+    ).toBe(SHIPPED_PLACEHOLDER);
+  });
+
+  it("still signs and verifies a development session with the placeholder", () => {
+    const secret = getSessionSecret({
+      NODE_ENV: "development",
+      SESSION_SECRET: SHIPPED_PLACEHOLDER,
+    });
+    const { token, session } = issueSession(claims, { secret, now: NOW });
+
+    expect(verifySessionToken(token, { secret, now: NOW + 10 })).toEqual(
+      session,
+    );
   });
 });
 
