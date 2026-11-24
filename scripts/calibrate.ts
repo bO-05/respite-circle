@@ -4,7 +4,6 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnvLocal } from "../src/db/env";
 import { seedQuestionSet } from "../src/db/seed-data";
-import { parsePublishedCalibration } from "../src/server/calibration/published";
 import {
   runCalibrationCases,
   type CalibrationCaseRun,
@@ -12,6 +11,7 @@ import {
   type CalibrationRun,
 } from "../src/server/calibration/runner";
 import {
+  CALIBRATION_HISTORY_FILE,
   CALIBRATION_RESULT_FILES,
   CALIBRATION_SOURCE_LABEL,
   CalibrationHarnessError,
@@ -24,7 +24,13 @@ import {
   type CalibrationReport,
   type CalibrationSource,
 } from "../src/server/domain/calibration";
+import { appendSupersededRecord } from "../src/server/calibration/history";
+import {
+  parsePublishedCalibration,
+  parsePublishedCalibrationHistory,
+} from "../src/server/calibration/published";
 import { renderCalibrationMarkdown } from "../src/server/domain/calibration-report";
+import { formatMetricRatio } from "../src/server/domain/calibration-page";
 import { PROMPT_VERSION } from "../src/server/services/decision-contract";
 import { decide } from "../src/server/services/decide";
 import {
@@ -183,7 +189,10 @@ function commandLabel(forcedBaseline: boolean): string {
 }
 
 function percent(value: number): string {
-  return `${(value * 100).toFixed(1)}%`;
+  // Truncate, never round up: 26/31 must print as 83.8%, not 83.9%, and a run
+  // that is not complete must never read as complete. This mirrors
+  // `formatMetricRatio`, which the page and the generated markdown use.
+  return formatMetricRatio(Math.round(value * 10_000), 10_000);
 }
 
 function printSummary(report: CalibrationReport, files: { json: string; markdown: string }): void {
@@ -235,15 +244,98 @@ function printSummary(report: CalibrationReport, files: { json: string; markdown
   console.log(`Wrote ${files.json} and ${files.markdown}.`);
 }
 
+function isMissingFile(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "ENOENT"
+  );
+}
+
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** The record this source is about to replace, or null when none exists. */
+function readCurrentRecord(
+  path: string,
+  relativePath: string,
+): CalibrationReport | null {
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch (error) {
+    if (isMissingFile(error)) return null;
+    throw new CalibrationHarnessError(
+      `${relativePath} could not be read: ${messageOf(error)}`,
+    );
+  }
+
+  try {
+    return parsePublishedCalibration(JSON.parse(text) as unknown);
+  } catch (error) {
+    throw new CalibrationHarnessError(
+      `${relativePath} exists but is not a valid published record (${messageOf(
+        error,
+      )}). Refusing to overwrite it: repair or move the file first so a rerun cannot erase history.`,
+    );
+  }
+}
+
+function readStoredHistory(path: string): CalibrationReport[] {
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch (error) {
+    if (isMissingFile(error)) return [];
+    throw new CalibrationHarnessError(
+      `${CALIBRATION_HISTORY_FILE} could not be read: ${messageOf(error)}`,
+    );
+  }
+
+  try {
+    return parsePublishedCalibrationHistory(JSON.parse(text) as unknown);
+  } catch (error) {
+    throw new CalibrationHarnessError(
+      `${CALIBRATION_HISTORY_FILE} is not a valid set of published runs (${messageOf(
+        error,
+      )}). Refusing to publish: a corrupt history must be repaired, never replaced.`,
+    );
+  }
+}
+
 function writeReport(report: CalibrationReport): { json: string; markdown: string } {
   const files = CALIBRATION_RESULT_FILES[report.source];
   const jsonPath = resolve(repoRoot, files.json);
   const markdownPath = resolve(repoRoot, files.markdown);
+  const historyPath = resolve(repoRoot, CALIBRATION_HISTORY_FILE);
 
   // Refuse to publish a record `/calibration` cannot read. This is the one
   // place the runner's shape meets the page's contract, so a field added on
   // one side without the other fails here instead of rendering a blank number.
   const validated = parsePublishedCalibration(report);
+
+  // A rerun replaces only its own source's current pair. The record it replaces
+  // is appended to the published history first, so an earlier date, commit and
+  // case set remain readable on `/calibration` and are never silently lost.
+  const previous = readCurrentRecord(jsonPath, files.json);
+  const history = readStoredHistory(historyPath);
+  const nextHistory = appendSupersededRecord(history, previous);
+  if (nextHistory.length !== history.length && previous) {
+    const validatedHistory = parsePublishedCalibrationHistory({
+      records: nextHistory,
+    });
+    mkdirSync(dirname(historyPath), { recursive: true });
+    writeFileSync(
+      historyPath,
+      `${JSON.stringify({ records: validatedHistory }, null, 2)}\n`,
+      "utf8",
+    );
+    console.log(
+      `Kept the superseded ${previous.source} run of ${previous.date} in ${CALIBRATION_HISTORY_FILE}.`,
+    );
+  }
 
   mkdirSync(dirname(jsonPath), { recursive: true });
   writeFileSync(jsonPath, `${JSON.stringify(validated, null, 2)}\n`, "utf8");

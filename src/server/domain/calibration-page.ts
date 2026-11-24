@@ -87,6 +87,35 @@ export type CalibrationBelowTargetWarning = {
   message: string;
 };
 
+/**
+ * One superseded run in the history list. It is deliberately compact: the
+ * current run keeps its full card, and an earlier run keeps its date, commit,
+ * engine, case count and scores so a reader can see what changed.
+ */
+export type CalibrationHistoryEntry = {
+  key: string;
+  source: CalibrationSource;
+  engine: CalibrationSource;
+  sourceLabel: string;
+  isLive: boolean;
+  notLiveNote: string | null;
+  provider: string;
+  model: string;
+  date: string;
+  generatedAt: string;
+  gitCommit: string;
+  shortCommit: string;
+  caseCount: number;
+  slottableCaseCount: number;
+  safetyCaseCount: number;
+  personalCareCaseCount: number;
+  slotKind: string;
+  safetyRecall: string;
+  personalCareRecall: string;
+  abstention: string;
+  gatePass: boolean;
+};
+
 export type CalibrationReportView = {
   source: CalibrationSource;
   engine: CalibrationSource;
@@ -408,4 +437,57 @@ export function buildCalibrationReportView(
       ? "The harness gate passed. Safety recall and personal-care recall are the two gates; latency and abstention are reported, not gated."
       : `The harness gate did not pass: ${report.gate.failures.join(" ")}`,
   };
+}
+
+/**
+ * Superseded runs, newest first. Each entry keeps the numbers it was published
+ * with; nothing here is recomputed against today's case set and no entry is
+ * ever combined with a current run.
+ */
+export function buildCalibrationHistoryView(
+  records: readonly CalibrationReport[],
+): CalibrationHistoryEntry[] {
+  return [...records]
+    .sort((left, right) => right.generatedAt.localeCompare(left.generatedAt))
+    .map((report) => {
+      const scores = report.scores;
+      return {
+        key: `${report.source}-${report.generatedAt}`,
+        source: report.source,
+        engine: report.engine,
+        sourceLabel: CALIBRATION_SOURCE_LABEL[report.source],
+        isLive: report.source === "live",
+        notLiveNote:
+          report.source === "live"
+            ? null
+            : "This is not live-model performance.",
+        provider: report.provider,
+        model: report.model,
+        date: report.date,
+        generatedAt: report.generatedAt,
+        gitCommit: report.gitCommit,
+        shortCommit: report.gitCommit.slice(0, 7),
+        caseCount: report.caseCount,
+        slottableCaseCount: report.slottableCaseCount,
+        safetyCaseCount: report.safetyCaseCount,
+        personalCareCaseCount: report.personalCareCaseCount,
+        slotKind: `${scores.slotKindCorrect}/${scores.slotKindDenominator} (${formatMetricRatio(
+          scores.slotKindCorrect,
+          scores.slotKindDenominator,
+        )})`,
+        safetyRecall: `${scores.safetyTruePositiveCount}/${scores.safetyCaseCount} (${formatMetricRatio(
+          scores.safetyTruePositiveCount,
+          scores.safetyCaseCount,
+        )})`,
+        personalCareRecall: `${scores.personalCareTruePositiveCount}/${scores.personalCarePositiveCount} (${formatMetricRatio(
+          scores.personalCareTruePositiveCount,
+          scores.personalCarePositiveCount,
+        )})`,
+        abstention: `${scores.abstainedCaseCount}/${report.caseCount} (${formatMetricRatio(
+          scores.abstainedCaseCount,
+          report.caseCount,
+        )})`,
+        gatePass: report.gate.pass,
+      };
+    });
 }

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { seedQuestionSet } from "@/db/seed-data";
 import {
+  CALIBRATION_HISTORY_FILE,
   CALIBRATION_RESULT_FILES,
   calibrationQuestionSetLabel,
   type CalibrationReport,
@@ -9,7 +10,10 @@ import {
 } from "@/server/domain/calibration";
 import { PROMPT_VERSION } from "@/server/services/decision-contract";
 import type { CalibrationContract } from "@/server/domain/calibration-page";
-import { parsePublishedCalibration } from "./published";
+import {
+  parsePublishedCalibration,
+  parsePublishedCalibrationHistory,
+} from "./published";
 
 /**
  * Reads the published calibration records for `/calibration`.
@@ -32,9 +36,16 @@ export type LoadedCalibrationReport =
   | { status: "invalid"; path: string; message: string }
   | { status: "ready"; path: string; report: CalibrationReport };
 
+/** Earlier published runs, kept after their source file was replaced. */
+export type LoadedCalibrationHistory =
+  | { status: "missing"; path: string }
+  | { status: "invalid"; path: string; message: string }
+  | { status: "ready"; path: string; records: CalibrationReport[] };
+
 export type CalibrationResults = {
   live: LoadedCalibrationReport;
   baseline: LoadedCalibrationReport;
+  history: LoadedCalibrationHistory;
   current: CalibrationContract;
 };
 
@@ -81,6 +92,37 @@ async function readOne(
   }
 }
 
+async function readHistory(root: string): Promise<LoadedCalibrationHistory> {
+  const relativePath = CALIBRATION_HISTORY_FILE;
+  let text: string;
+
+  try {
+    text = await readFile(resolve(root, relativePath), "utf8");
+  } catch (error) {
+    if (isMissingFile(error)) return { status: "missing", path: relativePath };
+    return {
+      status: "invalid",
+      path: relativePath,
+      message: "the file could not be read from disk",
+    };
+  }
+
+  try {
+    return {
+      status: "ready",
+      path: relativePath,
+      records: parsePublishedCalibrationHistory(JSON.parse(text) as unknown),
+    };
+  } catch (error) {
+    return {
+      status: "invalid",
+      path: relativePath,
+      message:
+        error instanceof Error ? error.message : "the file could not be read",
+    };
+  }
+}
+
 export function currentCalibrationContract(): CalibrationContract {
   return {
     questionSet: calibrationQuestionSetLabel(seedQuestionSet),
@@ -91,12 +133,13 @@ export function currentCalibrationContract(): CalibrationContract {
 export async function loadCalibrationResults(
   root: string = process.cwd(),
 ): Promise<CalibrationResults> {
-  const [live, baseline] = await Promise.all([
+  const [live, baseline, history] = await Promise.all([
     readOne("live", root),
     readOne("deterministic-baseline", root),
+    readHistory(root),
   ]);
 
-  return { live, baseline, current: currentCalibrationContract() };
+  return { live, baseline, history, current: currentCalibrationContract() };
 }
 
 export { isCalibrationStale } from "@/server/domain/calibration-page";

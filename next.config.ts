@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
     "/calibration": [
       "./data/calibration-results.json",
       "./data/calibration-results.baseline.json",
+      "./data/calibration-history.json",
     ],
   },
   // Tailwind 4 is processed by the Turbopack loader that ships with

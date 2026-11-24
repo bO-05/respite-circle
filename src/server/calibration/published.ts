@@ -277,6 +277,35 @@ export const PublishedCalibrationSchema = z
 export type PublishedCalibration = z.infer<typeof PublishedCalibrationSchema>;
 
 /**
+ * The history of published runs. Each record is a whole, cross-checked run, so
+ * a hand-edited figure fails here exactly as it fails in a current file. A
+ * duplicate `(source, generatedAt)` is refused: republishing the same measured
+ * record is not a second record.
+ */
+export const PublishedCalibrationHistorySchema = z
+  .strictObject({
+    records: z.array(PublishedCalibrationSchema).min(1),
+  })
+  .superRefine((history, context) => {
+    const seen = new Set<string>();
+    for (const [index, record] of history.records.entries()) {
+      const key = `${record.source}|${record.generatedAt}`;
+      if (seen.has(key)) {
+        context.addIssue({
+          code: "custom",
+          message: `this ${record.source} run is already recorded for ${record.generatedAt}`,
+          path: ["records", index],
+        });
+      }
+      seen.add(key);
+    }
+  });
+
+export type PublishedCalibrationHistory = z.infer<
+  typeof PublishedCalibrationHistorySchema
+>;
+
+/**
  * The schema is written so its inferred type is the same report the runner
  * scores. This compile-time check keeps the two definitions honest; if the
  * runner gains a field, this line fails before any test does.
@@ -295,4 +324,17 @@ export function parsePublishedCalibration(raw: unknown): CalibrationReport {
     throw new Error(`The calibration results file is not valid: ${issues}`);
   }
   return parsed.data;
+}
+
+export function parsePublishedCalibrationHistory(
+  raw: unknown,
+): CalibrationReport[] {
+  const parsed = PublishedCalibrationHistorySchema.safeParse(raw);
+  if (!parsed.success) {
+    const issues = parsed.error.issues
+      .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
+      .join("; ");
+    throw new Error(`The calibration history file is not valid: ${issues}`);
+  }
+  return parsed.data.records;
 }

@@ -47,6 +47,14 @@ export const CALIBRATION_RESULT_FILES: Record<
   },
 };
 
+/**
+ * Superseded published runs. A rerun replaces its own source's current pair,
+ * but first appends the record it replaced here, so the date, commit and
+ * numbers of an earlier run stay readable and are never rewritten. The page
+ * shows these as history and never mixes them into the current cards.
+ */
+export const CALIBRATION_HISTORY_FILE = "data/calibration-history.json";
+
 /** The badge text the results page and the report both use. */
 export const CALIBRATION_SOURCE_LABEL: Record<CalibrationSource, string> = {
   live: "Measured with live model",

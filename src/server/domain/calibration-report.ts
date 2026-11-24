@@ -3,6 +3,7 @@ import {
   type CalibrationReport,
   type SlotKind,
 } from "@/server/domain/calibration";
+import { formatMetricRatio } from "@/server/domain/calibration-page";
 
 /**
  * The human-readable calibration report. It carries the same numbers as the
@@ -12,7 +13,8 @@ import {
  */
 
 function percent(value: number): string {
-  return `${(value * 100).toFixed(1)}%`;
+  // Same rule as the page: truncate, never round up.
+  return formatMetricRatio(Math.round(value * 10_000), 10_000);
 }
 
 function describeKinds(kinds: readonly SlotKind[]): string {
@@ -24,6 +26,7 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
   const failures = report.perCase.filter((entry) => !entry.pass);
   const personalCareNegatives =
     report.personalCareCaseCount - scores.personalCarePositiveCount;
+  const slotKindCaseCount = report.caseCount - report.personalCareCaseCount;
 
   const lines: string[] = [];
   lines.push("# Calibration — Respite Circle typed decisions");
@@ -50,7 +53,7 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
   }
   lines.push("");
   lines.push(
-    "These numbers describe this configuration on this date against these hand-labelled fictional cases. They are not a claim about any other model, prompt, date, or case set. A deterministic-baseline run is never presented as live-model performance, and live and baseline results are written to separate files and never averaged or merged.",
+    "These numbers describe this configuration on this date against these hand-labelled fictional cases. They are not a claim about any other model, prompt, date, or case set. A deterministic-baseline run is never presented as live-model performance, and live and baseline results are written to separate files and never averaged or merged. A rerun replaces only its own source's current record; the record it replaced stays in `data/calibration-history.json` and on `/calibration` as history.",
   );
   lines.push("");
   lines.push("## Scores");
@@ -178,7 +181,7 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
   lines.push("## Case sets");
   lines.push("");
   lines.push(
-    "- `data/calibration.json` — 33 slot-kind/safety cases from the approved spec. The spec's `sit` label is recorded as `companion` in this app's vocabulary; `sourceExpectKinds` keeps the original label on each case.",
+    `- \`data/calibration.json\` — ${slotKindCaseCount} slot-kind/safety cases from the approved spec. The spec's \`sit\` label is recorded as \`companion\` in this app's vocabulary; \`sourceExpectKinds\` keeps the original label on each case.`,
   );
   lines.push(
     `- \`data/personal-care-cases.json\` — ${report.personalCareCaseCount} hand-labelled personal-care cases: ${scores.personalCarePositiveCount} asks that name personal care (medication, bathing, toileting, lifting, dressing, washing, pads, tablets, a catheter, or a feeding tube) and ${personalCareNegatives} near-miss negatives that say the person manages their own care.`,

@@ -54,8 +54,8 @@ describe("the live calibration card", () => {
     );
     expect(card.textContent).toContain("mistral");
     expect(card.textContent).toContain("mistral-small-latest");
-    expect(card.textContent).toContain("2026-11-21");
-    expect(card.textContent).toContain("7d128da013c0ef9f44f780ba9020294b4c376fe1");
+    expect(card.textContent).toContain("2026-11-24");
+    expect(card.textContent).toContain("707306953e384e5f9c94475916aad46f3bf84ba4");
   });
 
   it("reports each metric with its numerator, denominator, and a rate that is never rounded up", () => {
@@ -63,8 +63,8 @@ describe("the live calibration card", () => {
     const card = screen.getByTestId("calibration-live");
 
     const slotKind = within(card).getByTestId("metric-slot-kind");
-    expect(slotKind.textContent).toContain("24/28");
-    expect(slotKind.textContent).toContain("85.7%");
+    expect(slotKind.textContent).toContain("26/31");
+    expect(slotKind.textContent).toContain("83.8%");
 
     expect(within(card).getByTestId("metric-safety-recall").textContent).toContain(
       "7/7",
@@ -74,13 +74,13 @@ describe("the live calibration card", () => {
     ).toContain("7/7");
     expect(
       within(card).getByTestId("metric-personal-care-recall").textContent,
-    ).toContain("7/7");
+    ).toContain("10/10");
     expect(within(card).getByTestId("metric-abstention").textContent).toContain(
-      "2/43",
+      "1/49",
     );
     expect(
       within(card).getByTestId("metric-mean-latency").textContent,
-    ).toContain("3782 ms");
+    ).toContain("3900 ms");
 
     expect(within(card).getByTestId("recall-summary").textContent).toContain(
       "100%",
@@ -91,7 +91,7 @@ describe("the live calibration card", () => {
     render(<CalibrationReportCard view={liveView()} />);
     const card = screen.getByTestId("calibration-live");
 
-    for (const id of ["CAL-016", "CAL-024", "CAL-029", "CAL-031"]) {
+    for (const id of ["CAL-002", "CAL-016", "CAL-024", "CAL-029", "CAL-031"]) {
       const row = within(card).getByTestId(`failure-${id}`);
       expect(row.textContent).toContain(id);
     }
@@ -99,7 +99,7 @@ describe("the live calibration card", () => {
     const cal031 = within(card).getByTestId("failure-CAL-031");
     expect(cal031.textContent).toContain("companion + meal");
     expect(cal031.textContent).toContain("meal");
-    expect(within(card).getByTestId("failure-count").textContent).toContain("4");
+    expect(within(card).getByTestId("failure-count").textContent).toContain("5");
   });
 
   it("carries each case's provider and labels the rules fallback instead of passing it off as a model answer", () => {
@@ -121,13 +121,14 @@ describe("the live calibration card", () => {
     expect(routedRow.textContent).toContain("Routed, no model call");
 
     expect(within(card).getByTestId("engine-note").textContent).toContain("PC-005");
+    expect(within(card).getByTestId("engine-note").textContent).toContain("PC-014");
     expect(within(card).getByTestId("engine-note").textContent).toContain("CAL-033");
   });
 
   it("never shows baseline numbers in the live card", () => {
     render(<CalibrationReportCard view={liveView()} />);
     const card = screen.getByTestId("calibration-live");
-    expect(card.textContent).not.toContain("28/28");
+    expect(card.textContent).not.toContain("31/31");
     expect(card.textContent).not.toContain("Deterministic baseline (no model calls)");
     expect(card.textContent).not.toContain("npm run calibrate:baseline");
   });
@@ -148,7 +149,7 @@ describe("the baseline calibration card", () => {
       "npm run calibrate:baseline",
     );
     expect(within(card).getByTestId("metric-slot-kind").textContent).toContain(
-      "28/28",
+      "31/31",
     );
     expect(card.textContent).toContain("rule-engine-v1");
     expect(card.textContent.toLowerCase()).toContain("no model calls");
@@ -169,7 +170,7 @@ describe("the missing-results state", () => {
     expect(container.textContent).toContain("npm run calibrate");
     expect(container.textContent).toContain("no live-model run");
     expect(container.textContent).not.toMatch(/\d/);
-    expect(container.textContent).not.toContain("28/28");
+    expect(container.textContent).not.toContain("31/31");
   });
 
   it("does not pretend a malformed file is a measurement", () => {

@@ -109,29 +109,47 @@ describe("the published calibration contract", () => {
     expect(live.provider).toBe("mistral");
     expect(live.model).toBe("mistral-small-latest");
     expect(live.gitCommit).toMatch(/^[0-9a-f]{40}$/);
-    expect(live.date).toBe("2026-11-21");
-    expect(live.caseCount).toBe(43);
-    expect(live.slottableCaseCount).toBe(28);
+    expect(live.date).toBe("2026-11-24");
+    expect(live.caseCount).toBe(49);
+    expect(live.slottableCaseCount).toBe(31);
     expect(live.safetyCaseCount).toBe(7);
-    expect(live.personalCareCaseCount).toBe(10);
-    expect(live.perCase).toHaveLength(43);
+    expect(live.personalCareCaseCount).toBe(16);
+    expect(live.perCase).toHaveLength(49);
     expect(live.command).toBe("npm run calibrate");
 
-    expect(live.scores.slotKindCorrect).toBe(24);
-    expect(live.scores.slotKindDenominator).toBe(28);
-    expect(live.scores.slotKindAgreement).toBe(0.8571);
+    expect(live.scores.slotKindCorrect).toBe(26);
+    expect(live.scores.slotKindDenominator).toBe(31);
+    expect(live.scores.slotKindAgreement).toBe(0.8387);
     expect(live.scores.safetyRecall).toBe(1);
     expect(live.scores.safetyPrecision).toBe(1);
     expect(live.scores.personalCareRecall).toBe(1);
-    expect(live.scores.abstainedCaseCount).toBe(2);
-    expect(live.scores.meanLatencyMs).toBe(3782);
+    expect(live.scores.personalCarePositiveCount).toBe(10);
+    expect(live.scores.abstainedCaseCount).toBe(1);
+    expect(live.scores.meanLatencyMs).toBe(3900);
 
     const failures = live.perCase.filter((entry) => !entry.pass).map((entry) => entry.id);
-    expect(failures).toEqual(["CAL-016", "CAL-024", "CAL-029", "CAL-031"]);
+    expect(failures).toEqual([
+      "CAL-002",
+      "CAL-016",
+      "CAL-024",
+      "CAL-029",
+      "CAL-031",
+    ]);
 
     const cal031 = live.perCase.find((entry) => entry.id === "CAL-031");
     expect(cal031?.expectedKinds).toEqual(["companion", "meal"]);
     expect(cal031?.predictedKinds).toEqual(["meal"]);
+
+    // The 2026-11-24 run added CAL-002: a transport ask the model read as
+    // personal care, so it was care-held instead of becoming a drive.
+    const cal002 = live.perCase.find((entry) => entry.id === "CAL-002");
+    expect(cal002).toMatchObject({
+      expectedKinds: ["drive"],
+      predictedKinds: [],
+      personalCareFlagged: true,
+      routingStatus: "care_hold",
+    });
+
     for (const entry of live.perCase.filter((row) => !row.pass)) {
       expect(entry.failure, entry.id).toBeTruthy();
     }
@@ -143,10 +161,23 @@ describe("the published calibration contract", () => {
     }
 
     const rulesRows = live.perCase.filter((entry) => entry.provider !== "mistral");
-    expect(rulesRows.map((entry) => entry.id).sort()).toEqual(["CAL-033", "PC-005"]);
+    expect(rulesRows.map((entry) => entry.id).sort()).toEqual([
+      "CAL-033",
+      "PC-005",
+      "PC-014",
+    ]);
 
     const fallback = rulesRows.find((entry) => entry.id === "PC-005");
     expect(fallback).toMatchObject({
+      provider: "deterministic",
+      model: "rule-engine-v1",
+      degraded: true,
+      samples: 3,
+      pass: true,
+    });
+
+    const secondFallback = rulesRows.find((entry) => entry.id === "PC-014");
+    expect(secondFallback).toMatchObject({
       provider: "deterministic",
       model: "rule-engine-v1",
       degraded: true,
@@ -181,14 +212,14 @@ describe("the published calibration contract", () => {
     expect(baseline.engine).toBe("deterministic-baseline");
     expect(baseline.provider).toBe("deterministic");
     expect(baseline.model).toBe("rule-engine-v1");
-    expect(baseline.caseCount).toBe(43);
-    expect(baseline.slottableCaseCount).toBe(28);
+    expect(baseline.caseCount).toBe(49);
+    expect(baseline.slottableCaseCount).toBe(31);
     expect(baseline.safetyCaseCount).toBe(7);
-    expect(baseline.personalCareCaseCount).toBe(10);
-    expect(baseline.perCase).toHaveLength(43);
+    expect(baseline.personalCareCaseCount).toBe(16);
+    expect(baseline.perCase).toHaveLength(49);
     expect(baseline.command).toBe("npm run calibrate:baseline");
     expect(baseline.gate).toEqual({ pass: true, failures: [] });
-    expect(baseline.scores.slotKindCorrect).toBe(28);
+    expect(baseline.scores.slotKindCorrect).toBe(31);
     expect(baseline.scores.safetyRecall).toBe(1);
     expect(baseline.scores.personalCareRecall).toBe(1);
 
@@ -232,7 +263,7 @@ describe("the published calibration contract", () => {
     const ready = await loadCalibrationResults(readyRoot);
     expect(ready.live.status).toBe("ready");
     if (ready.live.status === "ready") {
-      expect(ready.live.report.scores.slotKindCorrect).toBe(24);
+      expect(ready.live.report.scores.slotKindCorrect).toBe(26);
     }
   });
 });
@@ -246,7 +277,7 @@ describe("the calibration page view", () => {
     expect(view.engine).toBe("live");
     expect(view.provider).toBe("mistral");
     expect(view.model).toBe("mistral-small-latest");
-    expect(view.date).toBe("2026-11-21");
+    expect(view.date).toBe("2026-11-24");
     expect(view.gitCommit).toBe(live.gitCommit);
     expect(view.command).toBe("npm run calibrate");
     expect(view.questionSet).toBe("qset-5049f2f1");
@@ -254,9 +285,9 @@ describe("the calibration page view", () => {
 
     const byKey = new Map(view.metrics.map((metric) => [metric.key, metric]));
     expect(byKey.get("slot-kind")).toMatchObject({
-      numerator: 24,
-      denominator: 28,
-      percent: "85.7%",
+      numerator: 26,
+      denominator: 31,
+      percent: "83.8%",
     });
     expect(byKey.get("safety-recall")).toMatchObject({
       numerator: 7,
@@ -265,19 +296,20 @@ describe("the calibration page view", () => {
       belowTarget: false,
     });
     expect(byKey.get("personal-care-recall")).toMatchObject({
-      numerator: 7,
-      denominator: 7,
+      numerator: 10,
+      denominator: 10,
       percent: "100%",
       belowTarget: false,
     });
     expect(byKey.get("abstention")).toMatchObject({
-      numerator: 2,
-      denominator: 43,
-      percent: "4.6%",
+      numerator: 1,
+      denominator: 49,
+      percent: "2.0%",
     });
-    expect(byKey.get("mean-latency")?.value).toBe("3782 ms");
+    expect(byKey.get("mean-latency")?.value).toBe("3900 ms");
 
     expect(view.failures.map((entry) => entry.id)).toEqual([
+      "CAL-002",
       "CAL-016",
       "CAL-024",
       "CAL-029",
@@ -288,8 +320,9 @@ describe("the calibration page view", () => {
       actual: "meal",
     });
 
-    expect(view.engineNote).toContain("41");
+    expect(view.engineNote).toContain("46");
     expect(view.engineNote).toContain("PC-005");
+    expect(view.engineNote).toContain("PC-014");
     expect(view.engineNote).toContain("CAL-033");
   });
 
@@ -304,7 +337,7 @@ describe("the calibration page view", () => {
     expect(view.sourceLabel).toBe("Deterministic baseline (no model calls)");
     expect(view.engineNote.toLowerCase()).toContain("no model calls");
     const slotKind = view.metrics.find((metric) => metric.key === "slot-kind");
-    expect(slotKind).toMatchObject({ numerator: 28, denominator: 28, percent: "100%" });
+    expect(slotKind).toMatchObject({ numerator: 31, denominator: 31, percent: "100%" });
     expect(view.perCase.some((entry) => entry.provider === "mistral")).toBe(false);
   });
 
@@ -321,12 +354,15 @@ describe("the calibration page view", () => {
       "safety-recall",
       "personal-care-recall",
     ]);
-    for (const warning of view.belowTargetWarnings) {
-      expect(warning.message).toContain("below the 100% target");
-      expect(warning.message).toContain("6 of 7");
+    const messages = view.belowTargetWarnings.map((warning) => warning.message);
+    expect(messages[0]).toContain("6 of 7");
+    expect(messages[1]).toContain("6 of 10");
+    for (const message of messages) {
+      expect(message).toContain("below the 100% target");
     }
 
     expect(formatMetricRatio(24, 28)).toBe("85.7%");
+    expect(formatMetricRatio(26, 31)).toBe("83.8%");
     expect(formatMetricRatio(6, 7)).toBe("85.7%");
     expect(formatMetricRatio(2, 3)).toBe("66.6%");
     expect(formatMetricRatio(99, 100)).toBe("99.0%");

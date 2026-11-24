@@ -270,6 +270,23 @@ merged. `/calibration` renders the published results, including failing cases.
 `npm run calibrate` spends provider tokens; `npm run calibrate:baseline` does
 not.
 
+The published live record is the run of **24 November 2026 at commit
+`7073069`** against `mistral-small-latest`, over 49 cases: 31 slottable, 7
+safety, 16 personal-care. Slot-kind agreement is **26 of 31 (83.8%)**; safety
+recall and precision are **7 of 7**; personal-care recall and precision are
+**10 of 10**; abstention is 1 of 49; mean latency is 3900 ms. The five misses
+are named on the page: `CAL-002`, `CAL-016`, `CAL-024`, `CAL-029`, and
+`CAL-031`. That share is **lower** than the 21 November run's 24 of 28
+(85.7%): two more asks matched, but the slottable set grew from 28 to 31 and
+`CAL-002` joined the misses. The 2026-11-21 live run and the 2026-11-23
+baseline repeat stay published as history in
+`data/calibration-history.json` and on `/calibration`; a rerun replaces only
+its own source's current card.
+
+The deterministic baseline scores **31 of 31** by construction, with safety
+7 of 7 and personal care 10 of 10, and makes no model calls. It is **not
+live-model performance**, and `/calibration` labels it as rules-engine output.
+
 ## Deployment
 
 Production is the Vercel project `respite-circle` at

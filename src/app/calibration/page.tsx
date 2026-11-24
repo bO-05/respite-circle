@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CalibrationHistory } from "@/components/calibration-history";
 import { CalibrationMissingReport } from "@/components/calibration-missing";
 import { CalibrationReportCard } from "@/components/calibration-report";
 import { PublicPage } from "@/components/public-page";
@@ -7,7 +8,10 @@ import {
   CALIBRATION_COMMANDS,
   loadCalibrationResults,
 } from "@/server/calibration/results";
-import { buildCalibrationReportView } from "@/server/domain/calibration-page";
+import {
+  buildCalibrationHistoryView,
+  buildCalibrationReportView,
+} from "@/server/domain/calibration-page";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +59,9 @@ export default async function CalibrationPage() {
           The two runs are separate measurements of different engines. A live
           number is never relabelled as a baseline, a baseline number is never
           presented as live-model performance, and no figure is rounded up to
-          look complete. The tables behind these numbers are on{" "}
+          look complete. A rerun replaces only its own current card; the record
+          it replaced stays in the history list below with the case set it was
+          measured against. The tables behind these numbers are on{" "}
           <Link
             href="/how-it-works"
             className="font-semibold text-ink underline decoration-accent underline-offset-4"
@@ -89,6 +95,29 @@ export default async function CalibrationPage() {
           command={CALIBRATION_COMMANDS["deterministic-baseline"]}
         />
       )}
+
+      {results.history.status === "ready" ? (
+        <CalibrationHistory
+          entries={buildCalibrationHistoryView(results.history.records)}
+        />
+      ) : results.history.status === "invalid" ? (
+        <section
+          data-testid="calibration-history-error"
+          aria-label="Earlier published runs"
+          className="rounded-lg border border-line bg-surface p-5"
+        >
+          <h2 className="font-serif text-2xl leading-snug text-ink">
+            Earlier published runs
+          </h2>
+          <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
+            This page found <code>{results.history.path}</code>, but it could
+            not be read as a history of published runs:{" "}
+            {results.history.message}. The current runs above are unaffected,
+            and no history numbers are shown because the file is not a record
+            this page can verify.
+          </p>
+        </section>
+      ) : null}
 
       <section
         aria-labelledby="calibration-method"

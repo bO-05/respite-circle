@@ -46,27 +46,27 @@ test("the calibration page keeps the live run and the baseline visibly separate"
   await expect(live.getByTestId("calibration-command")).toHaveText(
     "npm run calibrate",
   );
-  await expect(live.getByTestId("metric-slot-kind")).toContainText("24/28");
-  await expect(live.getByTestId("metric-slot-kind")).toContainText("85.7%");
+  await expect(live.getByTestId("metric-slot-kind")).toContainText("26/31");
+  await expect(live.getByTestId("metric-slot-kind")).toContainText("83.8%");
   await expect(live.getByTestId("metric-safety-recall")).toContainText("7/7");
   await expect(live.getByTestId("metric-safety-precision")).toContainText("7/7");
   await expect(live.getByTestId("metric-personal-care-recall")).toContainText(
-    "7/7",
+    "10/10",
   );
-  await expect(live.getByTestId("metric-abstention")).toContainText("2/43");
-  await expect(live.getByTestId("metric-mean-latency")).toContainText("3782 ms");
-  await expect(live.getByTestId("failure-count")).toContainText("4");
+  await expect(live.getByTestId("metric-abstention")).toContainText("1/49");
+  await expect(live.getByTestId("metric-mean-latency")).toContainText("3900 ms");
+  await expect(live.getByTestId("failure-count")).toContainText("5");
 
   const liveText = await live.innerText();
   expect(liveText).toContain("mistral");
   expect(liveText).toContain("mistral-small-latest");
-  expect(liveText).toContain("2026-11-21");
-  expect(liveText).toContain("7d128da013c0ef9f44f780ba9020294b4c376fe1");
-  expect(liveText).not.toContain("28/28");
+  expect(liveText).toContain("2026-11-24");
+  expect(liveText).toContain("707306953e384e5f9c94475916aad46f3bf84ba4");
+  expect(liveText).not.toContain("31/31");
   expect(liveText).not.toContain("Deterministic baseline (no model calls)");
   expect(liveText).not.toContain("npm run calibrate:baseline");
 
-  for (const id of ["CAL-016", "CAL-024", "CAL-029", "CAL-031"]) {
+  for (const id of ["CAL-002", "CAL-016", "CAL-024", "CAL-029", "CAL-031"]) {
     await expect(live.getByTestId(`failure-${id}`)).toBeVisible();
   }
   await expect(live.getByTestId("failure-CAL-031")).toContainText(
@@ -99,7 +99,7 @@ test("the calibration page keeps the live run and the baseline visibly separate"
   await expect(baseline.getByTestId("calibration-command")).toHaveText(
     "npm run calibrate:baseline",
   );
-  await expect(baseline.getByTestId("metric-slot-kind")).toContainText("28/28");
+  await expect(baseline.getByTestId("metric-slot-kind")).toContainText("31/31");
   await expect(baseline.getByTestId("baseline-not-live")).toHaveText(
     "This is not live-model performance.",
   );
@@ -108,6 +108,22 @@ test("the calibration page keeps the live run and the baseline visibly separate"
   expect(baselineText).toContain("rule-engine-v1");
   expect(baselineText.toLowerCase()).toContain("no model calls");
   expect(baselineText).not.toContain("mistral");
+
+  // A rerun replaces only its own card. The 2026-11-21 live record and the
+  // 2026-11-23 baseline repeat stay readable as history, with their own
+  // case sets, and the baseline history entry is still labelled as rules.
+  const history = page.getByTestId("calibration-history");
+  await expect(history).toBeVisible();
+  const oldLive = history.getByTestId("history-live-2026-11-21");
+  await expect(oldLive).toBeVisible();
+  await expect(oldLive).toContainText("24/28");
+  await expect(oldLive).toContainText("43 total");
+  const repeat = history.getByTestId("history-deterministic-baseline-2026-11-23");
+  await expect(repeat).toBeVisible();
+  await expect(repeat).toContainText("28/28");
+  await expect(repeat.getByTestId("history-not-live")).toHaveText(
+    "This is not live-model performance.",
+  );
 
   const bodyText = (await page.locator("body").innerText()).toLowerCase();
   for (const claim of BANNED_CLAIMS) {
