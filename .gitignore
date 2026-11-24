@@ -42,3 +42,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# read-only reference material — never part of the app.
+# These live here, not only in .git/info/exclude, so `tests/unit/scaffold.test.ts`
+# still holds in a fresh clone (a clone does not carry .git/info/exclude).
+/docs/respite-circle-source/
+/.research/
