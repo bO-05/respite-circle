@@ -8,6 +8,7 @@ import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { formatApprovalLine } from "@/server/domain/ask-review";
 import { AUTO_PUBLISH_DESK_LABEL } from "@/server/domain/auto-publish";
+import { deskSlotLead } from "@/server/domain/desk-slot-lead";
 import { formatWindowLabel } from "@/server/domain/slots";
 import { getDeskSlotClaimReview } from "@/server/repositories/claim-review";
 import { getDeskSlotCoverage } from "@/server/repositories/coverage";
@@ -86,7 +87,10 @@ export default async function DeskSlotPage({
       person={person}
       role={session.role}
       title="Time review"
-      lead="A neighbour has said yes. Confirm the claim, or take it back before the family hears anything."
+      // The lead follows the row in front of the coordinator. Asking every
+      // state to confirm a claim told the truth only for `claimed`.
+      lead={deskSlotLead(review.status)}
+      leadTestId="slot-lead"
     >
       <dl className="grid gap-4 rounded-lg border border-line bg-surface p-5 sm:grid-cols-2">
         <div>

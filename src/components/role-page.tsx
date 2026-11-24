@@ -12,12 +12,15 @@ export function RolePage({
   role,
   title,
   lead,
+  leadTestId,
   children,
 }: {
   person: { firstName: string; lastName: string };
   role: Role;
   title: string;
   lead?: string;
+  /** Names the lead paragraph for a screen whose sentence depends on state. */
+  leadTestId?: string;
   children?: ReactNode;
 }) {
   return (
@@ -37,7 +40,10 @@ export function RolePage({
         {title}
       </h1>
       {lead ? (
-        <p className="mt-4 max-w-prose text-xl leading-relaxed text-ink">
+        <p
+          data-testid={leadTestId}
+          className="mt-4 max-w-prose text-xl leading-relaxed text-ink"
+        >
           {lead}
         </p>
       ) : null}
