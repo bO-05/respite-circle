@@ -41,6 +41,13 @@ const QUIET_ASK_TWO = "d2000000-0000-4000-8000-00000000000c";
 const QUIET_CLOSURE_SLOT = "d2000000-0000-4000-8000-00000000000d";
 const QUIET_WAITING_ASK = "d2000000-0000-4000-8000-00000000000e";
 
+// The serial group restarts at test 1 after any failure, so a time a later
+// test re-offers, expires, or closes must never be one an earlier test asserts.
+// Each mutating test owns one of these times instead.
+const QUIET_REOFFER_TARGET_SLOT = "d2000000-0000-4000-8000-00000000000f";
+const QUIET_EXPIRE_TARGET_SLOT = "d2000000-0000-4000-8000-000000000010";
+const QUIET_CLOSURE_TARGET_SLOT = "d2000000-0000-4000-8000-000000000011";
+
 const QUIET_COORDINATOR_TOKEN = "e2e-coverage-coordinator";
 const QUIET_CAREGIVER_TOKEN = "e2e-coverage-caregiver";
 
@@ -65,6 +72,16 @@ const REOFFER_START = new Date(FIXTURE_NOW.getTime() + 4 * DAY);
 const REOFFER_END = new Date(REOFFER_START.getTime() + 2 * HOUR);
 const CLOSURE_START = new Date(FIXTURE_NOW.getTime() + 12 * HOUR);
 const CLOSURE_END = new Date(FIXTURE_NOW.getTime() + 14 * HOUR);
+const REOFFER_TARGET_START = new Date(FIXTURE_NOW.getTime() + 3 * DAY);
+const REOFFER_TARGET_END = new Date(
+  REOFFER_TARGET_START.getTime() + 2 * HOUR,
+);
+const EXPIRE_TARGET_START = new Date(FIXTURE_NOW.getTime() + 6 * DAY);
+const EXPIRE_TARGET_END = new Date(EXPIRE_TARGET_START.getTime() + 2 * HOUR);
+const CLOSURE_TARGET_START = new Date(FIXTURE_NOW.getTime() + 12 * HOUR);
+const CLOSURE_TARGET_END = new Date(
+  CLOSURE_TARGET_START.getTime() + 2 * HOUR,
+);
 
 const CONFIRMATION = renderConfirmation({
   kind: "companion",
@@ -90,12 +107,6 @@ if (!CONFIRMATION || !REMINDER) {
 const EXPECTED_CONFIRMATION = CONFIRMATION.body;
 const EXPECTED_REMINDER = REMINDER.body;
 
-const EXPECTED_WATCH_WINDOW = formatWindowLabel(
-  WATCH_START,
-  WATCH_END,
-  TIME_ZONE,
-);
-
 const EVIDENCE_DIR = path.join(
   process.cwd(),
   ".research",
@@ -104,6 +115,57 @@ const EVIDENCE_DIR = path.join(
 );
 
 const MESSAGE_LINE = "Messages sent to the caregiver about this slot: 0";
+
+/**
+ * What test 1 asserts about the watch. The last test in the group re-runs it
+ * after every later test has acted, because a serial failure restarts the
+ * group at test 1 — that is exactly the state a retry meets. Nothing a later
+ * test does may change it, so the re-offer, the expiry and the closure each
+ * own a separate fixture time.
+ */
+async function expectFirstTestWatchState(
+  page: Page,
+  watchWindowLabel: string,
+): Promise<void> {
+  const card = page.locator(
+    `[data-testid="coverage-card"][data-slot-id="${QUIET_WATCH_SLOT}"]`,
+  );
+  await expect(card).toBeVisible();
+  await expect(card.getByTestId("coverage-who")).toContainText("Marta");
+  await expect(card.getByTestId("coverage-who")).toContainText("June");
+  await expect(card.getByTestId("coverage-window")).toHaveText(
+    watchWindowLabel,
+  );
+  await expect(card.getByTestId("coverage-open-for")).toContainText(
+    /Open for (under an hour|\d+ hours?|\d+ days?)/,
+  );
+  await expect(card.getByTestId("coverage-message-count")).toHaveText(
+    MESSAGE_LINE,
+  );
+  await expect(card.getByTestId("coverage-message-count")).toHaveAttribute(
+    "data-count",
+    "0",
+  );
+  await expect(card.getByTestId("coverage-pipeline-evidence")).toContainText(
+    /2 messages have reached families|pipeline itself works/i,
+  );
+
+  // The other times test 1 names are here too, each with its own live zero.
+  // No later test re-offers, expires or closes any of them.
+  for (const slotId of [
+    QUIET_EXPIRE_SLOT,
+    QUIET_REOFFER_SLOT,
+    QUIET_CLOSURE_SLOT,
+  ]) {
+    const other = page.locator(
+      `[data-testid="coverage-card"][data-slot-id="${slotId}"]`,
+    );
+    await expect(other).toBeVisible();
+    await expect(other.getByTestId("coverage-message-count")).toHaveText(
+      MESSAGE_LINE,
+    );
+  }
+}
 
 async function signIn(
   browser: Browser,
@@ -335,6 +397,9 @@ async function ensureQuietChurch(db: E2eDatabase): Promise<void> {
     ON CONFLICT (id) DO NOTHING
   `;
 
+  // The stable times the first and last tests assert. No later test re-offers,
+  // expires or closes any of them, because a serial retry re-runs the group
+  // from test 1 and must find exactly this watch.
   await db.client`
     INSERT INTO slot (
       id, ask_id, church_id, kind, tier, label, window_start, window_end,
@@ -365,13 +430,62 @@ async function ensureQuietChurch(db: E2eDatabase): Promise<void> {
         ${new Date(FIXTURE_NOW.getTime() - 30 * HOUR).toISOString()}::timestamptz
       ),
       (
-        ${QUIET_CLOSURE_SLOT}, ${QUIET_ASK_TWO}, ${QUIET_CHURCH}, 'home',
+        ${QUIET_CLOSURE_SLOT}, ${QUIET_ASK}, ${QUIET_CHURCH}, 'home',
         'in_home', 'A Saturday morning at home',
         ${CLOSURE_START.toISOString()}::timestamptz,
         ${CLOSURE_END.toISOString()}::timestamptz,
         true, 'q6_home', 'open', ${QUIET_COORDINATOR}, now()
       )
     ON CONFLICT (id) DO NOTHING
+  `;
+
+  // The mutating tests each own one time, so the watch above is untouched.
+  await db.client`
+    INSERT INTO slot (
+      id, ask_id, church_id, kind, tier, label, window_start, window_end,
+      gated, rule_ref, status, approved_by, approved_at
+    )
+    VALUES
+      (
+        -- Owned by the re-offer test; a call is on record, so the one
+        -- re-offer is allowed there.
+        ${QUIET_REOFFER_TARGET_SLOT}, ${QUIET_ASK}, ${QUIET_CHURCH}, 'drive',
+        'doorstep', 'A drive on Friday',
+        ${REOFFER_TARGET_START.toISOString()}::timestamptz,
+        ${REOFFER_TARGET_END.toISOString()}::timestamptz,
+        false, 'manual', 'open', ${QUIET_COORDINATOR},
+        ${new Date(FIXTURE_NOW.getTime() - 30 * HOUR).toISOString()}::timestamptz
+      ),
+      (
+        -- Owned by the zero-row proof test.
+        ${QUIET_EXPIRE_TARGET_SLOT}, ${QUIET_ASK}, ${QUIET_CHURCH}, 'meal',
+        'doorstep', 'A second reheatable meal',
+        ${EXPIRE_TARGET_START.toISOString()}::timestamptz,
+        ${EXPIRE_TARGET_END.toISOString()}::timestamptz,
+        false, 'manual', 'open', ${QUIET_COORDINATOR},
+        ${new Date(FIXTURE_NOW.getTime() - 30 * HOUR).toISOString()}::timestamptz
+      ),
+      (
+        -- Owned by the closing test: the second ask's only time, so closing
+        -- it still proves that the last live time closes the ask.
+        ${QUIET_CLOSURE_TARGET_SLOT}, ${QUIET_ASK_TWO}, ${QUIET_CHURCH}, 'home',
+        'in_home', 'A Saturday morning at home',
+        ${CLOSURE_TARGET_START.toISOString()}::timestamptz,
+        ${CLOSURE_TARGET_END.toISOString()}::timestamptz,
+        true, 'manual', 'open', ${QUIET_COORDINATOR}, now()
+      )
+    ON CONFLICT (id) DO NOTHING
+  `;
+
+  // A re-offer is allowed only after a person records a call. This call
+  // belongs to the time the re-offer test owns, so that test exercises the one
+  // allowed re-offer without restarting the clock of the time test 1 reads.
+  await db.client`
+    INSERT INTO call_log (slot_id, coordinator_id, outcome, note, created_at)
+    VALUES (
+      ${QUIET_REOFFER_TARGET_SLOT}, ${QUIET_COORDINATOR}, 'reached',
+      'Reached Marta; she would like the Friday drive tried once more.', now()
+    )
   `;
 
   await db.client`
@@ -397,11 +511,29 @@ test.describe.configure({ timeout: 300_000 });
 
 test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage watch and the failure-path proof", () => {
   let db: E2eDatabase;
+  let expectedWatchWindow: string;
 
   test.beforeAll(async () => {
     test.setTimeout(300_000);
     db = await openE2eDatabase();
     await ensureQuietChurch(db);
+
+    // Read the window back from the stored row. A retry starts minutes later
+    // in a new worker, so recomputing the label from a fresh `new Date()`
+    // would expect a minute the row does not carry.
+    const [watchRow] = await db.client<{
+      window_start: string;
+      window_end: string | null;
+    }[]>`
+      SELECT window_start::text AS window_start, window_end::text AS window_end
+        FROM slot
+       WHERE id = ${QUIET_WATCH_SLOT}
+    `;
+    expectedWatchWindow = formatWindowLabel(
+      new Date(watchRow.window_start),
+      watchRow.window_end ? new Date(watchRow.window_end) : null,
+      TIME_ZONE,
+    );
   });
 
   test.afterAll(async () => {
@@ -420,43 +552,7 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
     const grace = await signIn(browser, QUIET_COORDINATOR_TOKEN);
     await grace.page.goto("/desk/failures");
 
-    const card = grace.page.locator(
-      `[data-testid="coverage-card"][data-slot-id="${QUIET_WATCH_SLOT}"]`,
-    );
-    await expect(card).toBeVisible();
-    await expect(card.getByTestId("coverage-who")).toContainText("Marta");
-    await expect(card.getByTestId("coverage-who")).toContainText("June");
-    await expect(card.getByTestId("coverage-window")).toHaveText(
-      EXPECTED_WATCH_WINDOW,
-    );
-    await expect(card.getByTestId("coverage-open-for")).toContainText(
-      /Open for (under an hour|\d+ hours?|\d+ days?)/,
-    );
-    await expect(card.getByTestId("coverage-message-count")).toHaveText(
-      MESSAGE_LINE,
-    );
-    await expect(card.getByTestId("coverage-message-count")).toHaveAttribute(
-      "data-count",
-      "0",
-    );
-    await expect(card.getByTestId("coverage-pipeline-evidence")).toContainText(
-      /2 messages have reached families|pipeline itself works/i,
-    );
-
-    // The other open times are here too, each with its own live zero.
-    for (const slotId of [
-      QUIET_EXPIRE_SLOT,
-      QUIET_REOFFER_SLOT,
-      QUIET_CLOSURE_SLOT,
-    ]) {
-      const other = grace.page.locator(
-        `[data-testid="coverage-card"][data-slot-id="${slotId}"]`,
-      );
-      await expect(other).toBeVisible();
-      await expect(other.getByTestId("coverage-message-count")).toHaveText(
-        MESSAGE_LINE,
-      );
-    }
+    await expectFirstTestWatchState(grace.page, expectedWatchWindow);
 
     // The covered time is not a call task; its two messages are the evidence.
     await expect(
@@ -582,9 +678,12 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
   test("VAL-FAILURE-006 — a time is offered again once after the call, and never a second time", async ({
     browser,
   }) => {
+    // This test owns its own time. The re-offer restarts the coverage clock,
+    // so doing it to the time test 1 watches would leave a retry of the serial
+    // group unable to find the card test 1 asserts.
     const beforeOffer = await db.client<{ window_start: string }[]>`
       SELECT window_start::text AS window_start
-        FROM slot WHERE id = ${QUIET_WATCH_SLOT}
+        FROM slot WHERE id = ${QUIET_REOFFER_TARGET_SLOT}
     `;
     const originalStart = beforeOffer[0].window_start;
 
@@ -592,10 +691,10 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
     await grace.page.goto("/desk/failures");
 
     const card = grace.page.locator(
-      `[data-testid="coverage-card"][data-slot-id="${QUIET_WATCH_SLOT}"]`,
+      `[data-testid="coverage-card"][data-slot-id="${QUIET_REOFFER_TARGET_SLOT}"]`,
     );
 
-    const already = await reofferCount(db, QUIET_WATCH_SLOT);
+    const already = await reofferCount(db, QUIET_REOFFER_TARGET_SLOT);
     if (already === 0) {
       await expect(card).toBeVisible();
       await expect(card.getByTestId("coverage-reoffer")).toBeVisible();
@@ -606,7 +705,7 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
       await expect(card).toHaveCount(0, { timeout: 45_000 });
     }
 
-    await grace.page.goto(`/desk/slot/${QUIET_WATCH_SLOT}`);
+    await grace.page.goto(`/desk/slot/${QUIET_REOFFER_TARGET_SLOT}`);
     await expect(
       grace.page.getByTestId("coverage-reoffer-disabled"),
     ).toContainText(/already been offered again once/i);
@@ -621,7 +720,7 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
         window_start::text AS window_start,
         window_end::text AS window_end,
         status
-        FROM slot WHERE id = ${QUIET_WATCH_SLOT}
+        FROM slot WHERE id = ${QUIET_REOFFER_TARGET_SLOT}
     `;
     expect(row.status).toBe("open");
     expect(new Date(row.window_start).getTime()).toBeGreaterThan(
@@ -636,8 +735,8 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
     await expect(grace.page.getByTestId("coverage-window")).toHaveText(
       expectedNewWindow,
     );
-    expect(await reofferCount(db, QUIET_WATCH_SLOT)).toBe(1);
-    expect(await notificationCountFor(db, QUIET_WATCH_SLOT)).toBe(0);
+    expect(await reofferCount(db, QUIET_REOFFER_TARGET_SLOT)).toBe(1);
+    expect(await notificationCountFor(db, QUIET_REOFFER_TARGET_SLOT)).toBe(0);
 
     await shot(grace.page, "coverage-reoffered-once");
     await grace.context.close();
@@ -647,12 +746,14 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
     browser,
   }) => {
     const grace = await signIn(browser, QUIET_COORDINATOR_TOKEN);
-    const status = await slotStatus(db, QUIET_EXPIRE_SLOT);
+    // This test owns the time it closes. The watch test's own times stay open,
+    // so a retry of the serial group still finds every card test 1 asserts.
+    const status = await slotStatus(db, QUIET_EXPIRE_TARGET_SLOT);
 
     if (status === "open") {
       await grace.page.goto("/desk/failures");
       const card = grace.page.locator(
-        `[data-testid="coverage-card"][data-slot-id="${QUIET_EXPIRE_SLOT}"]`,
+        `[data-testid="coverage-card"][data-slot-id="${QUIET_EXPIRE_TARGET_SLOT}"]`,
       );
       await expect(card).toBeVisible();
       await expect(card.getByTestId("coverage-message-count")).toHaveText(
@@ -663,12 +764,12 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
       // time's own review page.
       await expect(
         grace.page.locator(
-          `[data-testid="coverage-card"][data-slot-id="${QUIET_EXPIRE_SLOT}"]`,
+          `[data-testid="coverage-card"][data-slot-id="${QUIET_EXPIRE_TARGET_SLOT}"]`,
         ),
       ).toHaveCount(0, { timeout: 45_000 });
     }
 
-    await grace.page.goto(`/desk/slot/${QUIET_EXPIRE_SLOT}`);
+    await grace.page.goto(`/desk/slot/${QUIET_EXPIRE_TARGET_SLOT}`);
     const proof = grace.page.getByTestId("absence-proof");
     await expect(proof).toBeVisible();
     await expect(grace.page.getByTestId("absence-proof-count")).toHaveText(
@@ -687,7 +788,7 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
     await expect(recipe).toContainText(/not a signature/i);
     await expect(recipe).not.toContainText(/anyone can check/i);
 
-    const proofs = await absenceProofs(db, QUIET_EXPIRE_SLOT);
+    const proofs = await absenceProofs(db, QUIET_EXPIRE_TARGET_SLOT);
     expect(proofs).toHaveLength(1);
     expect(Number(proofs[0].caregiver_outbox_count)).toBe(0);
     expect(proofs[0].query_text).toBe(ABSENCE_PROOF_QUERY_TEXT);
@@ -700,8 +801,10 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
       proofs[0].digest,
     );
 
-    expect(await slotStatus(db, QUIET_EXPIRE_SLOT)).toBe("expired_unclaimed");
-    expect(await notificationCountFor(db, QUIET_EXPIRE_SLOT)).toBe(0);
+    expect(await slotStatus(db, QUIET_EXPIRE_TARGET_SLOT)).toBe(
+      "expired_unclaimed",
+    );
+    expect(await notificationCountFor(db, QUIET_EXPIRE_TARGET_SLOT)).toBe(0);
     expect(await totalNotifications(db)).toBe(2);
 
     await shot(grace.page, "absence-proof");
@@ -741,17 +844,27 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
       await marta.page.request.get(`/ask/${QUIET_ASK_TWO}`)
     ).text();
     expect(askHtml).not.toMatch(/unclaimed|still waiting|waiting time|declined/i);
-    await expect(marta.page.getByTestId("ask-status")).toContainText(
-      /Approved by Grace/i,
-    );
+    if ((await askStatus(db, QUIET_ASK_TWO)) === "closed") {
+      // A serial retry reaches this test after the first attempt already
+      // closed the ask. The closed receipt, asserted again below, is the
+      // truthful state; the approved pill belongs to the first pass.
+      await expect(marta.page.getByTestId("ask-closed")).toContainText(
+        /This ask is closed/i,
+      );
+    } else {
+      await expect(marta.page.getByTestId("ask-status")).toContainText(
+        /Approved by Grace/i,
+      );
+    }
     await shot(marta.page, "ask-approved-no-status");
 
     // Close the second ask's only time. This is the last live time on that
-    // ask, so `closeAskIfFinished` must move it from approved to closed.
+    // ask, so `closeAskIfFinished` must move it from approved to closed. The
+    // time is this test's own, so the watch test's cards stay untouched.
     const grace = await signIn(browser, QUIET_COORDINATOR_TOKEN);
-    await grace.page.goto(`/desk/slot/${QUIET_CLOSURE_SLOT}`);
+    await grace.page.goto(`/desk/slot/${QUIET_CLOSURE_TARGET_SLOT}`);
 
-    if ((await slotStatus(db, QUIET_CLOSURE_SLOT)) === "open") {
+    if ((await slotStatus(db, QUIET_CLOSURE_TARGET_SLOT)) === "open") {
       await grace.page.getByTestId("coverage-expire").click();
       await expect(grace.page.getByTestId("absence-proof")).toBeVisible({
         timeout: 45_000,
@@ -817,6 +930,44 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
     await shot(marta.page, "ask-waiting-not-read-yet");
 
     await marta.context.close();
+  });
+
+  test("VAL-AUDITFIX-017 — the first test's watch state survives every later test, so a retry cannot cascade", async ({
+    browser,
+  }) => {
+    // A serial failure restarts the group at test 1, so a retry meets whatever
+    // state the later tests left behind. This re-runs test 1's watch
+    // assertions now that the re-offer, the expiry and the closure have all
+    // happened. It failed while the re-offer moved the time test 1 watches and
+    // the expiry closed two of its other cards; each now owns a separate time.
+    const grace = await signIn(browser, QUIET_COORDINATOR_TOKEN);
+    await grace.page.goto("/desk/failures");
+    await expectFirstTestWatchState(grace.page, expectedWatchWindow);
+
+    expect(await reofferCount(db, QUIET_WATCH_SLOT)).toBe(0);
+    for (const slotId of [
+      QUIET_WATCH_SLOT,
+      QUIET_EXPIRE_SLOT,
+      QUIET_REOFFER_SLOT,
+      QUIET_CLOSURE_SLOT,
+    ]) {
+      expect(await slotStatus(db, slotId)).toBe("open");
+    }
+
+    // The mutating tests did run, each on its own time. The re-offer happened
+    // exactly once, and both closing tests left their proofs behind.
+    expect(await reofferCount(db, QUIET_REOFFER_TARGET_SLOT)).toBe(1);
+    expect(await slotStatus(db, QUIET_EXPIRE_TARGET_SLOT)).toBe(
+      "expired_unclaimed",
+    );
+    expect(await slotStatus(db, QUIET_CLOSURE_TARGET_SLOT)).toBe(
+      "expired_unclaimed",
+    );
+    expect(await askStatus(db, QUIET_ASK_TWO)).toBe("closed");
+    expect(await absenceProofs(db, QUIET_EXPIRE_TARGET_SLOT)).toHaveLength(1);
+    expect(await absenceProofs(db, QUIET_CLOSURE_TARGET_SLOT)).toHaveLength(1);
+
+    await grace.context.close();
   });
 });
 
