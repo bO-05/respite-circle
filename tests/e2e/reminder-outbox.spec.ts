@@ -16,6 +16,7 @@ import {
   renderReminder,
 } from "../../src/server/domain/notifications";
 import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
+import { expectNoDeskConcepts } from "./helpers/desk-words";
 
 /**
  * VAL-CONFIRM-003, VAL-CONFIRM-004, VAL-CONFIRM-006 and the caregiver half of
@@ -25,9 +26,10 @@ import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
  * and one open time. Grace sees the exact reminder sentence before writing it,
  * writes it once, and the page then refuses a second. The family reads both
  * messages on `/care` — the confirmation and the one reminder — with the slot
- * label and window, and nothing else. The caregiver's `/care` and `/ask` pages
- * carry none of the board's concepts: no views, declines, waiting time,
- * unclaimed word, claimant count, or remaining places.
+ * label and window, and nothing else. The caregiver's `/care`, `/ask` and
+ * `/ask/[id]` pages carry none of the desk's words: this spec scans them with
+ * the one shared list in `helpers/desk-words.ts`, the same list
+ * `coverage-watch.spec.ts` and `failure-path.spec.ts` import.
  */
 
 const QUIET_CHURCH = "d1000000-0000-4000-8000-000000000001";
@@ -249,31 +251,6 @@ async function ensureQuietChurch(db: E2eDatabase): Promise<void> {
   `;
 }
 
-/**
- * The caregiver's pages are consent surfaces, not a board. These words are the
- * board's language and must not exist on `/care` or `/ask`.
- */
-function expectNoBoardConcepts(text: string, where: string): void {
-  const forbidden: Array<[RegExp, string]> = [
-    [/\bviews?\b/i, "views"],
-    [/\bviewed\b/i, "viewed"],
-    [/\bdeclines?\b/i, "declines"],
-    [/\bdeclined\b/i, "declined"],
-    [/waiting time/i, "waiting time"],
-    [/\bunclaimed\b/i, "unclaimed"],
-    [/\bclaimants?\b/i, "claimant"],
-    [/\bplaces? left\b/i, "places left"],
-    [/\bremaining\b/i, "remaining"],
-  ];
-
-  for (const [pattern, label] of forbidden) {
-    expect(
-      pattern.test(text),
-      `${where} must not contain the board concept "${label}"`,
-    ).toBe(false);
-  }
-}
-
 test.describe.configure({ timeout: 300_000 });
 
 test.describe.serial("VAL-CONFIRM-003, VAL-CONFIRM-004, VAL-CONFIRM-006 and VAL-BOARD-006 — the one reminder and the caregiver's outbox", () => {
@@ -405,8 +382,8 @@ test.describe.serial("VAL-CONFIRM-003, VAL-CONFIRM-004, VAL-CONFIRM-006 and VAL-
       expect(html).not.toContain(forbidden);
     }
 
-    expectNoBoardConcepts(visible, "/care");
-    expectNoBoardConcepts(html, "/care");
+    expectNoDeskConcepts(visible, "/care");
+    expectNoDeskConcepts(html, "/care");
 
     await shot(marta.page, "caregiver-both-messages");
     await marta.context.close();
@@ -419,22 +396,22 @@ test.describe.serial("VAL-CONFIRM-003, VAL-CONFIRM-004, VAL-CONFIRM-006 and VAL-
 
     await marta.page.goto("/ask");
     await expect(marta.page.locator("h1")).toHaveCount(1);
-    expectNoBoardConcepts(
+    expectNoDeskConcepts(
       await marta.page.locator("body").innerText(),
       "/ask",
     );
-    expectNoBoardConcepts(await marta.page.content(), "/ask");
+    expectNoDeskConcepts(await marta.page.content(), "/ask");
     await shot(marta.page, "caregiver-ask");
 
     await marta.page.goto(`/ask/${QUIET_ASK}`);
     await expect(
       marta.page.getByTestId("caregiver-verbatim"),
     ).toContainText("running on empty");
-    expectNoBoardConcepts(
+    expectNoDeskConcepts(
       await marta.page.locator("body").innerText(),
       "/ask/[id]",
     );
-    expectNoBoardConcepts(await marta.page.content(), "/ask/[id]");
+    expectNoDeskConcepts(await marta.page.content(), "/ask/[id]");
     await shot(marta.page, "caregiver-ask-receipt");
 
     await marta.context.close();
