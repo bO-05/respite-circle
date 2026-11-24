@@ -86,3 +86,26 @@ describe("VAL-DOC-001 — README as app documentation", () => {
     expect(readme).toContain("Unlicense");
   });
 });
+
+describe("VAL-AUDITFIX-011 — every approval claim names the meal exception", () => {
+  it("names the signed low-risk exception, the stored value, and the audit event", () => {
+    expect(readme).toMatch(/signed low-risk policy/i);
+    expect(readme).toMatch(/reheatable meal/i);
+    expect(readme).toContain("published_via = auto_low_risk");
+    expect(readme).toContain("slot_auto_published");
+    expect(readme).toMatch(/demo seed\s+leaves\s+the\s+switch\s+off/i);
+  });
+
+  it("keeps any approval absolute inside a passage that names the exception", () => {
+    const absolutes = readme.matchAll(
+      /approves?\s+(?:every\s+(?:one|time|thing)|everything)/gi,
+    );
+    for (const match of absolutes) {
+      const index = match.index ?? 0;
+      const passage = readme.slice(Math.max(0, index - 700), index + 700);
+      expect(passage, `approval claim at offset ${index}`).toMatch(
+        /low-risk|auto_low_risk|reheatable meal/i,
+      );
+    }
+  });
+});

@@ -8,8 +8,14 @@ reads it before anyone else. An AI answers only nine narrow typed questions —
 companionship, transport, a meal, a time window, safety, a familiar face,
 reheating, mobility, and personal care — with yes/no or pick-list answers and a
 stated confidence. It cannot write a sentence, send anything, or rank a person.
-Plain code turns the answers into draft times. The coordinator edits and
-approves every one before it becomes visible.
+Plain code turns the answers into draft times. A named coordinator edits and
+approves what is offered before it becomes visible, with one narrow exception:
+while the church's signed low-risk policy has the switch on, a reheatable meal
+may publish itself at intake with no coordinator approving that time. The app
+records it as `published_via = auto_low_risk` with no approver, and the audit
+log keeps `slot_auto_published` with the policy version it followed. A companion
+place, a drive, and an in-home visit always wait for a person, and the demo seed
+leaves the switch off.
 
 Neighbours see times, never stories: the board shows the kind of help, the
 window, the place, and whether the time is gated. The person who claims a time
@@ -405,9 +411,10 @@ Next.js 16 App Router — server components, server actions, route handlers
   failure falls back to the deterministic engine, labelled as rules. No model
   string becomes a message or a sentence about a person.
 - **The human gate.** Plain code constructs draft slots; the coordinator edits,
-  excludes, approves, or sends back. Board queries use an explicit column
-  allow-list and never join caregiver identity, verbatim text, or the
-  orientation note.
+  excludes, approves, or sends back. Only a signed low-risk policy can let a
+  meal publish itself, and that decision is audited. Board queries use an
+  explicit column allow-list and never join caregiver identity, verbatim text,
+  or the orientation note.
 - **The claim.** One conditional
   `UPDATE … WHERE status = 'open' AND claimed_by IS NULL RETURNING *` in a
   single transaction arbitrates; the loser gets a human sentence, not a 500.
@@ -439,12 +446,13 @@ application: all of the code in this repository, the caregiver and respite
 domain model, the slot system, the policy content, and the calibration set.
 
 One pattern predates that window. The typed-decision trust pattern — an AI that
-answers only narrow typed questions, human verification before anything becomes
-visible, and a refusal to report success it cannot verify — was first explored in
-the author's earlier mutual-aid prototype **Vouch** (September–October 2026,
-before the build window). Vouch is the author's own prior work. The Respite
-Circle implementation of the pattern is new and was written during the hackathon
-window; no Vouch code is included here.
+answers only narrow typed questions, a named person's approval before a time
+becomes visible except where a signed low-risk policy lets a meal publish itself
+and logs that decision, and a refusal to report success it cannot verify — was
+first explored in the author's earlier mutual-aid prototype **Vouch**
+(September–October 2026, before the build window). Vouch is the author's own
+prior work. The Respite Circle implementation of the pattern is new and was
+written during the hackathon window; no Vouch code is included here.
 
 The application builds on these open-source packages under their published
 licenses:
