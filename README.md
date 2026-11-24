@@ -39,6 +39,13 @@ demo data is fictional; nothing here is a real congregation's record. See
 | `/desk` and its sub-pages | coordinator, deputy | Queue, draft slots, exclusion reasons, policy, sessions, invite, coverage watch, audit, metrics. |
 | `/circle`, `/my-claims` | volunteer | The board of open times and the claims that person made. |
 
+## Limits
+
+A church is set up by a developer today, with `npm run db:migrate` and
+`npm run db:seed`. Adding a new family or volunteer after that needs a small
+admin surface the app does not have yet. Today those rows are added in the
+database by a developer.
+
 ## Stack
 
 Versions are pinned in `package.json`.
@@ -420,7 +427,8 @@ Next.js 16 App Router — server components, server actions, route handlers
   single transaction arbitrates; the loser gets a human sentence, not a 500.
   The orientation note is sliced to the approved claimer. Approval creates
   exactly one confirmation from a human template, and there is at most one
-  reminder.
+  reminder. The confirmation is in-app: the coordinator confirms, the app records one line, and the family reads it when they open Care.
+  The app sends no email and no SMS.
 - **Database-enforced invariants.** `ask.verbatim_text` is immutable (a
   column-scoped trigger, with deletes rejected), append-only tables reject
   update and delete, a caregiver notification requires a covered slot, and a

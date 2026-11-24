@@ -111,6 +111,45 @@ describe("VAL-AUDITFIX-011 — every approval claim names the meal exception", (
 });
 
 /**
+ * VAL-AUDITFIX-012. The confirmation lives in the app: the coordinator
+ * confirms, one row is written, and the family reads it on /care. The app has
+ * no provider, queue, or send path, and the copy must say so rather than leave
+ * a judge to discover it from the schema. README is the committed half of the
+ * statement; the submission pack carries the same words and is not committed.
+ */
+describe("VAL-AUDITFIX-012 — delivery is stated as in-app", () => {
+  const flat = readme.replace(/\s+/g, " ");
+
+  it("says the confirmation is in-app and read when the family opens Care", () => {
+    expect(flat).toContain(
+      "The confirmation is in-app: the coordinator confirms, the app records one line, and the family reads it when they open Care.",
+    );
+  });
+
+  it("says the app sends no email and no SMS", () => {
+    expect(flat).toContain("The app sends no email and no SMS.");
+  });
+
+  it("names the setup limit: a developer today, and no admin surface for a new person", () => {
+    expect(flat).toMatch(/a church is set up by a developer today/i);
+    expect(flat).toMatch(
+      /adding a new family or volunteer .*needs a small admin surface the app does not have yet/i,
+    );
+  });
+
+  it("never promises a message outside the app", () => {
+    for (const pattern of [
+      /we(?:'| wi)ll (?:email|text) you/i,
+      /you(?:'| wi)ll (?:get|receive) an? (?:email|text)/i,
+      /sent (?:by|via) (?:email|text|SMS)/i,
+      /notification (?:email|text)/i,
+    ]) {
+      expect(flat).not.toMatch(pattern);
+    }
+  });
+});
+
+/**
  * The desk lead is the coordinator's first sentence about the human gate. It
  * may not promise that a person sees a time before a neighbour does, because
  * a signed low-risk policy with the switch on lets a meal publish at intake
