@@ -1,31 +1,16 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { seedAccessTokens } from "../../src/db/seed-data";
+import { scanCopy } from "../../src/server/domain/copy-lint";
 
 const STAMP = "Fictional church, fictional families. Sample data.";
 
-const BANNED_CLAIMS = [
-  "vetted",
-  "HIPAA compliant",
-  "HIPAA-compliant",
-  "AI-powered care",
-  "certified safe",
-  "fully screened",
-  "platform",
-  "ecosystem",
-  "marketplace",
-  "orchestration",
-  "seamless",
-  "revolutionize",
-  "empathy at scale",
-  "compassionate AI",
-  "AI that understands",
-  "replaces your coordinator",
-  "zero-touch",
-];
-
+/**
+ * Every banned claim comes from the one shipped list in
+ * `src/server/domain/copy-lint.ts`. This spec used to carry its own 17-phrase
+ * copy, which silently missed the five extras the shipped list has.
+ */
 function bannedHits(text: string): string[] {
-  const lower = text.toLowerCase();
-  return BANNED_CLAIMS.filter((claim) => lower.includes(claim.toLowerCase()));
+  return scanCopy(text).map((hit) => hit.claim);
 }
 
 async function signIn(
@@ -39,7 +24,7 @@ async function signIn(
   return { page, close: () => context.close() };
 }
 
-test("how it works carries the AI table and the who-decides table", async ({
+test("VAL-TRUST-001 — how it works carries the AI table and the who-decides table", async ({
   page,
 }) => {
   const response = await page.goto("/how-it-works");
@@ -100,7 +85,7 @@ test("how it works carries the AI table and the who-decides table", async ({
   });
 });
 
-test("the privacy matrix names four fields for four viewers", async ({
+test("VAL-TRUST-002 — the privacy matrix names four fields for four viewers", async ({
   page,
 }) => {
   await page.goto("/how-it-works");
@@ -145,7 +130,7 @@ test("the privacy matrix names four fields for four viewers", async ({
   });
 });
 
-test("consent tiers list group, drive, meal, and in-home with requirements", async ({
+test("VAL-TRUST-003 — consent tiers list group, drive, meal, and in-home with requirements", async ({
   page,
 }) => {
   await page.goto("/how-it-works");
@@ -181,7 +166,7 @@ test("consent tiers list group, drive, meal, and in-home with requirements", asy
   });
 });
 
-test("never lists all eight commitments with no banned claim", async ({
+test("VAL-TRUST-004 and VAL-TRUST-006 — never lists all eight commitments with no banned claim", async ({
   page,
 }) => {
   const response = await page.goto("/never");
@@ -220,7 +205,7 @@ test("never lists all eight commitments with no banned claim", async ({
   });
 });
 
-test("the trust page reads at 360px without horizontal scrolling", async ({
+test("VAL-A11Y-001 — the trust page reads at 360px without horizontal scrolling", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 740 });
@@ -262,7 +247,7 @@ test("the trust page reads at 360px without horizontal scrolling", async ({
   });
 });
 
-test("promises stays signed, linked, and free of banned claims", async ({
+test("VAL-TRUST-006 and VAL-POLICY-002 — promises stays signed, linked, and free of banned claims", async ({
   page,
 }) => {
   const response = await page.goto("/promises");
@@ -289,7 +274,7 @@ test("promises stays signed, linked, and free of banned claims", async ({
   });
 });
 
-test("the board keeps the story off the congregation screen the matrix promises", async ({
+test("VAL-TRUST-002 and VAL-BOARD-001 — the board keeps the story off the congregation screen the matrix promises", async ({
   browser,
 }) => {
   const { page, close } = await signIn(browser, seedAccessTokens.ruth);

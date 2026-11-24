@@ -164,7 +164,7 @@ async function capacityLineFor(
 
 test.describe.configure({ timeout: 180_000 });
 
-test.describe("weekly Respite Morning sessions", () => {
+test.describe("VAL-SESSION-001…004 — weekly Respite Morning sessions", () => {
   let db: E2eDatabase;
   const createdAskIds: string[] = [];
 
@@ -192,7 +192,7 @@ test.describe("weekly Respite Morning sessions", () => {
     await db.client.end();
   });
 
-  test("the desk and the sessions page show four Tuesdays with capacity, and filling twice adds nothing", async ({
+  test("VAL-SESSION-001 and VAL-SESSION-003 — the desk and the sessions page show four Tuesdays with capacity, and filling twice adds nothing", async ({
     browser,
   }) => {
     const sessionsBefore = await futureSessions(db);
@@ -244,7 +244,7 @@ test.describe("weekly Respite Morning sessions", () => {
     await grace.context.close();
   });
 
-  test("a cancelled week shows the desk banner and refuses a companion proposal, naming the week", async ({
+  test("VAL-SESSION-002 — a cancelled week shows the desk banner and refuses a companion proposal, naming the week", async ({
     browser,
   }) => {
     const sessions = await futureSessions(db);
@@ -323,7 +323,7 @@ test.describe("weekly Respite Morning sessions", () => {
     await grace.context.close();
   });
 
-  test("a full morning shows Full on the desk and cannot accept another companion place", async ({
+  test("VAL-SESSION-003 — a full morning shows Full on the desk and cannot accept another companion place", async ({
     browser,
   }) => {
     const sessions = await futureSessions(db);
@@ -406,7 +406,7 @@ test.describe("weekly Respite Morning sessions", () => {
     await grace.context.close();
   });
 
-  test("cancelling a morning cancels its places, puts call tasks on the desk, and sends nothing", async ({
+  test("VAL-SESSION-004 — cancelling a morning cancels its places, puts call tasks on the desk, and sends nothing", async ({
     browser,
   }) => {
     const notificationsBefore = await notificationCount(db);

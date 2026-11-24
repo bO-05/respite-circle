@@ -24,7 +24,7 @@ function documentedScripts(): string[] {
   );
 }
 
-describe("README as app documentation", () => {
+describe("VAL-DOC-001 — README as app documentation", () => {
   it("only names package scripts that exist", () => {
     const missing = [...new Set(documentedScripts())].filter(
       (name) => !(name in pkg.scripts),
@@ -77,7 +77,7 @@ describe("README as app documentation", () => {
     expect(readme).toContain("vercel env pull");
   });
 
-  it("carries the open-source disclosure with the hackathon window and licenses", () => {
+  it("VAL-DOC-002 — carries the open-source disclosure with the hackathon window and licenses", () => {
     expect(readme).toContain("Vouch");
     expect(readme).toContain("October 30");
     expect(readme).toContain("November 27, 2026");

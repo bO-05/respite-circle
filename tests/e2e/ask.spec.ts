@@ -74,7 +74,7 @@ async function readAsk(
 
 test.describe.configure({ timeout: 120_000 });
 
-test.describe("caregiver ask intake", () => {
+test.describe("VAL-ASK-001…007 — caregiver ask intake", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async ({ request }) => {
@@ -92,7 +92,7 @@ test.describe("caregiver ask intake", () => {
     await db.client.end();
   });
 
-  test("offers one large question, typing, dictation, consent, and five fictional examples", async ({
+  test("VAL-ASK-001, VAL-ASK-006 and VAL-ASK-007 — offers one large question, typing, dictation, consent, and five fictional examples", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -133,7 +133,7 @@ test.describe("caregiver ask intake", () => {
     await context.close();
   });
 
-  test("empty and whitespace-only submissions show an associated error and create no ask", async ({
+  test("VAL-ASK-004 — empty and whitespace-only submissions show an associated error and create no ask", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -159,7 +159,7 @@ test.describe("caregiver ask intake", () => {
     await context.close();
   });
 
-  test("the consent line is required: no acknowledgement, no ask", async ({
+  test("VAL-ASK-007 — the consent line is required: no acknowledgement, no ask", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -177,7 +177,7 @@ test.describe("caregiver ask intake", () => {
     await context.close();
   });
 
-  test("submitting shows a plain receipt with the exact words and Grace's name", async ({
+  test("VAL-ASK-001 and VAL-ASK-002 — submitting shows a plain receipt with the exact words and Grace's name", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -270,7 +270,7 @@ test.describe("caregiver ask intake", () => {
     await context.close();
   });
 
-  test("a 4,000-character ask is stored and shown intact", async ({
+  test("VAL-ASK-005 — a 4,000-character ask is stored and shown intact", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -298,7 +298,7 @@ test.describe("caregiver ask intake", () => {
     await context.close();
   });
 
-  test("without SpeechRecognition it explains the browser and typing still sends", async ({
+  test("VAL-ASK-006 — without SpeechRecognition it explains the browser and typing still sends", async ({
     browser,
   }) => {
     const context = await browser.newContext();
@@ -334,7 +334,7 @@ test.describe("caregiver ask intake", () => {
     await context.close();
   });
 
-  test("a caregiver edit appends a revision and leaves the original untouched", async ({
+  test("VAL-ASK-002 and VAL-ASK-003 — a caregiver edit appends a revision and leaves the original untouched", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -401,7 +401,7 @@ test.describe("caregiver ask intake", () => {
     await context.close();
   });
 
-  test("the API refuses empty words, missing consent, and the wrong roles", async ({
+  test("VAL-ASK-004 and VAL-ASK-007 — the API refuses empty words, missing consent, and the wrong roles", async ({
     browser,
     request,
   }) => {

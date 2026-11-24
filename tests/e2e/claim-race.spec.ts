@@ -39,7 +39,7 @@ function noSqlIn(text: string): void {
 
 test.describe.configure({ timeout: 120_000 });
 
-test.describe("the claim race", () => {
+test.describe("VAL-CLAIM-002 — the claim race", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -66,7 +66,7 @@ test.describe("the claim race", () => {
     await db.client.end();
   });
 
-  test("two parallel claims yield one win, one human 409, and one claimant", async ({
+  test("VAL-CLAIM-002 — two parallel claims yield one win, one human 409, and one claimant", async ({
     browser,
   }) => {
     const ruth = await signIn(browser, seedAccessTokens.ruth);

@@ -94,7 +94,7 @@ async function auditActions(
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe.serial("a volunteer's own claims", () => {
+test.describe.serial("VAL-CLAIM-005, VAL-CLAIM-006, VAL-ACCESS-004 and VAL-CROSS-004 — a volunteer's own claims", () => {
   let db: E2eDatabase;
   const createdAskIds: string[] = [];
   let mainAskId: string;
@@ -240,7 +240,7 @@ test.describe.serial("a volunteer's own claims", () => {
     await db.client.end();
   });
 
-  test("shows only Ruth's claims and none of a real waiting ask's drafts", async ({
+  test("VAL-CLAIM-006 and VAL-ACCESS-004 — shows only Ruth's claims and none of a real waiting ask's drafts", async ({
     browser,
   }) => {
     const ruth = await signIn(browser, seedAccessTokens.ruth);
@@ -298,7 +298,7 @@ test.describe.serial("a volunteer's own claims", () => {
     await ruth.context.close();
   });
 
-  test("withholds the orientation note before the coordinator approves", async ({
+  test("VAL-CLAIM-005 — withholds the orientation note before the coordinator approves", async ({
     browser,
   }) => {
     const ruth = await signIn(browser, seedAccessTokens.ruth);
@@ -339,7 +339,7 @@ test.describe.serial("a volunteer's own claims", () => {
     await ruth.context.close();
   });
 
-  test("reveals the note to the claimer alone after approval", async ({
+  test("VAL-CLAIM-005 and VAL-CLAIM-006 — reveals the note to the claimer alone after approval", async ({
     browser,
   }) => {
     // The coordinator approval is the real action, not a SQL fixture.
@@ -460,7 +460,7 @@ test.describe.serial("a volunteer's own claims", () => {
     await ruth.context.close();
   });
 
-  test("offers done after the time has passed and closes the claim", async ({
+  test("VAL-CONFIRM-005 — offers done after the time has passed and closes the claim", async ({
     browser,
   }) => {
     const ruth = await signIn(browser, seedAccessTokens.ruth);

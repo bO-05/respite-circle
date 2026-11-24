@@ -130,7 +130,7 @@ describe("versioned policy content", () => {
     await seedDatabase(t.db);
   });
 
-  it("seeds version 1 with every content field", async () => {
+  it("VAL-POLICY-005 — seeds version 1 with every content field", async () => {
     const [row] = await t.client<SeedPolicyRow[]>`
       SELECT id, version, safeguarding_promises, question_set, crisis_script,
              local_crisis_line, referral_resources, familiar_face_default,
@@ -182,7 +182,7 @@ describe("versioned policy content", () => {
     );
   });
 
-  it("records the policy version in force on every ask and decision", async () => {
+  it("VAL-POLICY-003 — records the policy version in force on every ask and decision", async () => {
     const inForce = await getPolicyInForce(seedIds.church, t.db);
     expect(inForce).toBeTruthy();
     expect(inForce?.version).toBe(1);

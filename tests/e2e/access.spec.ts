@@ -30,7 +30,7 @@ function tamperRole(token: string, role: string): string {
   return `${encoded}.${signature}`;
 }
 
-test("demo access lists only fictional role links and is labeled", async ({
+test("VAL-ACCESS-001 — demo access lists only fictional role links and is labeled", async ({
   page,
 }) => {
   const response = await page.goto("/demo");
@@ -54,7 +54,7 @@ test("demo access lists only fictional role links and is labeled", async ({
   await expect(page.getByText("Hidden Person")).toHaveCount(0);
 });
 
-test("each seeded role link signs in one person and lands on that role's home", async ({
+test("VAL-ACCESS-001 — each seeded role link signs in one person and lands on that role's home", async ({
   browser,
 }) => {
   const cases = [
@@ -80,7 +80,7 @@ test("each seeded role link signs in one person and lands on that role's home", 
   }
 });
 
-test("a caregiver is refused the desk and its policy page with no coordinator data", async ({
+test("VAL-ACCESS-002 — a caregiver is refused the desk and its policy page with no coordinator data", async ({
   browser,
 }) => {
   const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -112,7 +112,7 @@ test("a caregiver is refused the desk and its policy page with no coordinator da
   await context.close();
 });
 
-test("without a session every private route renders no private data", async ({
+test("VAL-ACCESS-003 — without a session every private route renders no private data", async ({
   request,
   page,
 }) => {
@@ -147,7 +147,7 @@ test("without a session every private route renders no private data", async ({
   await expect(page.getByText("Grace Whitfield")).toHaveCount(0);
 });
 
-test("a forged or re-signed cookie is rejected by every guard", async ({
+test("VAL-ACCESS-003 — a forged or re-signed cookie is rejected by every guard", async ({
   browser,
 }) => {
   const { context } = await signIn(browser, seedAccessTokens.marta);
@@ -203,7 +203,7 @@ test("a forged or re-signed cookie is rejected by every guard", async ({
   await context.close();
 });
 
-test("the session cookie is signed, HttpOnly, SameSite=Lax, and expiring", async ({
+test("VAL-ACCESS-003 — the session cookie is signed, HttpOnly, SameSite=Lax, and expiring", async ({
   request,
 }) => {
   const response = await request.get(`/enter/${seedAccessTokens.marta}`, {
@@ -228,7 +228,7 @@ test("the session cookie is signed, HttpOnly, SameSite=Lax, and expiring", async
   expect(parts[1].length).toBeGreaterThan(20);
 });
 
-test("an invalid access link sets no session and returns to the entry page", async ({
+test("VAL-ACCESS-003 — an invalid access link sets no session and returns to the entry page", async ({
   request,
 }) => {
   const response = await request.get("/enter/not-a-real-token", {

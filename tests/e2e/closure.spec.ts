@@ -133,7 +133,7 @@ async function auditActions(
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe.serial("the loop closes", () => {
+test.describe.serial("VAL-CONFIRM-005 and VAL-CROSS-001 — the loop closes", () => {
   let db: E2eDatabase;
   const createdAskIds: string[] = [];
   let firstAskId: string;
@@ -224,7 +224,7 @@ test.describe.serial("the loop closes", () => {
     await db.client.end();
   });
 
-  test("Marta reads the one confirmation before the time is closed", async ({
+  test("VAL-CONFIRM-005 — Marta reads the one confirmation before the time is closed", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
@@ -243,7 +243,7 @@ test.describe.serial("the loop closes", () => {
     await marta.context.close();
   });
 
-  test("Ruth closes the time from the closure page and the ask closes", async ({
+  test("VAL-CONFIRM-005 — Ruth closes the time from the closure page and the ask closes", async ({
     browser,
   }) => {
     const ruth = await signIn(browser, seedAccessTokens.ruth);
@@ -304,7 +304,7 @@ test.describe.serial("the loop closes", () => {
     await ruth.context.close();
   });
 
-  test("Marta leaves a thank-you, and the ask shows closed with no new message", async ({
+  test("VAL-CONFIRM-005 — Marta leaves a thank-you, and the ask shows closed with no new message", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
@@ -342,7 +342,7 @@ test.describe.serial("the loop closes", () => {
     await marta.context.close();
   });
 
-  test("Ruth reads the family's thank-you on the closure", async ({
+  test("VAL-CONFIRM-005 — Ruth reads the family's thank-you on the closure", async ({
     browser,
   }) => {
     const ruth = await signIn(browser, seedAccessTokens.ruth);
@@ -363,7 +363,7 @@ test.describe.serial("the loop closes", () => {
     await ruth.context.close();
   });
 
-  test("Marta asks again from a blank page, and the old words stay untouched", async ({
+  test("VAL-CROSS-001 — Marta asks again from a blank page, and the old words stay untouched", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);

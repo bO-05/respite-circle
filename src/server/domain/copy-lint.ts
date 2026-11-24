@@ -196,6 +196,15 @@ export function scanCopy(text: string): CopyHit[] {
   return dropContainedHits(hits);
 }
 
+/**
+ * Only the report-implication hits. The safety e2e's own scan asks this
+ * narrower question ("does this screen say a report was made?"), and importing
+ * the rule keeps that spec from re-declaring a substring of the list.
+ */
+export function scanReportClaims(text: string): CopyHit[] {
+  return scanCopy(text).filter((hit) => REPORT_CLAIM_SET.has(hit.claim));
+}
+
 /** The rule behind a claim, when the list has more to say than its name. */
 export function claimMessage(claim: string): string | null {
   return REPORT_CLAIM_SET.has(claim) ? REPORT_CLAIM_MESSAGE : null;

@@ -276,7 +276,7 @@ function expectNoBoardConcepts(text: string, where: string): void {
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe.serial("the one reminder and the caregiver's outbox", () => {
+test.describe.serial("VAL-CONFIRM-003, VAL-CONFIRM-004, VAL-CONFIRM-006 and VAL-BOARD-006 — the one reminder and the caregiver's outbox", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -292,7 +292,7 @@ test.describe.serial("the one reminder and the caregiver's outbox", () => {
     }
   });
 
-  test("the desk previews the exact reminder and writes it exactly once", async ({
+  test("VAL-CONFIRM-003 and VAL-CONFIRM-006 — the desk previews the exact reminder and writes it exactly once", async ({
     browser,
   }) => {
     expect(await notificationsFor(db, QUIET_COVERED_SLOT)).toHaveLength(1);
@@ -345,7 +345,7 @@ test.describe.serial("the one reminder and the caregiver's outbox", () => {
     await grace.context.close();
   });
 
-  test("a time nobody has claimed offers no reminder at all", async ({
+  test("VAL-CONFIRM-003 — a time nobody has claimed offers no reminder at all", async ({
     browser,
   }) => {
     const grace = await signIn(browser, QUIET_COORDINATOR_TOKEN);
@@ -367,7 +367,7 @@ test.describe.serial("the one reminder and the caregiver's outbox", () => {
     await grace.context.close();
   });
 
-  test("the caregiver reads both received messages with the label and window", async ({
+  test("VAL-CONFIRM-006 — the caregiver reads both received messages with the label and window", async ({
     browser,
   }) => {
     const marta = await signIn(browser, QUIET_CAREGIVER_TOKEN);
@@ -412,7 +412,7 @@ test.describe.serial("the one reminder and the caregiver's outbox", () => {
     await marta.context.close();
   });
 
-  test("the caregiver's ask pages carry no board concepts", async ({
+  test("VAL-BOARD-006 — the caregiver's ask pages carry no board concepts", async ({
     browser,
   }) => {
     const marta = await signIn(browser, QUIET_CAREGIVER_TOKEN);

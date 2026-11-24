@@ -190,7 +190,7 @@ async function q1Text(db: E2eDatabase, askId: string): Promise<string> {
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe("the editable, signed church policy", () => {
+test.describe("VAL-POLICY-001, VAL-POLICY-002, VAL-POLICY-003, VAL-POLICY-004 and VAL-CROSS-003 — the editable, signed church policy", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -201,7 +201,7 @@ test.describe("the editable, signed church policy", () => {
     if (db) await db.client.end();
   });
 
-  test("a blank sign-off is refused and saves no version", async ({
+  test("VAL-POLICY-004 — a blank sign-off is refused and saves no version", async ({
     browser,
   }) => {
     const before = await policyVersionCount(db);
@@ -226,7 +226,7 @@ test.describe("the editable, signed church policy", () => {
     await grace.context.close();
   });
 
-  test("saving creates a new version; promises and the next ask use it; the prior ask keeps its own", async ({
+  test("VAL-POLICY-001, VAL-POLICY-002, VAL-POLICY-003 and VAL-CROSS-003 — saving creates a new version; promises and the next ask use it; the prior ask keeps its own", async ({
     browser,
   }) => {
     const baseline = await latestPolicy(db);
@@ -359,7 +359,7 @@ test.describe("the editable, signed church policy", () => {
     await grace.context.close();
   });
 
-  test("a tighter clock saves without a word; a loosened clock needs LOOSEN and is flagged in audit", async ({
+  test("VAL-POLICY-001 — a tighter clock saves without a word; a loosened clock needs LOOSEN and is flagged in audit", async ({
     browser,
   }) => {
     const baseline = await latestPolicy(db);
@@ -474,7 +474,7 @@ test.describe("the editable, signed church policy", () => {
     await grace.context.close();
   });
 
-  test("a deputy may edit, and a caregiver is refused and never sees the content", async ({
+  test("VAL-POLICY-001 and VAL-ACCESS-006 — a deputy may edit, and a caregiver is refused and never sees the content", async ({
     browser,
   }) => {
     const daniel = await signIn(browser, seedAccessTokens.daniel);

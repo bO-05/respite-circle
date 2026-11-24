@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("landing page serves the design system and the sample-data stamp", async ({
+test("VAL-TRUST-005 and VAL-FOUND-005 — landing page serves the design system and the sample-data stamp", async ({
   page,
 }) => {
   const consoleErrors: string[] = [];
@@ -35,7 +35,7 @@ test("landing page serves the design system and the sample-data stamp", async ({
   expect(consoleErrors).toEqual([]);
 });
 
-test("health endpoint answers without exposing a secret", async ({ request }) => {
+test("VAL-FOUND-002 and VAL-FOUND-005 — health endpoint answers without exposing a secret", async ({ request }) => {
   const response = await request.get("/api/health");
   expect(response.status()).toBe(200);
 

@@ -92,7 +92,7 @@ const RULE_CODES = [
 
 test.describe.configure({ timeout: 150_000 });
 
-test.describe("why a volunteer was not proposed", () => {
+test.describe("VAL-DESK-008 — why a volunteer was not proposed", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -103,7 +103,7 @@ test.describe("why a volunteer was not proposed", () => {
     await db.client.end();
   });
 
-  test("shows every volunteer, the rule, the fix, and the owner on each draft time", async ({
+  test("VAL-DESK-008 — shows every volunteer, the rule, the fix, and the owner on each draft time", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);

@@ -99,7 +99,7 @@ async function shot(page: Page, name: string): Promise<void> {
 
 test.describe.configure({ timeout: 180_000 });
 
-test.describe("approve, publish, and send back", () => {
+test.describe("VAL-DESK-004, VAL-DESK-005 and VAL-DESK-006 — approve, publish, and send back", () => {
   let db: E2eDatabase;
   const createdAskIds: string[] = [];
 
@@ -122,7 +122,7 @@ test.describe("approve, publish, and send back", () => {
     await db.client.end();
   });
 
-  test("approving publishes the non-held draft, keeps the held one, and shows the approval line on the board", async ({
+  test("VAL-DESK-004 — approving publishes the non-held draft, keeps the held one, and shows the approval line on the board", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
@@ -244,7 +244,7 @@ test.describe("approve, publish, and send back", () => {
     await ruth.context.close();
   });
 
-  test("sending back requires a note, publishes nothing, and shows the note to its caregiver", async ({
+  test("VAL-DESK-005 — sending back requires a note, publishes nothing, and shows the note to its caregiver", async ({
     browser,
   }) => {
     const david = await signIn(browser, seedAccessTokens.david);
@@ -356,7 +356,7 @@ test.describe("approve, publish, and send back", () => {
     await grace.context.close();
   });
 
-  test("keeps a waiting ask and its drafts out of every volunteer and board payload", async ({
+  test("VAL-DESK-006 — keeps a waiting ask and its drafts out of every volunteer and board payload", async ({
     browser,
   }) => {
     const priya = await signIn(browser, seedAccessTokens.priya);

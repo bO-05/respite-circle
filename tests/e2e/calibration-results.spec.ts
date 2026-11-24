@@ -1,32 +1,14 @@
 import { expect, test } from "@playwright/test";
-
-const BANNED_CLAIMS = [
-  "vetted",
-  "HIPAA compliant",
-  "HIPAA-compliant",
-  "AI-powered care",
-  "certified safe",
-  "fully screened",
-  "platform",
-  "ecosystem",
-  "marketplace",
-  "orchestration",
-  "seamless",
-  "revolutionize",
-  "empathy at scale",
-  "compassionate AI",
-  "AI that understands",
-  "replaces your coordinator",
-  "zero-touch",
-];
+import { scanCopy } from "../../src/server/domain/copy-lint";
 
 /**
  * `/calibration` is the measured record. This spec holds the page to the two
  * published files: the live run keeps its four named misses and its rules
  * fallback, the baseline stays labelled and separate, and neither card shows
- * the other run's numbers.
+ * the other run's numbers. Banned claims come from the one shipped list in
+ * `src/server/domain/copy-lint.ts`; this spec used to carry its own copy.
  */
-test("the calibration page keeps the live run and the baseline visibly separate", async ({
+test("VAL-CALIB-003, VAL-CALIB-004 and VAL-CALIB-005 — the calibration page keeps the live run and the baseline visibly separate", async ({
   page,
 }) => {
   const response = await page.goto("/calibration");
@@ -125,10 +107,8 @@ test("the calibration page keeps the live run and the baseline visibly separate"
     "This is not live-model performance.",
   );
 
-  const bodyText = (await page.locator("body").innerText()).toLowerCase();
-  for (const claim of BANNED_CLAIMS) {
-    expect(bodyText).not.toContain(claim.toLowerCase());
-  }
+  const bodyText = await page.locator("body").innerText();
+  expect(scanCopy(bodyText).map((hit) => hit.claim)).toEqual([]);
 
   // The same rows at a phone width use stacked cards, not a scrolling table.
   await page.setViewportSize({ width: 360, height: 800 });

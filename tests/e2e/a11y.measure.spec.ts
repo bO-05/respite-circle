@@ -7,10 +7,7 @@ import {
   type BrowserContext,
   type Page,
 } from "@playwright/test";
-import {
-  BANNED_CLAIMS,
-  REQUIRED_BANNED_CLAIMS,
-} from "../../src/server/domain/copy-lint";
+import { BANNED_CLAIMS } from "../../src/server/domain/copy-lint";
 import { seedAccessTokens } from "../../src/db/seed-data";
 import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
 
@@ -274,7 +271,7 @@ test.afterAll(async () => {
   createdAskIds = [];
 });
 
-test("body copy is 18px or larger, the ask screen leads at 20px, and every page has one h1", async ({
+test("VAL-A11Y-004 — body copy is 18px or larger, the ask screen leads at 20px, and every page has one h1", async ({
   browser,
 }) => {
   for (const path of PUBLIC_ROUTES) {
@@ -327,7 +324,7 @@ test("body copy is 18px or larger, the ask screen leads at 20px, and every page 
   await context.close();
 });
 
-test("every primary action measures at least 44 by 44 CSS pixels", async ({
+test("VAL-A11Y-001 — every primary action measures at least 44 by 44 CSS pixels", async ({
   browser,
 }) => {
   const checked = new Map<string, number>();
@@ -385,7 +382,7 @@ test("every primary action measures at least 44 by 44 CSS pixels", async ({
   expect(total).toBeGreaterThan(10);
 });
 
-test("the consent and low-risk checkboxes measure 44 by 44 themselves", async ({
+test("VAL-A11Y-001 — the consent and low-risk checkboxes measure 44 by 44 themselves", async ({
   browser,
 }) => {
   // Both boxes sit inside a clickable label row. The row is not the control:
@@ -409,7 +406,7 @@ test("the consent and low-risk checkboxes measure 44 by 44 themselves", async ({
   await coordinator.context.close();
 });
 
-test("text and controls meet WCAG AA contrast on every measured screen", async ({
+test("VAL-A11Y-002 — text and controls meet WCAG AA contrast on every measured screen", async ({
   browser,
 }) => {
   const routes = [
@@ -433,7 +430,7 @@ test("text and controls meet WCAG AA contrast on every measured screen", async (
   }
 });
 
-test("no horizontal scroll at 200% zoom or on a small phone", async ({
+test("VAL-A11Y-001 — no horizontal scroll at 200% zoom or on a small phone", async ({
   browser,
 }) => {
   const cases = [
@@ -467,7 +464,7 @@ test("no horizontal scroll at 200% zoom or on a small phone", async ({
   }
 });
 
-test("the ask, approve, publish and claim flow is completable by keyboard with a visible focus ring", async ({
+test("VAL-A11Y-003 — the ask, approve, publish and claim flow is completable by keyboard with a visible focus ring", async ({
   browser,
 }) => {
   const caregiver = await signIn(browser, seedAccessTokens.marta);
@@ -546,7 +543,7 @@ test("the ask, approve, publish and claim flow is completable by keyboard with a
   await ruth.context.close();
 });
 
-test("reduced motion removes transitions and no screen counts time down", async ({
+test("VAL-A11Y-005 — reduced motion removes transitions and no screen counts time down", async ({
   browser,
 }) => {
   const { context, page } = await signIn(browser, seedAccessTokens.grace);
@@ -589,7 +586,7 @@ test("reduced motion removes transitions and no screen counts time down", async 
   await context.close();
 });
 
-test("the ask form labels its controls and announces exactly one associated error", async ({
+test("VAL-A11Y-004 — the ask form labels its controls and announces exactly one associated error", async ({
   browser,
 }) => {
   const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -614,7 +611,7 @@ test("the ask form labels its controls and announces exactly one associated erro
   await context.close();
 });
 
-test("a refused coordinator form keeps the coordinator's own words and shows one error", async ({
+test("VAL-A11Y-004 — a refused coordinator form keeps the coordinator's own words and shows one error", async ({
   browser,
 }) => {
   // A waiting ask the coordinator can open in two tabs.
@@ -680,7 +677,7 @@ test("a refused coordinator form keeps the coordinator's own words and shows one
   await grace.context.close();
 });
 
-test("plain language: no banned claim and no caregiver label in the first line of the ask flow", async ({
+test("VAL-A11Y-006 — plain language: no banned claim and no caregiver label in the first line of the ask flow", async ({
   browser,
 }) => {
   const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -701,7 +698,7 @@ test("plain language: no banned claim and no caregiver label in the first line o
   expect(mainText).not.toMatch(/caregiver/);
   expect(mainText).not.toMatch(/respite/);
 
-  const banned = [...REQUIRED_BANNED_CLAIMS, ...BANNED_CLAIMS];
+  const banned = BANNED_CLAIMS;
   const rendered = mainText;
   for (const phrase of new Set(banned)) {
     expect(
@@ -726,7 +723,7 @@ test("plain language: no banned claim and no caregiver label in the first line o
   }
 });
 
-test("the landing's step cards share a height and the failure path keeps its weight", async ({
+test("VAL-SHELL-001 — the landing's step cards share a height and the failure path keeps its weight", async ({
   browser,
 }) => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });

@@ -100,7 +100,7 @@ async function startingState(db: E2eDatabase) {
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe("demo reset", () => {
+test.describe("VAL-CROSS-006 and VAL-DEMO-001 — demo reset", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -111,7 +111,7 @@ test.describe("demo reset", () => {
     await db.client.end();
   });
 
-  test("requires its token and reports twelve verified assertions", async ({
+  test("VAL-DEMO-001 — requires its token and reports twelve verified assertions", async ({
     request,
   }) => {
     const missing = await request.post(E2E_RESET_PATH, {
@@ -147,7 +147,7 @@ test.describe("demo reset", () => {
     expect(ok.counts.slot).toBe(3);
   });
 
-  test("leaves a demo-ready board and preserves the failure path", async ({
+  test("VAL-DEMO-001 and VAL-CROSS-002 — leaves a demo-ready board and preserves the failure path", async ({
     browser,
     request,
   }) => {
@@ -251,7 +251,7 @@ test.describe("demo reset", () => {
     await grace.context.close();
   });
 
-  test("two consecutive resets produce identical counts and starting state", async ({
+  test("VAL-CROSS-006 — two consecutive resets produce identical counts and starting state", async ({
     request,
   }) => {
     const first = await reset(request);
@@ -264,7 +264,7 @@ test.describe("demo reset", () => {
     expect(secondState).toEqual(firstState);
   });
 
-  test("refuses to report success when a seeded assertion fails", async ({
+  test("VAL-DEMO-001 — refuses to report success when a seeded assertion fails", async ({
     request,
   }) => {
     await reset(request);
@@ -312,7 +312,7 @@ test.describe("demo reset", () => {
     expect(church.name).toBe(seedChurch.name);
   });
 
-  test("truncates first, so edited seeded wording is restored", async ({
+  test("VAL-DEMO-001 — truncates first, so edited seeded wording is restored", async ({
     request,
   }) => {
     await reset(request);
@@ -347,7 +347,7 @@ test.describe("demo reset", () => {
     expect(church.name).toBe(seedChurch.name);
   });
 
-  test("the demo reset page checks the token and shows the digest", async ({
+  test("VAL-DEMO-001 — the demo reset page checks the token and shows the digest", async ({
     page,
   }) => {
     const response = await page.goto("/demo/reset");

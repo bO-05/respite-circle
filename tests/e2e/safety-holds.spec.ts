@@ -8,6 +8,7 @@ import {
   type Page,
 } from "@playwright/test";
 import { seedAccessTokens, seedIds } from "../../src/db/seed-data";
+import { scanReportClaims } from "../../src/server/domain/copy-lint";
 import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
 
 /**
@@ -29,8 +30,7 @@ const SAFETY_ASK =
   "She fell last week and I am scared she will wander out of the house.";
 const CARE_ASK = "I need help with bathing and remembering her medication.";
 
-const REPORT_IMPLICATION =
-  /we have reported|we reported|report has been filed|has been reported to|notified the police|notified the authorities|APS has been notified|filed a report/i;
+// Report-claim rules live in `src/server/domain/copy-lint.ts`, not here.
 
 const FIXED_NOTE =
   "Marta, thank you for telling us. Grace will call you today, and we will stay with this together.\n\nYou do not owe anyone a decision tonight.";
@@ -122,7 +122,7 @@ async function auditRows(
 
 test.describe.configure({ timeout: 180_000 });
 
-test.describe("safety and personal-care routing", () => {
+test.describe("VAL-SAFETY-001…006 — safety and personal-care routing", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -133,7 +133,7 @@ test.describe("safety and personal-care routing", () => {
     await db.client.end();
   });
 
-  test("a safety hold is pinned, carries the script, 988 and the local line, and reaches no board", async ({
+  test("VAL-SAFETY-001 and VAL-SAFETY-002 — a safety hold is pinned, carries the script, 988 and the local line, and reaches no board", async ({
     browser,
   }) => {
     const david = await signIn(browser, seedAccessTokens.david);
@@ -193,7 +193,7 @@ test.describe("safety and personal-care routing", () => {
     // No screen may imply a report was made outside that explicit denial.
     const bodyText = await grace.page.locator("body").innerText();
     expect(bodyText).toMatch(/No report has been made/);
-    expect(bodyText).not.toMatch(REPORT_IMPLICATION);
+    expect(scanReportClaims(bodyText)).toEqual([]);
 
     // No slot control exists on a held ask.
     await expect(grace.page.getByTestId("draft-slot")).toHaveCount(0);
@@ -227,7 +227,7 @@ test.describe("safety and personal-care routing", () => {
     await grace.context.close();
   });
 
-  test("a personal-care hold shows both referrals and refuses every slot entry point", async ({
+  test("VAL-SAFETY-003 and VAL-SAFETY-006 — a personal-care hold shows both referrals and refuses every slot entry point", async ({
     browser,
   }) => {
     const priya = await signIn(browser, seedAccessTokens.priya);
@@ -312,7 +312,7 @@ test.describe("safety and personal-care routing", () => {
     await grace.context.close();
   });
 
-  test("a coordinator closes a held ask with human words the family reads", async ({
+  test("VAL-SAFETY-004 — a coordinator closes a held ask with human words the family reads", async ({
     browser,
   }) => {
     const david = await signIn(browser, seedAccessTokens.david);
@@ -364,7 +364,7 @@ test.describe("safety and personal-care routing", () => {
     ).toBe(FIXED_NOTE);
     const caregiverText = await davidReader.page.locator("body").innerText();
     expect(caregiverText).toMatch(/Grace closed this ask with these words/);
-    expect(caregiverText).not.toMatch(REPORT_IMPLICATION);
+    expect(scanReportClaims(caregiverText)).toEqual([]);
     await shot(davidReader.page, "closed-caregiver");
 
     await davidReader.page.goto("/care");
@@ -380,7 +380,7 @@ test.describe("safety and personal-care routing", () => {
     await davidReader.context.close();
   });
 
-  test("a safety override needs the confirmation and the reason, writes both to audit, and never applies to personal care", async ({
+  test("VAL-SAFETY-005 and VAL-SAFETY-006 — a safety override needs the confirmation and the reason, writes both to audit, and never applies to personal care", async ({
     browser,
   }) => {
     const david = await signIn(browser, seedAccessTokens.david);

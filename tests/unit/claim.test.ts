@@ -7,6 +7,7 @@ import {
   isRuleCode,
   type ClaimOutcomeCode,
 } from "@/server/domain/claim";
+import { scanCopy } from "@/server/domain/copy-lint";
 import { RULE_CODES, type RuleCode } from "@/server/domain/gating";
 
 /**
@@ -21,8 +22,6 @@ import { RULE_CODES, type RuleCode } from "@/server/domain/gating";
 
 const SQL_WORDS =
   /\b(SELECT|UPDATE|INSERT|DELETE|DROP|SQLSTATE|postgres|pg_|constraint|relation|column|table)\b/i;
-const BANNED_CLAIMS =
-  /\b(vetted|HIPAA|platform|AI-powered care|certified safe|fully screened|ecosystem|marketplace|orchestration|seamless|revolutionize|empathy at scale)\b/i;
 const SHAMING =
   /\b(unclaimed|declines?|declined|views?|viewed|waiting time|places? left|spaces? left|remaining|no one (has )?claimed|nobody claimed)\b/i;
 const UUID =
@@ -31,7 +30,9 @@ const UUID =
 function expectHuman(sentence: string): void {
   expect(sentence.length).toBeGreaterThan(20);
   expect(sentence).not.toMatch(SQL_WORDS);
-  expect(sentence).not.toMatch(BANNED_CLAIMS);
+  // The one shipped list, not a local copy: marketing claims and every
+  // report-implication phrase are refused in a claim sentence too.
+  expect(scanCopy(sentence).map((hit) => hit.claim)).toEqual([]);
   expect(sentence).not.toMatch(SHAMING);
   expect(sentence).not.toMatch(UUID);
 }

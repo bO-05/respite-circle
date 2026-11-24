@@ -331,7 +331,7 @@ async function crossCheck(
 
 test.describe.configure({ timeout: 240_000 });
 
-test.describe.serial("the church numbers", () => {
+test.describe.serial("VAL-METRICS-001…003 — the church numbers", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -350,7 +350,7 @@ test.describe.serial("the church numbers", () => {
     await db.client.end();
   });
 
-  test("matches a direct SQL cross-check for the stated range", async ({
+  test("VAL-METRICS-001 and VAL-METRICS-002 — matches a direct SQL cross-check for the stated range", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, COORDINATOR_TOKEN);
@@ -443,7 +443,7 @@ test.describe.serial("the church numbers", () => {
     }
   });
 
-  test("states its default range and explains a refused range", async ({
+  test("VAL-METRICS-001 — states its default range and explains a refused range", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, COORDINATOR_TOKEN);
@@ -474,7 +474,7 @@ test.describe.serial("the church numbers", () => {
     }
   });
 
-  test("shows no market, percentage, or improvement claim", async ({
+  test("VAL-METRICS-003 — shows no market, percentage, or improvement claim", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, COORDINATOR_TOKEN);
@@ -511,7 +511,7 @@ test.describe.serial("the church numbers", () => {
     }
   });
 
-  test("gives the pastor the same read-only numbers and no family names", async ({
+  test("VAL-METRICS-001 — gives the pastor the same read-only numbers and no family names", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, PASTOR_TOKEN);

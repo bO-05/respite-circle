@@ -126,7 +126,7 @@ async function shot(page: Page, name: string): Promise<void> {
 
 test.describe.configure({ timeout: 120_000 });
 
-test.describe("draft slot editor", () => {
+test.describe("VAL-DESK-003, VAL-DESK-006, VAL-DESK-007 and VAL-AUDITFIX-003 — draft slot editor", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -137,7 +137,7 @@ test.describe("draft slot editor", () => {
     await db.client.end();
   });
 
-  test("builds the hero ask's companion and gated home drafts, each with its rule", async ({
+  test("VAL-DESK-007 — builds the hero ask's companion and gated home drafts, each with its rule", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
@@ -215,7 +215,7 @@ test.describe("draft slot editor", () => {
     await grace.context.close();
   });
 
-  test("edits kind, label, window, gated flag, and orientation note before publishing", async ({
+  test("VAL-DESK-003 — edits kind, label, window, gated flag, and orientation note before publishing", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
@@ -315,7 +315,7 @@ test.describe("draft slot editor", () => {
     await grace.context.close();
   });
 
-  test("adds and removes a draft before publishing", async ({ browser }) => {
+  test("VAL-DESK-003 — adds and removes a draft before publishing", async ({ browser }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
     const askId = await createAsk(marta.context, HERO_ASK);
     await marta.context.close();
@@ -564,7 +564,7 @@ test.describe("draft slot editor", () => {
     await grace.context.close();
   });
 
-  test("keeps drafts off the board and out of caregiver and volunteer pages", async ({
+  test("VAL-DESK-006 — keeps drafts off the board and out of caregiver and volunteer pages", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
@@ -637,7 +637,7 @@ test.describe("draft slot editor", () => {
     await grace.context.close();
   });
 
-  test("refuses drafts entirely on a safety- or personal-care-held ask", async ({
+  test("VAL-SAFETY-006 — refuses drafts entirely on a safety- or personal-care-held ask", async ({
     browser,
   }) => {
     const david = await signIn(browser, seedAccessTokens.david);

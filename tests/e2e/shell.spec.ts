@@ -27,7 +27,7 @@ async function navLabels(page: Page): Promise<string[]> {
   return nav.getByRole("link").allTextContents();
 }
 
-test("landing explains the loop and gives the failure path equal weight", async ({
+test("VAL-SHELL-001 — landing explains the loop and gives the failure path equal weight", async ({
   page,
 }) => {
   const response = await page.goto("/");
@@ -80,7 +80,7 @@ test("landing explains the loop and gives the failure path equal weight", async 
   await expect(page.getByText(AI_CHIP, { exact: true })).toBeVisible();
 });
 
-test("every page carries a skip link, one h1, landmarks, and the stamp", async ({
+test("VAL-TRUST-005 and VAL-A11Y-004 — every page carries a skip link, one h1, landmarks, and the stamp", async ({
   browser,
   page: guestPage,
 }) => {
@@ -138,7 +138,7 @@ test("every page carries a skip link, one h1, landmarks, and the stamp", async (
   }
 });
 
-test("each role sees only its own navigation", async ({ browser }) => {
+test("VAL-SHELL-002 — each role sees only its own navigation", async ({ browser }) => {
   const cases = [
     {
       token: seedAccessTokens.marta,
@@ -189,7 +189,7 @@ test("each role sees only its own navigation", async ({ browser }) => {
   }
 });
 
-test("a refused caregiver gets a 403 page and never the hidden label in the title", async ({
+test("VAL-ACCESS-002 — a refused caregiver gets a 403 page and never the hidden label in the title", async ({
   browser,
 }) => {
   const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -322,7 +322,7 @@ test("client-side navigation keeps the shell title in sync", async ({
   await context.close();
 });
 
-test("the layout works at 360px and at 200% zoom width", async ({
+test("VAL-A11Y-001 — the layout works at 360px and at 200% zoom width", async ({
   browser,
   page,
 }) => {

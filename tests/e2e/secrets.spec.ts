@@ -46,8 +46,8 @@ function secretValues(): string[] {
   );
 }
 
-test.describe("the shipped client bundle", () => {
-  test("contains no provider key, database URL, or session secret", async () => {
+test.describe("VAL-FOUND-005 — the shipped client bundle", () => {
+  test("VAL-FOUND-005 — contains no provider key, database URL, or session secret", async () => {
     expect(
       statSync(STATIC_DIR).isDirectory(),
       "the production build must exist before this spec runs",
@@ -96,7 +96,7 @@ test.describe("the shipped client bundle", () => {
     expect(hits, JSON.stringify(hits, null, 2)).toEqual([]);
   });
 
-  test("the served pages carry no connection string or session secret", async ({
+  test("VAL-FOUND-005 — the served pages carry no connection string or session secret", async ({
     request,
   }) => {
     const needles = ["postgres://", "postgresql://", E2E_SESSION_SECRET];

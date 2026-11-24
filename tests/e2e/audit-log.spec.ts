@@ -163,7 +163,7 @@ async function countEvents(db: E2eDatabase): Promise<number> {
 
 test.describe.configure({ timeout: 240_000 });
 
-test.describe.serial("the decision log", () => {
+test.describe.serial("VAL-AUDIT-001…004 — the decision log", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -176,7 +176,7 @@ test.describe.serial("the decision log", () => {
     if (db) await db.client.end();
   });
 
-  test("separates AI, human, and app decisions and shows all five facts", async ({
+  test("VAL-AUDIT-001 — separates AI, human, and app decisions and shows all five facts", async ({
     browser,
   }) => {
     const { context, page } = await signIn(
@@ -286,7 +286,7 @@ test.describe.serial("the decision log", () => {
     }
   });
 
-  test("filters by entity and by actor, and says when nothing matches", async ({
+  test("VAL-AUDIT-004 — filters by entity and by actor, and says when nothing matches", async ({
     browser,
   }) => {
     const { context, page } = await signIn(
@@ -354,7 +354,7 @@ test.describe.serial("the decision log", () => {
     }
   });
 
-  test("refuses a direct update and leaves the row as it was", async ({
+  test("VAL-AUDIT-002 — refuses a direct update and leaves the row as it was", async ({
     browser,
   }) => {
     const { context, page } = await signIn(
@@ -413,7 +413,7 @@ test.describe.serial("the decision log", () => {
     }
   });
 
-  test("refuses a caregiver before the log is read", async ({ browser }) => {
+  test("VAL-ACCESS-002 — refuses a caregiver before the log is read", async ({ browser }) => {
     const context = await browser.newContext();
     const page = await context.newPage();
 

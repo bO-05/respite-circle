@@ -52,7 +52,7 @@ async function reset(request: APIRequestContext): Promise<void> {
 
 test.describe.configure({ timeout: 240_000 });
 
-test.describe("the happy path", () => {
+test.describe("VAL-CROSS-001 — the happy path", () => {
   let db: E2eDatabase;
   let askId: string | null = null;
 
@@ -75,7 +75,7 @@ test.describe("the happy path", () => {
     await db.client.end();
   });
 
-  test("one ask travels from Marta to Grace to Ruth and back", async ({
+  test("VAL-CROSS-001 — one ask travels from Marta to Grace to Ruth and back", async ({
     browser,
     request,
   }) => {

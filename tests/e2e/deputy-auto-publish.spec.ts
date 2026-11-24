@@ -268,7 +268,7 @@ async function saveSwitch(
 
 test.describe.configure({ timeout: 240_000 });
 
-test("a deputy carries the desk, the switch is audited, and only a meal publishes itself", async ({
+test("VAL-ACCESS-006 and VAL-POLICY-006 — a deputy carries the desk, the switch is audited, and only a meal publishes itself", async ({
   browser,
 }) => {
   const db = await openE2eDatabase();

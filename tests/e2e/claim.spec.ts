@@ -70,7 +70,7 @@ async function slotsFor(db: E2eDatabase, askId: string): Promise<SlotRow[]> {
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe.serial("the atomic claim", () => {
+test.describe.serial("VAL-CLAIM-001…004 — the atomic claim", () => {
   let db: E2eDatabase;
   const createdAskIds: string[] = [];
   let mainAskId: string;
@@ -180,7 +180,7 @@ test.describe.serial("the atomic claim", () => {
     await db.client.end();
   });
 
-  test("one eligible claim succeeds and shows the calm human state", async ({
+  test("VAL-CLAIM-001 — one eligible claim succeeds and shows the calm human state", async ({
     browser,
   }) => {
     const ruth = await signIn(browser, seedAccessTokens.ruth);
@@ -226,7 +226,7 @@ test.describe.serial("the atomic claim", () => {
     await ruth.context.close();
   });
 
-  test("a forged claim by an ineligible volunteer is refused and changes nothing", async ({
+  test("VAL-CLAIM-003 — a forged claim by an ineligible volunteer is refused and changes nothing", async ({
     browser,
   }) => {
     // Tom has no safeguarding checklist. The board already locks the in-home
@@ -265,7 +265,7 @@ test.describe.serial("the atomic claim", () => {
     await tom.context.close();
   });
 
-  test("two concurrent claims yield exactly one 200 and one 409 with a human message", async ({
+  test("VAL-CLAIM-002 — two concurrent claims yield exactly one 200 and one 409 with a human message", async ({
     browser,
   }) => {
     const ruth = await signIn(browser, seedAccessTokens.ruth);
@@ -332,7 +332,7 @@ test.describe.serial("the atomic claim", () => {
     await ben.context.close();
   });
 
-  test("a drive cannot be claimed while transport is disabled", async ({
+  test("VAL-CLAIM-003 — a drive cannot be claimed while transport is disabled", async ({
     browser,
   }) => {
     const ruth = await signIn(browser, seedAccessTokens.ruth);

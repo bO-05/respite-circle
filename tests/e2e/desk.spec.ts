@@ -99,7 +99,7 @@ async function shot(page: Page, name: string): Promise<void> {
 
 test.describe.configure({ timeout: 150_000 });
 
-test.describe("coordinator desk queue", () => {
+test.describe("VAL-DESK-001 and VAL-DESK-002 — coordinator desk queue", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -110,7 +110,7 @@ test.describe("coordinator desk queue", () => {
     await db.client.end();
   });
 
-  test("pins safety and personal care, then lists ordinary asks oldest first with typed reasons and waits", async ({
+  test("VAL-DESK-001 — pins safety and personal care, then lists ordinary asks oldest first with typed reasons and waits", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
@@ -254,7 +254,7 @@ test.describe("coordinator desk queue", () => {
     await grace.context.close();
   });
 
-  test("shows the family's exact words read-only, with a lock note and no edit action", async ({
+  test("VAL-DESK-002 — shows the family's exact words read-only, with a lock note and no edit action", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);

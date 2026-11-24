@@ -110,7 +110,7 @@ async function countSlots(db: E2eDatabase, askId: string): Promise<number> {
   return row.count;
 }
 
-test.describe("decision trail", () => {
+test.describe("VAL-DECIDE-001, VAL-DECIDE-003, VAL-DECIDE-004, VAL-DECIDE-006 and VAL-DECIDE-007 — decision trail", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -121,7 +121,7 @@ test.describe("decision trail", () => {
     await db.client.end();
   });
 
-  test("shows Q1–Q9, the model's stated confidence, metadata, policy, digest, and the receipt first", async ({
+  test("VAL-DECIDE-001, VAL-DECIDE-003 and VAL-DECIDE-006 — shows Q1–Q9, the model's stated confidence, metadata, policy, digest, and the receipt first", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -208,7 +208,7 @@ test.describe("decision trail", () => {
     await context.close();
   });
 
-  test("re-runs the nine answers on a revision and names the revision it answered", async ({
+  test("VAL-DECIDE-001 — re-runs the nine answers on a revision and names the revision it answered", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -262,7 +262,7 @@ test.describe("decision trail", () => {
     await context.close();
   });
 
-  test("abstains on a contradictory answer instead of guessing, and waits for a person", async ({
+  test("VAL-DECIDE-004 — abstains on a contradictory answer instead of guessing, and waits for a person", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -295,7 +295,7 @@ test.describe("decision trail", () => {
     await context.close();
   });
 
-  test("names a bilingual handoff on the trail and the desk, with no guessed answer and no slot", async ({
+  test("VAL-DECIDE-007 — names a bilingual handoff on the trail and the desk, with no guessed answer and no slot", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -367,7 +367,7 @@ test.describe("decision trail", () => {
     await grace.context.close();
   });
 
-  test("shows the safety banner and next human step for a safety hold", async ({
+  test("VAL-SAFETY-002 — shows the safety banner and next human step for a safety hold", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);
@@ -404,7 +404,7 @@ test.describe("decision trail", () => {
     await context.close();
   });
 
-  test("shows the personal-care banner and human referrals for a care hold", async ({
+  test("VAL-SAFETY-003 — shows the personal-care banner and human referrals for a care hold", async ({
     browser,
   }) => {
     const { context, page } = await signIn(browser, seedAccessTokens.marta);

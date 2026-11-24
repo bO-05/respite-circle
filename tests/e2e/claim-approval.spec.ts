@@ -128,7 +128,7 @@ async function auditFor(
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe.serial("claim approval and the one confirmation", () => {
+test.describe.serial("VAL-CONFIRM-001, VAL-CONFIRM-002 and VAL-CLAIM-007 — claim approval and the one confirmation", () => {
   let db: E2eDatabase;
   const createdAskIds: string[] = [];
   let mainAskId: string;
@@ -208,7 +208,7 @@ test.describe.serial("claim approval and the one confirmation", () => {
     await db.client.end();
   });
 
-  test("the desk sees both claims and no message exists yet", async ({
+  test("VAL-CONFIRM-001 — the desk sees both claims and no message exists yet", async ({
     browser,
   }) => {
     const grace = await signIn(browser, seedAccessTokens.grace);
@@ -244,7 +244,7 @@ test.describe.serial("claim approval and the one confirmation", () => {
     await grace.context.close();
   });
 
-  test("confirming covers the claim and writes exactly one human confirmation", async ({
+  test("VAL-CONFIRM-001 — confirming covers the claim and writes exactly one human confirmation", async ({
     browser,
   }) => {
     const grace = await signIn(browser, seedAccessTokens.grace);
@@ -297,7 +297,7 @@ test.describe.serial("claim approval and the one confirmation", () => {
     await grace.context.close();
   });
 
-  test("the caregiver reads the one human line, with Ruth and the time", async ({
+  test("VAL-CONFIRM-002 — the caregiver reads the one human line, with Ruth and the time", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
@@ -341,7 +341,7 @@ test.describe.serial("claim approval and the one confirmation", () => {
     await priya.context.close();
   });
 
-  test("revoking requires a reason, sends nothing, and returns the time to open", async ({
+  test("VAL-CLAIM-007 — revoking requires a reason, sends nothing, and returns the time to open", async ({
     browser,
   }) => {
     const grace = await signIn(browser, seedAccessTokens.grace);

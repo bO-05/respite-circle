@@ -12,6 +12,7 @@ import { renderConfirmation, renderReminder } from "../../src/server/domain/noti
 import { ABSENCE_PROOF_QUERY_TEXT } from "../../src/server/domain/coverage";
 import { formatWindowLabel } from "../../src/server/domain/slots";
 import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
+import { expectNoDeskConcepts } from "./helpers/desk-words";
 
 /**
  * VAL-FAILURE-001..006 and VAL-CROSS-002 on the real surface.
@@ -122,32 +123,6 @@ async function shot(page: Page, name: string): Promise<void> {
     path: path.join(EVIDENCE_DIR, `${name}.png`),
     fullPage: true,
   });
-}
-
-/**
- * The caregiver's pages are consent surfaces, not a desk. These words are the
- * desk's language and must not exist on `/care` or `/ask/[id]`.
- */
-function expectNoDeskConcepts(text: string, where: string): void {
-  const forbidden: Array<[RegExp, string]> = [
-    [/\bunclaimed\b/i, "unclaimed"],
-    [/\bwaiting\b/i, "waiting"],
-    [/\bdeclines?\b/i, "declines"],
-    [/\bdeclined\b/i, "declined"],
-    [/\bviews?\b/i, "views"],
-    [/\bcount\b/i, "count"],
-    [/\bcounted\b/i, "counted"],
-    [/\bexpired\b/i, "expired"],
-    [/places? left/i, "places left"],
-    [/remaining/i, "remaining"],
-  ];
-
-  for (const [pattern, label] of forbidden) {
-    expect(
-      pattern.test(text),
-      `${where} must not contain the desk word "${label}"`,
-    ).toBe(false);
-  }
 }
 
 async function notificationsFor(
@@ -420,7 +395,7 @@ async function ensureQuietChurch(db: E2eDatabase): Promise<void> {
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe.serial("the coverage watch and the failure-path proof", () => {
+test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage watch and the failure-path proof", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -436,7 +411,7 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     }
   });
 
-  test("the coverage watch names the family, the window, the time open, and a live zero", async ({
+  test("VAL-FAILURE-001 and VAL-FAILURE-002 — the coverage watch names the family, the window, the time open, and a live zero", async ({
     browser,
   }) => {
     expect(await notificationCountFor(db, QUIET_COVERED_SLOT)).toBe(2);
@@ -502,7 +477,7 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     await grace.context.close();
   });
 
-  test("a time is not offered again before a call is recorded", async ({
+  test("VAL-FAILURE-006 — a time is not offered again before a call is recorded", async ({
     browser,
   }) => {
     const grace = await signIn(browser, QUIET_COORDINATOR_TOKEN);
@@ -521,7 +496,7 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     await grace.context.close();
   });
 
-  test("recording a call persists the coordinator, time, outcome, and note, and sends nothing", async ({
+  test("VAL-FAILURE-003 and VAL-FAILURE-005 — recording a call persists the coordinator, time, outcome, and note, and sends nothing", async ({
     browser,
   }) => {
     const before = await notificationCountFor(db, QUIET_WATCH_SLOT);
@@ -604,7 +579,7 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     await grace.context.close();
   });
 
-  test("a time is offered again once after the call, and never a second time", async ({
+  test("VAL-FAILURE-006 — a time is offered again once after the call, and never a second time", async ({
     browser,
   }) => {
     const beforeOffer = await db.client<{ window_start: string }[]>`
@@ -668,7 +643,7 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     await grace.context.close();
   });
 
-  test("closing a time without a claim writes the zero-row proof with the query and digest", async ({
+  test("VAL-FAILURE-002 and VAL-FAILURE-005 — closing a time without a claim writes the zero-row proof with the query and digest", async ({
     browser,
   }) => {
     const grace = await signIn(browser, QUIET_COORDINATOR_TOKEN);
@@ -733,7 +708,7 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     await grace.context.close();
   });
 
-  test("the caregiver sees a human line only, and the last live time closes the ask", async ({
+  test("VAL-FAILURE-004 and VAL-CROSS-002 — the caregiver sees a human line only, and the last live time closes the ask", async ({
     browser,
   }) => {
     const marta = await signIn(browser, QUIET_CAREGIVER_TOKEN);
@@ -812,7 +787,7 @@ test.describe.serial("the coverage watch and the failure-path proof", () => {
     await marta.context.close();
   });
 
-  test("the waiting receipt carries no desk words and still names the coordinator", async ({
+  test("VAL-AUDITFIX-007 and VAL-FAILURE-004 — the waiting receipt carries no desk words and still names the coordinator", async ({
     browser,
   }) => {
     const marta = await signIn(browser, QUIET_CAREGIVER_TOKEN);

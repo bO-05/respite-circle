@@ -9,6 +9,7 @@ import {
 import { DEMO_IDS, DEMO_TEXT } from "../../src/db/demo-state";
 import { seedAccessTokens, seedIds } from "../../src/db/seed-data";
 import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
+import { expectNoDeskConcepts } from "./helpers/desk-words";
 import { E2E_RESET_PATH, E2E_RESET_TOKEN } from "./helpers/e2e-env";
 
 /**
@@ -45,28 +46,6 @@ async function reset(request: APIRequestContext): Promise<void> {
   expect((await response.json()).reset).toBe(true);
 }
 
-function expectNoDeskConcepts(text: string, where: string): void {
-  const forbidden: Array<[RegExp, string]> = [
-    [/\bunclaimed\b/i, "unclaimed"],
-    [/\bwaiting\b/i, "waiting"],
-    [/\bdeclines?\b/i, "declines"],
-    [/\bdeclined\b/i, "declined"],
-    [/\bcount(ed|s)?\b/i, "count"],
-    [/\bexpired\b/i, "expired"],
-    [/places? left/i, "places left"],
-    [/remaining/i, "remaining"],
-    [/nobody/i, "nobody"],
-    [/no one has/i, "no one has"],
-  ];
-
-  for (const [pattern, label] of forbidden) {
-    expect(
-      pattern.test(text),
-      `${where} must not contain the desk word "${label}"`,
-    ).toBe(false);
-  }
-}
-
 test.describe.configure({ timeout: 180_000 });
 
 test.describe("the failure path", () => {
@@ -83,7 +62,7 @@ test.describe("the failure path", () => {
     await db.client.end();
   });
 
-  test("a time nobody has taken produces a coordinator call, never a message", async ({
+  test("VAL-FAILURE-001, VAL-FAILURE-002, VAL-FAILURE-004, VAL-CROSS-002 and VAL-AUDITFIX-007 — a time nobody has taken produces a coordinator call, never a message", async ({
     browser,
     request,
   }) => {
@@ -209,7 +188,7 @@ test.describe("the failure path", () => {
     await david.context.close();
   });
 
-  test("the failure card names whoever holds the desk, and always offers a way through", async ({
+  test("VAL-FAILURE-006 — the failure card names whoever holds the desk, and always offers a way through", async ({
     browser,
     request,
   }) => {
@@ -305,6 +284,10 @@ test.describe("the failure path", () => {
     const askDetailText = await david.page.locator("body").innerText();
     expect(askDetailText).not.toContain("Whitfield");
     expect(askDetailText).not.toContain("calls David");
+    // The waiting receipt is a caregiver state too: the same shared scan that
+    // runs on `/care` runs here, so the desk's words cannot return with the
+    // status pill (VAL-AUDITFIX-007).
+    expectNoDeskConcepts(askDetailText, "/ask/[id] waiting_coordinator");
 
     await grace.context.close();
     await daniel.context.close();

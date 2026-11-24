@@ -125,7 +125,7 @@ async function shot(page: Page, name: string): Promise<void> {
 
 test.describe.configure({ timeout: 180_000 });
 
-test.describe("the draft editor refuses personal-care text", () => {
+test.describe("VAL-AUDITFIX-003 — the draft editor refuses personal-care text", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -136,7 +136,7 @@ test.describe("the draft editor refuses personal-care text", () => {
     await db.client.end();
   });
 
-  test("refuses a label or a note, keeps the typed words, and publishes only the legitimate text", async ({
+  test("VAL-AUDITFIX-003 — refuses a label or a note, keeps the typed words, and publishes only the legitimate text", async ({
     browser,
   }) => {
     expect(CARE_MESSAGE).toMatch(/personal care/i);

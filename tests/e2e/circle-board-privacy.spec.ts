@@ -105,7 +105,7 @@ function expectNoMetricWords(text: string): void {
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe("the congregation board", () => {
+test.describe("VAL-BOARD-001…006 — the congregation board", () => {
   let db: E2eDatabase;
   const createdAskIds: string[] = [];
 
@@ -127,7 +127,7 @@ test.describe("the congregation board", () => {
     await db.client.end();
   });
 
-  test("an empty board is calm and names the next human action", async ({
+  test("VAL-BOARD-005 — an empty board is calm and names the next human action", async ({
     browser,
   }) => {
     // A church with no published time at all, isolated from the seeded demo
@@ -171,7 +171,7 @@ test.describe("the congregation board", () => {
     await ada.context.close();
   });
 
-  test("shows only published times with one large action, a calm claimed state, and no story", async ({
+  test("VAL-BOARD-001, VAL-BOARD-002, VAL-BOARD-003 and VAL-BOARD-004 — shows only published times with one large action, a calm claimed state, and no story", async ({
     browser,
   }) => {
     // A real approved ask: the board is genuinely populated.

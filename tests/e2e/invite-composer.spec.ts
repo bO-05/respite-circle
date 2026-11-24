@@ -182,7 +182,7 @@ async function insertForeignChurch(db: E2eDatabase): Promise<void> {
 
 test.describe.configure({ timeout: 300_000 });
 
-test.describe("the invitation composer", () => {
+test.describe("VAL-POLICY-007 and VAL-ACCESS-005 — the invitation composer", () => {
   let db: E2eDatabase;
 
   test.beforeAll(async () => {
@@ -215,7 +215,7 @@ test.describe("the invitation composer", () => {
     await db.client.end();
   });
 
-  test("Grace writes and sends one invitation; Marta reads it on first entry; Priya never sees it", async ({
+  test("VAL-POLICY-007 — Grace writes and sends one invitation; Marta reads it on first entry; Priya never sees it", async ({
     browser,
   }) => {
     const notificationsBefore = await notificationCount(db);
@@ -358,7 +358,7 @@ test.describe("the invitation composer", () => {
     await grace.context.close();
   });
 
-  test("the HTTP write path answers 201 with the stored author and instant", async ({
+  test("VAL-POLICY-007 — the HTTP write path answers 201 with the stored author and instant", async ({
     browser,
   }) => {
     const notificationsBefore = await notificationCount(db);
@@ -412,7 +412,7 @@ test.describe("the invitation composer", () => {
     await grace.context.close();
   });
 
-  test("a caregiver id from another church is refused with no writes", async ({
+  test("VAL-ACCESS-005 — a caregiver id from another church is refused with no writes", async ({
     browser,
   }) => {
     const grace = await signIn(browser, seedAccessTokens.grace);
@@ -444,7 +444,7 @@ test.describe("the invitation composer", () => {
     await grace.context.close();
   });
 
-  test("a caregiver's own session cannot use the invitation write path", async ({
+  test("VAL-ACCESS-002 — a caregiver's own session cannot use the invitation write path", async ({
     browser,
   }) => {
     const marta = await signIn(browser, seedAccessTokens.marta);
