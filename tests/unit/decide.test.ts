@@ -481,6 +481,36 @@ describe("decide()", () => {
       }),
     ).not.toBe(digest);
   });
+
+  it("binds a hold's source without disturbing a row that carries none", () => {
+    const row = {
+      askId: "ask-1",
+      policyVersionId: "policy-v1",
+      questionId: "Q5" as QuestionId,
+      questionText: "Is there any risk to their safety?",
+      answerType: "yesno" as const,
+      answer: true,
+      confidence: 0.62,
+      abstained: false,
+      samples: 3,
+      provider: "mistral",
+      model: "mistral-small-latest",
+      latencyMs: 812,
+      inputDigest: "a".repeat(64),
+    };
+
+    // Every row written before the source column existed hashed no source key,
+    // so a stored digest must still recompute when the column reads null.
+    expect(computeDecisionDigest({ ...row, signalSource: null })).toBe(
+      computeDecisionDigest(row),
+    );
+    expect(computeDecisionDigest({ ...row, signalSource: "rule" })).not.toBe(
+      computeDecisionDigest(row),
+    );
+    expect(computeDecisionDigest({ ...row, signalSource: "model" })).not.toBe(
+      computeDecisionDigest({ ...row, signalSource: "rule" }),
+    );
+  });
 });
 
 describe("provider selection", () => {

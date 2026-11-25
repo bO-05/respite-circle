@@ -361,24 +361,27 @@ export type DecisionDigestFields = {
 
 /** The per-row digest a coordinator or an auditor can recompute. */
 export function computeDecisionDigest(fields: DecisionDigestFields): string {
-  return sha256Hex(
-    stableStringify({
-      askId: fields.askId,
-      policyVersionId: fields.policyVersionId,
-      questionId: fields.questionId,
-      questionText: fields.questionText,
-      answerType: fields.answerType,
-      answer: fields.answer,
-      confidence: roundConfidence(fields.confidence),
-      abstained: fields.abstained,
-      samples: fields.samples,
-      provider: fields.provider,
-      model: fields.model,
-      latencyMs: fields.latencyMs,
-      inputDigest: fields.inputDigest,
-      // Always present, so a reader can recompute from the stored row: a null
-      // source is the seven other questions or an unlabelled row.
-      signalSource: fields.signalSource ?? null,
-    }),
-  );
+  const payload: Record<string, unknown> = {
+    askId: fields.askId,
+    policyVersionId: fields.policyVersionId,
+    questionId: fields.questionId,
+    questionText: fields.questionText,
+    answerType: fields.answerType,
+    answer: fields.answer,
+    confidence: roundConfidence(fields.confidence),
+    abstained: fields.abstained,
+    samples: fields.samples,
+    provider: fields.provider,
+    model: fields.model,
+    latencyMs: fields.latencyMs,
+    inputDigest: fields.inputDigest,
+  };
+
+  // A hold's provenance is bound into the digest, so a stored `rule` cannot be
+  // relabelled `model` without breaking it. Left out when null, so every row
+  // written before the source column existed still recomputes to its own
+  // stored digest, and the seven unscreened questions hash exactly as before.
+  if (fields.signalSource) payload.signalSource = fields.signalSource;
+
+  return sha256Hex(stableStringify(payload));
 }
