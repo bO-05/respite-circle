@@ -18,7 +18,7 @@ export async function SiteHeader() {
 
   return (
     <header className="border-b border-line bg-paper">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-1 px-5 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-4">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <Link
             href={home}
@@ -31,7 +31,10 @@ export async function SiteHeader() {
               Signed in as {ROLE_LABEL[session.role]}
             </p>
           ) : (
-            <p className="text-base text-ink-muted">
+            // At 360 a second header line costs the first screen ~26px, and the
+            // hero directly below already says what this product is. The
+            // tagline stays where there is room for it.
+            <p className="hidden text-base text-ink-muted sm:block">
               A church-run break for a family that cares for someone
             </p>
           )}

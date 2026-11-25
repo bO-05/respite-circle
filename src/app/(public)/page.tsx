@@ -28,7 +28,7 @@ export default function HomePage() {
   const demoMode = isDemoModeEnabled();
 
   return (
-    <PageMain className="max-w-4xl py-14">
+    <PageMain className="max-w-4xl py-8 sm:py-14">
       <section aria-labelledby="landing-heading">
         <p className="text-base font-semibold uppercase tracking-wide text-accent">
           A church-run break
@@ -39,7 +39,7 @@ export default function HomePage() {
         >
           A break for the person who does the caring.
         </h1>
-        <p className="mt-5 max-w-prose text-xl leading-relaxed text-ink">
+        <p className="mt-4 max-w-prose text-xl leading-relaxed text-ink sm:mt-5">
           Your church arranges a few hours. A named person reads what you write,
           a neighbour takes a time, and nobody has to explain their week to a
           crowd.
@@ -48,21 +48,33 @@ export default function HomePage() {
           No password. The link from your coordinator signs you in.
         </p>
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href="/enter"
-            className="inline-flex min-h-11 items-center rounded-md bg-accent px-5 py-2 text-base font-semibold text-accent-foreground"
-          >
-            Enter with your link
-          </Link>
+        {/*
+          A stranger without an access link cannot use the link path, so the
+          demo is the filled action and it is met first. Both paths stay inside
+          the 360x800 first screen; tests/e2e/r2-first-screen.spec.ts measures
+          the boxes rather than trusting this comment.
+        */}
+        <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
           {demoMode ? (
             <Link
               href="/demo"
-              className="inline-flex min-h-11 items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink"
+              data-primary-action
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-5 py-2 text-base font-semibold text-accent-foreground sm:w-auto"
             >
               Look around the demo
             </Link>
           ) : null}
+          <Link
+            href="/enter"
+            data-primary-action
+            className={
+              demoMode
+                ? "inline-flex min-h-11 w-full items-center justify-center rounded-md border border-ink/50 bg-surface px-5 py-2 text-base font-semibold text-ink sm:w-auto"
+                : "inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-5 py-2 text-base font-semibold text-accent-foreground sm:w-auto"
+            }
+          >
+            Enter with your link
+          </Link>
         </div>
       </section>
 

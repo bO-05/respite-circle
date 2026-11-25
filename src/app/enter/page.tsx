@@ -43,9 +43,32 @@ export default async function EnterPage({
       ) : null}
 
       <p className="max-w-prose text-base leading-relaxed text-ink-muted">
-        If someone from the church invited you, open the link they sent. It
-        signs you in as you, and only you.
+        If someone from the church invited you, open the link they sent. Anyone
+        who has the link can sign in with it, so keep it to yourself.
       </p>
+
+      {/*
+        The error copy says to ask for a new link. A person who has lost theirs
+        needs the next step on this page, not a sentence that ends in a dead
+        end: who to ask, at what door, and what to say.
+      */}
+      <section
+        aria-labelledby="lost-link"
+        className="rounded-lg border border-line bg-surface p-5"
+      >
+        <h2 id="lost-link" className="font-serif text-2xl text-ink">
+          Lost your link?
+        </h2>
+        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
+          Ask the person at church who invited you. Your coordinator can send
+          you a new link.
+        </p>
+        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+          If you are not sure who that is, ask at the church office and say you
+          are part of Respite Circle. You do not have to explain why you are
+          asking.
+        </p>
+      </section>
 
       {isDemoModeEnabled() ? (
         <section
