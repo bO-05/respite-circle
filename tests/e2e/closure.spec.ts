@@ -150,7 +150,9 @@ test.describe.serial("VAL-CONFIRM-005 and VAL-CROSS-001 — the loop closes", ()
     await marta.page.getByLabel(/Tell us what a hard week looks like/i).fill(
       FIRST_ASK,
     );
-    await marta.page.getByLabel(/^I understand/i).check();
+    await marta.page
+      .getByLabel(/i agree that the church may keep these words/i)
+      .check();
     const submitted = marta.page.waitForResponse(
       (response) =>
         response.url().includes("/api/asks") &&
@@ -381,7 +383,9 @@ test.describe.serial("VAL-CONFIRM-005 and VAL-CROSS-001 — the loop closes", ()
     expect(html).not.toContain(FIRST_ASK);
 
     await textarea.fill(SECOND_ASK);
-    await marta.page.getByLabel(/^I understand/i).check();
+    await marta.page
+      .getByLabel(/i agree that the church may keep these words/i)
+      .check();
     const submitted = marta.page.waitForResponse(
       (response) =>
         response.url().includes("/api/asks") &&

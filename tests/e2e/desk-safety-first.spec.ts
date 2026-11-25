@@ -26,15 +26,15 @@ import { seedAccessTokens } from "../../src/db/seed-data";
  * meets it. Its rows lead with when, who and what; ids come last.
  */
 
-const DESK_CHURCH = "d5000000-0000-4000-8000-000000000001";
-const DESK_COORDINATOR = "d5000000-0000-4000-8000-000000000002";
-const DESK_CAREGIVER = "d5000000-0000-4000-8000-000000000003";
-const DESK_RECIPIENT = "d5000000-0000-4000-8000-000000000004";
-const DESK_POLICY = "d5000000-0000-4000-8000-000000000005";
-const DESK_SAFETY_ASK = "d5000000-0000-4000-8000-000000000006";
-const DESK_WAITING_ASK = "d5000000-0000-4000-8000-000000000007";
-const DESK_OPEN_SLOT = "d5000000-0000-4000-8000-000000000008";
-const DESK_AUDIT_EVENT = "d5000000-0000-4000-8000-000000000009";
+const DESK_CHURCH = "d6000000-0000-4000-8000-000000000001";
+const DESK_COORDINATOR = "d6000000-0000-4000-8000-000000000002";
+const DESK_CAREGIVER = "d6000000-0000-4000-8000-000000000003";
+const DESK_RECIPIENT = "d6000000-0000-4000-8000-000000000004";
+const DESK_POLICY = "d6000000-0000-4000-8000-000000000005";
+const DESK_SAFETY_ASK = "d6000000-0000-4000-8000-000000000006";
+const DESK_WAITING_ASK = "d6000000-0000-4000-8000-000000000007";
+const DESK_OPEN_SLOT = "d6000000-0000-4000-8000-000000000008";
+const DESK_AUDIT_EVENT = "d6000000-0000-4000-8000-000000000009";
 
 const DESK_COORDINATOR_TOKEN = "e2e-desk-safety-coordinator";
 const DESK_CAREGIVER_TOKEN = "e2e-desk-safety-caregiver";
@@ -458,7 +458,7 @@ test.describe("VAL-R2UI-001 — safety asks come first on the desk", () => {
       await expect(row.getByTestId("audit-entity")).toHaveText("Ask");
       const html = await row.innerHTML();
       const time = html.indexOf('data-testid="audit-time"');
-      const entityId = html.indexOf("d5000000");
+      const entityId = html.indexOf("d6000000");
       expect(time).toBeGreaterThanOrEqual(0);
       expect(entityId).toBeGreaterThan(time);
       await shot(grace.page, "audit-row-order");
