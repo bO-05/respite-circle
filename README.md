@@ -540,6 +540,28 @@ application services, `src/db` schema and client, `drizzle/` migrations,
 `scripts/` operator commands, and `tests/` for the unit, integration, and
 Playwright suites.
 
+The safety and personal-care screen itself is
+`src/server/domain/deterministic-screen.ts`.
+
+### The rule screen beside the model
+
+On every ask the app decides, the app runs its own safety and personal-care
+screen over the caregiver's own words, beside the model's answer:
+`src/server/domain/deterministic-screen.ts` (`safety-care-screen-v1`). The
+screen reads only Q5 (immediate safety) and Q9 (personal care), and it can add a
+hold, never remove one. A yes or an abstention from the model keeps its hold and
+its label. A model that settles on no cannot release a hold the rules find, so a
+miss in the model does not become a miss in the app. Each safety or
+personal-care hold records which side produced it in `decision.signal_source`
+(`rule` or `model`), and the caregiver receipt shows that source plainly: a
+rule-held row is labelled "How sure the app's rules were" with the rules' own
+confidence, and it carries the sentence that a person will call. The screen
+exists because of a measured failure, not a preference: `/calibration` publishes
+the same-day run of 2026-11-25 that measured the model alone and failed at 27 of
+31 slot-kind, 12 of 15 safety and 18 of 24 personal care, with the harness gate
+FAIL. That record stays in `data/calibration-history.json` and on the page
+beside the run of the combined system that passed.
+
 ## Open-source disclosure
 
 Respite Circle was built for the AI for Church Hackathon 2026. The work built
