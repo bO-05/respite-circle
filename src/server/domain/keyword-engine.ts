@@ -233,28 +233,88 @@ const MOBILITY_NEGATIVE =
 const WEAK_CARE_WORDS =
   String.raw`pills?|tablets?|wash(?:es|ed|ing)?|bathroom|pads?|briefs|hygiene|get(?:s|ting)? dressed`;
 
-// A third-person self-care verb that can take a reflexive pronoun, including
-// the compound "washes and dresses herself".
-const SELF_CARE_VERBS = String.raw`showers?|bathes?|washes?|dresses?|feeds?|toilets?|get(?:s|ting)? dressed`;
-const SELF_CARE_REFLEXIVE = String.raw`\b(?:${SELF_CARE_VERBS})(?:\s+(?:and|,)\s+(?:${SELF_CARE_VERBS}))*\s+(?:herself|himself|themselves)\b`;
+/**
+ * Every care noun the screen knows, in one fragment.
+ *
+ * The positive rule, the negative rule and every declining strip interpolate
+ * this list, so a word can never live on one side only. Plurality is part of
+ * the term: `\bdiaper\b` never matched "diapers", which is how thirteen plain
+ * personal-care phrases passed the screen at 2b58b76. The round-2 audit named
+ * the words families actually use — nappies, diapers, injection, loo,
+ * accidents, inhaler, eye drops, teeth, undress, get changed — and each one
+ * below carries its plural or inflected form with it.
+ *
+ * "personal care" is deliberately absent: it is not a care noun a family uses
+ * to describe a need, and the built-in orientation notes say "this is company,
+ * not personal care". It stays in the negative rule only.
+ */
+const PERSONAL_CARE_TERMS = String.raw`medication|medications|meds|medicine|bathroom|bathing|bathe|bathes|bath|shower(?:ing|s)?|toileting|toilet|incontinent|incontinence|napp(?:y|ies)|diapers?|injections?|loo|accidents?|inhalers?|eye drops?|teeth|undress(?:es|ing|ed)?|(?:get|gets|getting|got) changed|lifting|lift (?:her|him|them)|transfers?|dressing|feeding|feeding tube|tube feed(?:ing)?|catheter|wound care|insulin|administer|${WEAK_CARE_WORDS}`;
 
 const PERSONAL_CARE_POSITIVE = new RegExp(
-  String.raw`\b(medication|medications|meds|medicine|bathing|bathe|bathes|bath|shower(?:ing|s)?|toileting|toilet|incontinent|incontinence|diaper|nappy|lifting|lift (her|him|them)|transfers?|dressing|undressing|feeding|feeding tube|tube feed(?:ing)?|catheter|wound care|insulin|administer|${WEAK_CARE_WORDS})\b`,
+  String.raw`\b(?:${PERSONAL_CARE_TERMS})\b`,
   "i",
 );
+
+// A third-person self-care verb that can take a reflexive pronoun, including
+// the compound "washes and dresses herself", "undresses himself" and "gets
+// changed himself".
+const SELF_CARE_VERBS = String.raw`showers?|bathes?|washes?|dresses?|undress(?:es|ed)?|feeds?|toilets?|(?:get|gets|getting) dressed|(?:get|gets|getting) changed|brushes?`;
+const SELF_CARE_REFLEXIVE = String.raw`\b(?:${SELF_CARE_VERBS})(?:\s+(?:and|,)\s+(?:${SELF_CARE_VERBS}))*\s+(?:herself|himself|themselves)\b`;
+// "she changes her own pads", "he brushes his own teeth" — the person manages
+// the care themselves, so it is not a need.
+const SELF_CARE_OWN = String.raw`\b(?:manages?|handles?|takes?|changes?|brushes?|do(?:es)?) (?:her|his|their) own\b[^.;]{0,48}`;
+
 const PERSONAL_CARE_NEGATIVE = new RegExp(
-  String.raw`\b(no personal care|not personal care|no (?:medication|meds|pills?|tablets?|bathing|washing|hygiene|toileting|dressing|feeding|lifting)|(?:doesn'?t|does not|doesnt) (?:need|take) (?:help with )?(?:medication|meds|pills?|tablets?)|(?:doesn'?t|does not|doesnt) need help with (?:bathing|medication|toileting|dressing|feeding|washing|hygiene|pills?|tablets?|pads?|briefs|the bathroom|getting dressed)|no help (?:needed )?(?:with |in |to )?(?:the )?(?:bathroom|pills?|tablets?|pads?|briefs|washing|hygiene)|no lifting|can (?:bathe|dress|feed|wash|get dressed) (?:herself|himself|themselves)|${SELF_CARE_REFLEXIVE}|(?:manages?|handles?|takes?|changes?|do(?:es)?) (?:her|his|their) own (?:shower|showering|bath|bathing|medication|medications|meds|medicine|tablets|pills|dressing|toileting|washing|hygiene|pads?|briefs)|takes? (?:her|his|their) own (?:medication|medications|meds|medicine|tablets|pills))\b`,
+  String.raw`\b(no personal care|not personal care|no (?:${PERSONAL_CARE_TERMS})|(?:doesn'?t|does not|doesnt|don'?t|do not) (?:need|take) (?:help with )?(?:${PERSONAL_CARE_TERMS})|no help (?:needed )?(?:with |in |to )?(?:the )?(?:${PERSONAL_CARE_TERMS})|no lifting|can (?:bathe|dress|feed|wash|get dressed) (?:herself|himself|themselves)|${SELF_CARE_OWN}|${SELF_CARE_REFLEXIVE}|takes? (?:her|his|their) own (?:${PERSONAL_CARE_TERMS}))\b`,
   "i",
 );
+
+/**
+ * A declining verb is what turns a negation into a refusal. In front of a care
+ * noun, "doesn't need", "doesn't want", "doesn't take" and "doesn't require"
+ * decline it. "Doesn't remember her meds" and "not able to manage his
+ * medication" name a need; the old strip read both as refusals and hid a care
+ * need behind a confident NO at the 0.78 default. These are the only verbs
+ * that may follow the negation and precede the care noun.
+ */
+const DECLINING_CARE_VERBS = String.raw`need|needs|want|wants|take|takes|require|requires`;
+
+// A list of care nouns joined by and/or, consumed whole so "no bathing or
+// toileting" does not leave its tail behind.
+const CARE_NOUN_LIST = String.raw`(?:${PERSONAL_CARE_TERMS})(?:\s*(?:,|or|and|nor)\s*(?:${PERSONAL_CARE_TERMS}))*`;
+
+const NEGATION_WORDS = String.raw`(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without|hasn'?t|haven'?t)`;
+
+/**
+ * The shapes that genuinely decline a care noun:
+ *
+ *   - "no medication", "no nappies", "no bathing or toileting"
+ *   - "no help needed with her pads", "no eye drops required"
+ *   - "doesn't need help with pills", "she does not take medication"
+ *   - "not need any help with bathing"
+ *
+ * "not able to…" is deliberately not one of them: "not able to take his
+ * medication" is a care need, so the bare `not` only declines when a declining
+ * verb follows it directly. The memory-loss and capacity sentences ("doesn't
+ * remember her meds", "not able to manage his medication") match none of these
+ * and reach the positive rule.
+ */
+const DECLINED_CARE_CLAUSE = String.raw`\b(?:not\s+(?:${DECLINING_CARE_VERBS})|(?:never|doesn'?t|does not|doesnt|don'?t|do not|without|hasn'?t|haven'?t)\b[^.;]{0,24}?\b(?:${DECLINING_CARE_VERBS}))\b[^.;]{0,32}?\b${CARE_NOUN_LIST}\b|\bno\b\s+${CARE_NOUN_LIST}\b|\bno\b[^.;]{0,32}?\b(?:needed|required)\b[^.;]{0,24}?\b${CARE_NOUN_LIST}\b|\bno help\b[^.;]{0,24}?\b${CARE_NOUN_LIST}\b`;
 
 /**
  * Strip phrases where a care term is explicitly negated before running the
  * positive safety/personal-care rules. "No falls so far" is not a fall, and
  * "does not need help with medication" is not personal care, while "no falls,
  * but she wanders at night" still leaves the wandering signal intact.
+ *
+ * Round 2: a care noun is only stripped when the sentence declines it. Safety
+ * and mobility words keep the broad shape — "no falls", "no stairs" can never
+ * be a care need — while the care nouns go through `DECLINED_CARE_CLAUSE`,
+ * which requires a declining verb (need / want / take / require) or the bare
+ * "no <noun>" denial. "Doesn't remember her meds" is not a refusal.
  */
 const NEGATED_CARE_TERM = new RegExp(
-  String.raw`\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without|hasn'?t|haven'?t)\b[^.;]{0,32}?\b(?:${SAFETY_DECLINE_TERMS}|medication|medications|meds|medicine|bathing|toileting|lifting|transfers?|dressing|feeding|personal care|walking|moving|mobility|stairs|steps|${WEAK_CARE_WORDS})\b`,
+  String.raw`\b${NEGATION_WORDS}\b[^.;]{0,32}?\b(?:${SAFETY_DECLINE_TERMS}|walking|moving|mobility|stairs|steps|lifting|transfers?)\b|${DECLINED_CARE_CLAUSE}`,
   "gi",
 );
 
@@ -269,12 +329,9 @@ function withoutNegatedCareTerms(text: string): string {
  * manages it themselves ("she manages her own shower"). None of those is a
  * personal-care need, so they are removed before the positive rule runs.
  */
-const PERSONAL_CARE_DECLINED_CLAUSE = new RegExp(
-  String.raw`\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without)\b[^.;]{0,80}?\b(?:personal care|medication|medications|meds|medicine|bathing|bathe|toileting|lifting|transfers?|dressing|feeding|${WEAK_CARE_WORDS})\b[^.;]{0,48}`,
-  "gi",
-);
+const PERSONAL_CARE_DECLINED_CLAUSE = new RegExp(DECLINED_CARE_CLAUSE, "gi");
 const SELF_CARE_STATEMENT = new RegExp(
-  String.raw`\b(?:manages?|handles?|takes?|changes?|do(?:es)?) (?:her|his|their) own\b[^.;]{0,48}|${SELF_CARE_REFLEXIVE}`,
+  String.raw`${SELF_CARE_OWN}|${SELF_CARE_REFLEXIVE}`,
   "gi",
 );
 const CAREGIVER_SELF_CARE =

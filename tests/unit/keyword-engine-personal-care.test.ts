@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
+import type { PolicyQuestion } from "@/db/schema";
 import { seedQuestionSet } from "@/db/seed-data";
 import {
   mentionsPersonalCare,
   runKeywordEngine,
 } from "@/server/domain/keyword-engine";
+import { buildDraftSlots, type TypedAnswer } from "@/server/domain/slots";
+import { decide } from "@/server/services/decide";
+import { createDeterministicProvider } from "@/server/services/providers";
 
 /**
  * VAL-AUDITFIX-009 — the offline personal-care lexicon.
@@ -206,4 +210,237 @@ describe("the draft editor's personal-care predicate (VAL-AUDITFIX-003)", () => 
     expect(mentionsPersonalCare("She takes her own tablets.")).toBe(false);
     expect(mentionsPersonalCare("No medication needed.")).toBe(false);
   });
+});
+
+/**
+ * VAL-R2CARE-001 and VAL-R2CARE-002 — the vocabulary families use.
+ *
+ * The audit at 2b58b76 tested fourteen plain personal-care phrases through the
+ * real pipeline; thirteen answered Q9 NO at 0.78 because the lexicon knew only
+ * the singular "diaper"/"nappy" and none of "injection", "loo", "accidents",
+ * "inhaler", "eye drops", "teeth", "undress" or "get changed". A confident NO
+ * at 0.78 is above the 0.60 abstention threshold, so no care hold fired and
+ * plain code proposed a slot a coordinator could approve.
+ *
+ * Every phrase below therefore runs through the real `decide()` →
+ * `resolveDecisionRouting` → `buildDraftSlots` pipeline and must hold with
+ * `slotConstructionAllowed: false` and nothing proposed. The declining set is
+ * the other half: a genuine refusal must stay a clear NO at the explicit
+ * negative confidence, raise no hold, and keep the ordinary route.
+ */
+const QUESTIONS: PolicyQuestion[] = seedQuestionSet.map((question) => ({
+  ...question,
+}));
+
+const TIME_ZONE = "America/New_York";
+// Tuesday 17 November 2026, 10:00 in New York. The next Respite Morning is a
+// week away, so a companion place can still be offered.
+const NOW = new Date("2026-11-17T15:00:00.000Z");
+
+const SESSION = {
+  id: "session-1",
+  startsAt: new Date("2026-11-24T15:00:00.000Z"),
+  endsAt: new Date("2026-11-24T19:00:00.000Z"),
+  capacity: 12,
+  usedCompanionPlaces: 0,
+  status: "scheduled" as const,
+};
+
+async function runPipeline(askText: string) {
+  const result = await decide({
+    askText,
+    questions: QUESTIONS,
+    provider: createDeterministicProvider(),
+  });
+
+  const answers: TypedAnswer[] = result.decisions.map((decision) => ({
+    questionId: decision.questionId,
+    answer: decision.answer,
+    abstained: decision.abstained,
+  }));
+
+  const plan = buildDraftSlots({
+    answers,
+    sessions: [SESSION],
+    recipientFirstName: "Elena",
+    policy: { transportEnabled: true },
+    now: NOW,
+    timeZone: TIME_ZONE,
+  });
+
+  const q9 = result.decisions.find((decision) => decision.questionId === "Q9");
+  if (!q9) throw new Error("Q9 was not answered");
+
+  return { result, q9, plan };
+}
+
+async function expectCareHold(askText: string) {
+  const { result, q9, plan } = await runPipeline(askText);
+
+  expect(q9.answer, askText).toBe(true);
+  expect(q9.confidence, askText).toBeGreaterThanOrEqual(0.6);
+  expect(result.routing.status, askText).toBe("care_hold");
+  expect(result.routing.slotConstructionAllowed, askText).toBe(false);
+  expect(plan.blocked?.reason, askText).toBe("personal_care_flag");
+  expect(plan.proposals, askText).toEqual([]);
+}
+
+/** VAL-R2CARE-001 — the fourteen phrasings from the round-2 audit. */
+const AUDITED_CARE_PHRASES = [
+  "nappies",
+  "diapers",
+  "he needs an injection",
+  "eye drops",
+  "inhaler",
+  "brush his teeth",
+  "get changed for bed",
+  "help him undress",
+  "he has accidents",
+  "clean him up after accidents",
+  "loo",
+  "help her to the loo",
+  "change his nappies",
+  "insulin injection",
+] as const;
+
+/** VAL-R2CARE-001 — a care need wrapped in a request for a visit or a sit. */
+const AUDITED_CARE_COMPOSITES = [
+  "he has accidents and I need help cleaning him up. Could someone visit on Saturday?",
+  "help her to the loo - she can't manage alone. Could someone come and sit with her Tuesday morning?",
+  "he needs an injection every morning. Could a volunteer sit with him Tuesday morning?",
+] as const;
+
+describe("VAL-R2CARE-001 — the words families use for personal care stop the ask", () => {
+  for (const phrase of AUDITED_CARE_PHRASES) {
+    it(`holds and proposes nothing for "${phrase}"`, async () => {
+      await expectCareHold(phrase);
+    });
+  }
+
+  for (const phrase of AUDITED_CARE_COMPOSITES) {
+    it(`holds a composite and proposes nothing: "${phrase}"`, async () => {
+      await expectCareHold(phrase);
+    });
+  }
+
+  it("shares one predicate with the coordinator's draft screen", () => {
+    for (const phrase of AUDITED_CARE_PHRASES) {
+      expect(mentionsPersonalCare(phrase), phrase).toBe(true);
+    }
+  });
+});
+
+/**
+ * Every word this change adds to the positive rule needs a declining form in
+ * the same change: the positive list, the negative rule and the declining
+ * strips move together. These pairs are the regression net for that rule.
+ */
+const ADDED_WORD_CASES = [
+  {
+    word: "nappies",
+    positive: "Could someone change his nappies before bed?",
+    declining: "He manages his own nappies now, thank you.",
+  },
+  {
+    word: "diapers",
+    positive: "She needs help with her diapers in the morning.",
+    declining: "She changes her own diapers now.",
+  },
+  {
+    word: "injection",
+    positive: "He needs an injection before breakfast.",
+    declining: "She takes her own insulin injection with breakfast.",
+  },
+  {
+    word: "loo",
+    positive: "Could someone help her to the loo at night?",
+    declining: "No help needed with the loo — she manages alone.",
+  },
+  {
+    word: "accidents",
+    positive: "He has accidents most mornings now.",
+    declining: "She has no accidents now, the change of diet helped.",
+  },
+  {
+    word: "inhaler",
+    positive: "Someone needs to watch him use his inhaler.",
+    declining: "No help needed with his inhaler — he manages it himself.",
+  },
+  {
+    word: "eye drops",
+    positive: "He can't do his eye drops on his own.",
+    declining: "No eye drops needed — the consultant stopped them.",
+  },
+  {
+    word: "teeth",
+    positive: "Could someone brush his teeth after breakfast?",
+    declining: "He brushes his own teeth every morning.",
+  },
+  {
+    word: "undress",
+    positive: "Help him undress at bedtime, please.",
+    declining: "He undresses himself when he's ready.",
+  },
+  {
+    word: "get changed",
+    positive: "She needs a hand to get changed for bed.",
+    declining: "He gets changed himself, thank you.",
+  },
+] as const;
+
+describe("VAL-R2CARE-001 — each added word keeps its declining form negative", () => {
+  for (const { word, positive, declining } of ADDED_WORD_CASES) {
+    it(`flags personal care when the ask names ${word}`, () => {
+      expectPersonalCareFlagged(positive);
+    });
+
+    it(`does not flag personal care when the ask declines ${word}`, () => {
+      expectPersonalCareNotFlagged(declining);
+    });
+  }
+});
+
+/** VAL-R2CARE-002 — a care need read as a need, never as a refusal. */
+const CARE_NEED_NOT_REFUSAL = [
+  "doesn't remember her meds",
+  "not able to manage his medication",
+] as const;
+
+/** VAL-R2CARE-002 — the four genuine declines that must stay confident NOs. */
+const GENUINE_DECLINES = [
+  "she takes her own tablets",
+  "no medication needed",
+  "she washes and dresses herself",
+  "he doesn't need help with pills",
+] as const;
+
+describe("VAL-R2CARE-002 — a care need is never read as a refusal", () => {
+  for (const phrase of CARE_NEED_NOT_REFUSAL) {
+    it(`treats "${phrase}" as a care need, not the default negative`, async () => {
+      const { result, q9, plan } = await runPipeline(phrase);
+
+      // YES or an explicit abstention; never a confident NO from no rule
+      // firing at all (the 0.78 default the audit measured).
+      const careNeed = q9.answer === true || q9.abstained;
+      expect(
+        careNeed,
+        `${phrase}: Q9 ${String(q9.answer)} at ${q9.confidence}`,
+      ).toBe(true);
+      expect(result.routing.status, phrase).toBe("care_hold");
+      expect(result.routing.slotConstructionAllowed, phrase).toBe(false);
+      expect(plan.proposals, phrase).toEqual([]);
+    });
+  }
+
+  for (const phrase of GENUINE_DECLINES) {
+    it(`keeps "${phrase}" a confident NO with no hold`, async () => {
+      const { result, q9, plan } = await runPipeline(phrase);
+
+      expect(q9.answer, phrase).toBe(false);
+      expect(q9.confidence, phrase).toBe(0.86);
+      expect(result.routing.status, phrase).toBe("waiting_coordinator");
+      expect(result.routing.slotConstructionAllowed, phrase).toBe(true);
+      expect(plan.blocked, phrase).toBeNull();
+    });
+  }
 });
