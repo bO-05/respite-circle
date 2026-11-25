@@ -16,6 +16,7 @@ import {
   renderConfirmation,
   type ConfirmationKind,
 } from "../../src/server/domain/notifications";
+import { humanDateTime, humanWindow } from "../fixtures/human-window";
 
 /**
  * VAL-CONFIRM-001, VAL-CONFIRM-002 and VAL-CLAIM-007 in the pure domain.
@@ -32,6 +33,13 @@ const COMPANION_START = new Date("2026-11-24T15:00:00.000Z");
 const COMPANION_END = new Date("2026-11-24T19:00:00.000Z");
 const HOME_START = new Date("2026-11-28T15:00:00.000Z");
 const HOME_END = new Date("2026-11-28T17:00:00.000Z");
+
+/**
+ * The human labels these assertions expect, derived from the fixture instants
+ * above. No assertion in this file writes a calendar date out by hand.
+ */
+const COMPANION_DATE_TIME = humanDateTime(COMPANION_START, TIME_ZONE);
+const HOME_LABEL = humanWindow(HOME_START, HOME_END, TIME_ZONE);
 
 const FORBIDDEN_COPY =
   /sql|postgres|constraint|stack|model|provider|generated|AI-powered|record id|uuid/i;
@@ -140,7 +148,7 @@ describe("the claim confirmation line", () => {
       confirmedAt: COMPANION_START,
       timeZone: TIME_ZONE,
     });
-    expect(line).toBe("Confirmed — Grace, Tuesday 24 November 2026, 10:00");
+    expect(line).toBe(`Confirmed — Grace, ${COMPANION_DATE_TIME}`);
     expect(line).not.toMatch(/^Approved/);
   });
 
@@ -150,7 +158,7 @@ describe("the claim confirmation line", () => {
       confirmedAt: COMPANION_START,
       timeZone: TIME_ZONE,
     });
-    expect(line).toBe("Confirmed — a person, Tuesday 24 November 2026, 10:00");
+    expect(line).toBe(`Confirmed — a person, ${COMPANION_DATE_TIME}`);
 
     expect(
       formatClaimConfirmationLine({
@@ -199,12 +207,10 @@ describe("the human confirmation template", () => {
     const expected: Record<ConfirmationKind, string> = {
       companion:
         "Tuesday is covered — Elena has a place at Respite Morning, and Ruth will be their companion.",
-      home: "Saturday 28 November 2026, 10:00–12:00 is covered — Ruth will visit Elena at home.",
-      drive:
-        "Saturday 28 November 2026, 10:00–12:00 is covered — Ruth will drive Elena to an appointment and wait, then bring them home.",
-      meal: "Saturday 28 November 2026, 10:00–12:00 is covered — Ruth will bring a meal to Elena's door.",
-      errand:
-        "Saturday 28 November 2026, 10:00–12:00 is covered — Ruth will run an errand for Elena.",
+      home: `${HOME_LABEL} is covered — Ruth will visit Elena at home.`,
+      drive: `${HOME_LABEL} is covered — Ruth will drive Elena to an appointment and wait, then bring them home.`,
+      meal: `${HOME_LABEL} is covered — Ruth will bring a meal to Elena's door.`,
+      errand: `${HOME_LABEL} is covered — Ruth will run an errand for Elena.`,
     };
 
     for (const kind of Object.keys(expected) as ConfirmationKind[]) {

@@ -162,8 +162,19 @@ describe("capacity and missing weeks", () => {
     const guard = calendarGuard(overview);
     expect(guard.incomplete).toBe(true);
     expect(guard.message).toMatch(/not all planned/i);
-    expect(guard.message).toContain("Tuesday 8 December 2026");
-    expect(guard.message).toContain("Tuesday 1 December 2026");
+
+    // The banner names the weeks the calendar itself planned, not a typed date.
+    const missingWeek = calendar.missing[0];
+    const cancelledWeek = calendar.cancelled[0];
+    if (!missingWeek || !cancelledWeek) {
+      throw new Error("expected one missing and one cancelled week");
+    }
+    expect(guard.message).toContain(
+      formatSessionDate(missingWeek.startsAt, TIME_ZONE),
+    );
+    expect(guard.message).toContain(
+      formatSessionDate(cancelledWeek.startsAt, TIME_ZONE),
+    );
     expect(guard.message).toMatch(/fill the calendar/i);
   });
 

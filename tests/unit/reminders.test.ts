@@ -14,6 +14,7 @@ import {
   renderReminder,
   type ReminderKind,
 } from "../../src/server/domain/notifications";
+import { humanWindow } from "../fixtures/human-window";
 
 /**
  * VAL-CONFIRM-003, VAL-CONFIRM-004 and VAL-CONFIRM-006 in the pure domain.
@@ -30,6 +31,15 @@ const COMPANION_START = new Date("2026-11-24T15:00:00.000Z");
 const COMPANION_END = new Date("2026-11-24T19:00:00.000Z");
 const HOME_START = new Date("2026-11-28T15:00:00.000Z");
 const HOME_END = new Date("2026-11-28T17:00:00.000Z");
+
+/**
+ * The window sentence each kind must render, built from the fixture instants
+ * above. No assertion in this file writes a calendar date out by hand.
+ */
+const COMPANION_LABEL = humanWindow(COMPANION_START, COMPANION_END, TIME_ZONE);
+const HOME_LABEL = humanWindow(HOME_START, HOME_END, TIME_ZONE);
+
+const COMPANION_REMINDER = `A reminder: ${COMPANION_LABEL}. Elena has a place at Respite Morning, and Ruth will be their companion.`;
 
 const GENERATED_CANARY = "GENERATED_PROSE_CANARY";
 
@@ -73,20 +83,17 @@ describe("the human reminder template", () => {
 
     expect(rendered).toEqual({
       templateCode: "reminder.companion",
-      body: "A reminder: Tuesday 24 November 2026, 10:00–14:00. Elena has a place at Respite Morning, and Ruth will be their companion.",
+      body: COMPANION_REMINDER,
     });
   });
 
   it("renders every kind with the window and the two first names", () => {
     const expected: Record<ReminderKind, string> = {
-      companion:
-        "A reminder: Tuesday 24 November 2026, 10:00–14:00. Elena has a place at Respite Morning, and Ruth will be their companion.",
-      home: "A reminder: Saturday 28 November 2026, 10:00–12:00. Ruth will visit Elena at home.",
-      drive:
-        "A reminder: Saturday 28 November 2026, 10:00–12:00. Ruth will drive Elena to an appointment and wait, then bring them home.",
-      meal: "A reminder: Saturday 28 November 2026, 10:00–12:00. Ruth will bring a meal to Elena's door.",
-      errand:
-        "A reminder: Saturday 28 November 2026, 10:00–12:00. Ruth will run an errand for Elena.",
+      companion: COMPANION_REMINDER,
+      home: `A reminder: ${HOME_LABEL}. Ruth will visit Elena at home.`,
+      drive: `A reminder: ${HOME_LABEL}. Ruth will drive Elena to an appointment and wait, then bring them home.`,
+      meal: `A reminder: ${HOME_LABEL}. Ruth will bring a meal to Elena's door.`,
+      errand: `A reminder: ${HOME_LABEL}. Ruth will run an errand for Elena.`,
     };
 
     for (const kind of Object.keys(expected) as ReminderKind[]) {
@@ -356,10 +363,7 @@ describe("the outbox template match report", () => {
       false,
     );
     expect(
-      matchesNotificationTemplate(
-        "reminder.companion",
-        "A reminder: Tuesday 24 November 2026, 10:00–14:00. Elena has a place at Respite Morning, and Ruth will be their companion.",
-      ),
+      matchesNotificationTemplate("reminder.companion", COMPANION_REMINDER),
     ).toBe(true);
   });
 

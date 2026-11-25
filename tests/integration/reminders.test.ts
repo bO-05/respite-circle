@@ -2,7 +2,11 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { and, eq, inArray } from "drizzle-orm";
 import { truncateAll } from "../../src/db/reset";
 import { seedDatabase } from "../../src/db/seed";
-import { SEED_REFERENCE_DATE, seedIds } from "../../src/db/seed-data";
+import {
+  buildSeedSessions,
+  CHURCH_TIMEZONE,
+  seedIds,
+} from "../../src/db/seed-data";
 import {
   ask,
   askRevision,
@@ -11,6 +15,7 @@ import {
   notification,
   slot,
 } from "../../src/db/schema";
+import { resolveNow } from "../../src/lib/clock";
 import { AuthError, type Actor } from "../../src/server/auth/policy";
 import { matchesNotificationTemplate } from "../../src/server/domain/notifications";
 import type { TypedAnswer } from "../../src/server/domain/slots";
@@ -24,6 +29,7 @@ import {
 import { approveAskForCoordinator } from "../../src/server/services/ask-review";
 import { sha256Hex } from "../../src/server/services/decision-contract";
 import { constructDraftSlots } from "../../src/server/services/slot-construction";
+import { humanWindow } from "../fixtures/human-window";
 import {
   expectRejection,
   openTestDatabase,
@@ -40,15 +46,30 @@ import {
  * person wrote.
  */
 
-const NOW = SEED_REFERENCE_DATE; // Tuesday 17 November 2026, 10:00 in New York
-const CONFIRMED_AT = new Date("2026-11-18T15:00:00.000Z");
-const COMPANION_START = new Date("2026-11-24T15:00:00.000Z");
-const IN_WINDOW = new Date("2026-11-24T13:00:00.000Z"); // 2 hours before
-const WINDOW_OPENS = new Date("2026-11-23T15:00:00.000Z"); // 24 hours before
-const TOO_EARLY = new Date("2026-11-20T15:00:00.000Z");
+/**
+ * The clock this file runs at, and the calendar the seed writes from it.
+ *
+ * `resolveNow` is the app's one clock, so the whole suite rolls with
+ * `RC_FAKE_NOW`. The four seeded mornings come from `buildSeedSessions(now)` —
+ * the same builder `seedDatabase` uses — so every window asserted below is the
+ * row the seed actually wrote, never a date typed into the file.
+ */
+const NOW = resolveNow();
+const [FIRST_MORNING] = buildSeedSessions(NOW);
+if (!FIRST_MORNING) throw new Error("The seed must plan four Respite Mornings.");
 
-const EXPECTED_REMINDER =
-  "A reminder: Tuesday 24 November 2026, 10:00–14:00. Elena has a place at Respite Morning, and Ruth will be their companion.";
+const COMPANION_START = FIRST_MORNING.startsAt;
+const COMPANION_END = FIRST_MORNING.endsAt;
+const CONFIRMED_AT = new Date(NOW.getTime() + 60 * 60 * 1_000);
+const IN_WINDOW = new Date(COMPANION_START.getTime() - 2 * 3_600_000); // 2 hours before
+const WINDOW_OPENS = new Date(COMPANION_START.getTime() - 24 * 3_600_000); // 24 hours before
+const TOO_EARLY = new Date(COMPANION_START.getTime() - 5 * 24 * 3_600_000);
+
+const EXPECTED_REMINDER = `A reminder: ${humanWindow(
+  COMPANION_START,
+  COMPANION_END,
+  CHURCH_TIMEZONE,
+)}. Elena has a place at Respite Morning, and Ruth will be their companion.`;
 
 const GENERATED_CANARY = "GENERATED_PROSE_CANARY";
 
@@ -497,9 +518,7 @@ describe("the one reminder for a covered time", () => {
     expect(mine[0].templateCode).toBe("reminder.companion");
     expect(mine[0].label).toBe("Companion place at Respite Morning");
     expect(mine[0].windowStart).toEqual(COMPANION_START);
-    expect(mine[0].windowEnd).toEqual(
-      new Date("2026-11-24T19:00:00.000Z"),
-    );
+    expect(mine[0].windowEnd).toEqual(COMPANION_END);
     expect(mine[0].timeZone).toBe("America/New_York");
     expect(mine[0].createdAt).toEqual(IN_WINDOW);
     expect(mine[0].kind).toBe("companion");
