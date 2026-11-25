@@ -5,6 +5,10 @@ import { mentionsPersonalCare } from "@/server/domain/keyword-engine";
 import { buildDraftSlots, type TypedAnswer } from "@/server/domain/slots";
 import { decide } from "@/server/services/decide";
 import { createDeterministicProvider } from "@/server/services/providers";
+import {
+  AUDITED_ABUSE_PHRASES as ABUSE_PHRASES,
+  AUDITED_SUICIDAL_IDEATION_PHRASES as SUICIDAL_IDEATION_PHRASES,
+} from "../fixtures/audited-safety-phrases";
 
 /**
  * VAL-R2SAFE-001, VAL-R2SAFE-002, VAL-R2SAFE-003, VAL-R2SAFE-004 and
@@ -87,21 +91,9 @@ async function expectSafetyHold(askText: string) {
   expect(plan.proposals, askText).toEqual([]);
 }
 
-/** VAL-R2SAFE-001 — suicidal ideation in the words a family uses. */
-const SUICIDAL_IDEATION_PHRASES = [
-  "Sometimes I want to die",
-  "I wish I wasn't alive",
-  "I don't want to be here anymore",
-] as const;
-
-/** VAL-R2SAFE-002 — a plain disclosure of domestic abuse. */
-const ABUSE_PHRASES = [
-  "my husband hits me",
-  "he hurt me last night",
-  "I'm scared of him",
-  "she threatened me",
-  "I'm not safe at home",
-] as const;
+/** VAL-R2SAFE-001/002 — the eight audit phrases are imported above from one
+ * fixture, shared with the published case-set test so the calibration set
+ * cannot drift from what was audited. */
 
 /** VAL-R2SAFE-001/002 — a disclosure with a request wrapped around it. */
 const DISCLOSURE_COMPOSITES = [

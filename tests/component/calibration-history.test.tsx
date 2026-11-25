@@ -40,6 +40,21 @@ describe("the published-run history", () => {
     );
   });
 
+  it("keeps a superseded live run with both personal-care precision denominators", () => {
+    render(<CalibrationHistory entries={historyView()} />);
+
+    const section = screen.getByTestId("calibration-history");
+    const previous = within(section).getByTestId("history-live-2026-11-24");
+
+    const text = previous.textContent ?? "";
+    expect(text).toContain("49 total");
+    // The labelled-only figure, the inclusive figure, and the three slottable
+    // asks a care hold removed from it, all stated in the card.
+    expect(text).toMatch(
+      /\d+\/\d+ \(\d+(\.\d)?%\) labelled · \d+\/\d+ \(\d+(\.\d)?%\) including the 3 slottable asks a care hold removed/,
+    );
+  });
+
   it("renders nothing when no earlier run exists", () => {
     const { container } = render(<CalibrationHistory entries={[]} />);
     expect(container.textContent).toBe("");

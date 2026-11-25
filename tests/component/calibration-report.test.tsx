@@ -26,11 +26,12 @@ function readPublished(relativePath: string): CalibrationReport {
   );
 }
 
+function liveReport(): CalibrationReport {
+  return readPublished(CALIBRATION_RESULT_FILES.live.json);
+}
+
 function liveView() {
-  return buildCalibrationReportView(
-    readPublished(CALIBRATION_RESULT_FILES.live.json),
-    CURRENT,
-  );
+  return buildCalibrationReportView(liveReport(), CURRENT);
 }
 
 function baselineView() {
@@ -42,6 +43,7 @@ function baselineView() {
 
 describe("the live calibration card", () => {
   it("shows the measured engine, provider, model, date, commit, and command", () => {
+    const report = liveReport();
     render(<CalibrationReportCard view={liveView()} />);
 
     const card = screen.getByTestId("calibration-live");
@@ -52,57 +54,73 @@ describe("the live calibration card", () => {
     expect(within(card).getByTestId("calibration-command").textContent).toBe(
       "npm run calibrate",
     );
-    expect(card.textContent).toContain("mistral");
-    expect(card.textContent).toContain("mistral-small-latest");
-    expect(card.textContent).toContain("2026-11-24");
-    expect(card.textContent).toContain("707306953e384e5f9c94475916aad46f3bf84ba4");
+    expect(card.textContent).toContain(report.provider);
+    expect(card.textContent).toContain(report.model);
+    expect(card.textContent).toContain(report.date);
+    expect(card.textContent).toContain(report.gitCommit);
   });
 
   it("reports each metric with its numerator, denominator, and a rate that is never rounded up", () => {
+    const report = liveReport();
     render(<CalibrationReportCard view={liveView()} />);
     const card = screen.getByTestId("calibration-live");
+    const scores = report.scores;
 
     const slotKind = within(card).getByTestId("metric-slot-kind");
-    expect(slotKind.textContent).toContain("26/31");
-    expect(slotKind.textContent).toContain("83.8%");
-
-    expect(within(card).getByTestId("metric-safety-recall").textContent).toContain(
-      "7/7",
+    expect(slotKind.textContent).toContain(
+      `${scores.slotKindCorrect}/${scores.slotKindDenominator}`,
     );
+
+    expect(
+      within(card).getByTestId("metric-safety-recall").textContent,
+    ).toContain(`${scores.safetyTruePositiveCount}/${scores.safetyCaseCount}`);
     expect(
       within(card).getByTestId("metric-safety-precision").textContent,
-    ).toContain("7/7");
+    ).toContain(
+      `${scores.safetyTruePositiveCount}/${scores.safetyFlaggedCount}`,
+    );
     expect(
       within(card).getByTestId("metric-personal-care-recall").textContent,
-    ).toContain("10/10");
+    ).toContain(
+      `${scores.personalCareTruePositiveCount}/${scores.personalCarePositiveCount}`,
+    );
+    expect(
+      within(card).getByTestId("metric-personal-care-precision").textContent,
+    ).toContain(
+      `${scores.personalCareTruePositiveCount}/${scores.personalCareFlaggedCount}`,
+    );
     expect(within(card).getByTestId("metric-abstention").textContent).toContain(
-      "1/49",
+      `${scores.abstainedCaseCount}/${report.caseCount}`,
     );
     expect(
       within(card).getByTestId("metric-mean-latency").textContent,
-    ).toContain("3900 ms");
+    ).toContain(`${scores.meanLatencyMs} ms`);
 
-    expect(within(card).getByTestId("recall-summary").textContent).toContain(
-      "100%",
+    const summary = within(card).getByTestId("recall-summary").textContent ?? "";
+    expect(summary).toContain(report.date);
+    expect(summary).toContain(report.gitCommit.slice(0, 7));
+    expect(summary).toContain(
+      `${scores.personalCareTruePositiveCount}/${scores.personalCareFlaggedCount}`,
     );
   });
 
   it("lists the published misses with expected and actual values", () => {
+    const failures = liveReport().perCase.filter((entry) => !entry.pass);
     render(<CalibrationReportCard view={liveView()} />);
     const card = screen.getByTestId("calibration-live");
 
-    for (const id of ["CAL-002", "CAL-016", "CAL-024", "CAL-029", "CAL-031"]) {
-      const row = within(card).getByTestId(`failure-${id}`);
-      expect(row.textContent).toContain(id);
+    for (const entry of failures) {
+      const row = within(card).getByTestId(`failure-${entry.id}`);
+      expect(row.textContent).toContain(entry.id);
+      expect(row.textContent).toContain(entry.failure ?? "");
     }
-
-    const cal031 = within(card).getByTestId("failure-CAL-031");
-    expect(cal031.textContent).toContain("companion + meal");
-    expect(cal031.textContent).toContain("meal");
-    expect(within(card).getByTestId("failure-count").textContent).toContain("5");
+    expect(
+      within(card).getByTestId("failure-count").textContent,
+    ).toContain(String(failures.length));
   });
 
-  it("carries each case's provider and labels the rules fallback instead of passing it off as a model answer", () => {
+  it("carries each case's provider and labels a rules fallback instead of passing it off as a model answer", () => {
+    const report = liveReport();
     render(<CalibrationReportCard view={liveView()} />);
     const card = screen.getByTestId("calibration-live");
 
@@ -111,31 +129,56 @@ describe("the live calibration card", () => {
       within(table).getByRole("columnheader", { name: "Provider" }),
     ).toBeTruthy();
 
-    const fallbackRow = within(card).getByTestId("case-PC-005");
-    expect(fallbackRow.textContent).toContain("deterministic");
-    expect(fallbackRow.textContent).toContain("rule-engine-v1");
-    expect(fallbackRow.textContent).toContain("Rules fallback");
+    const fallback = report.perCase.find(
+      (entry) => entry.model === "rule-engine-v1",
+    );
+    if (fallback) {
+      const fallbackRow = within(card).getByTestId(`case-${fallback.id}`);
+      expect(fallbackRow.textContent).toContain("deterministic");
+      expect(fallbackRow.textContent).toContain("rule-engine-v1");
+      if (fallback.degraded) {
+        expect(fallbackRow.textContent).toContain("Rules fallback");
+      }
+    }
 
-    const routedRow = within(card).getByTestId("case-CAL-033");
-    expect(routedRow.textContent).toContain("language-router-v1");
-    expect(routedRow.textContent).toContain("Routed, no model call");
+    const routed = report.perCase.find(
+      (entry) => entry.model === "language-router-v1",
+    );
+    if (routed) {
+      const routedRow = within(card).getByTestId(`case-${routed.id}`);
+      expect(routedRow.textContent).toContain("language-router-v1");
+      expect(routedRow.textContent).toContain("Routed, no model call");
+    }
 
-    expect(within(card).getByTestId("engine-note").textContent).toContain("PC-005");
-    expect(within(card).getByTestId("engine-note").textContent).toContain("PC-014");
-    expect(within(card).getByTestId("engine-note").textContent).toContain("CAL-033");
+    // The note names every case that did not get a live answer.
+    const note = within(card).getByTestId("engine-note").textContent ?? "";
+    for (const entry of report.perCase.filter(
+      (row) => row.provider !== report.provider,
+    )) {
+      expect(note).toContain(entry.id);
+    }
   });
 
   it("never shows baseline numbers in the live card", () => {
+    const live = liveReport();
     render(<CalibrationReportCard view={liveView()} />);
     const card = screen.getByTestId("calibration-live");
-    expect(card.textContent).not.toContain("31/31");
-    expect(card.textContent).not.toContain("Deterministic baseline (no model calls)");
+    expect(card.textContent).not.toContain(
+      "Deterministic baseline (no model calls)",
+    );
     expect(card.textContent).not.toContain("npm run calibrate:baseline");
+    expect(card.textContent).not.toContain("This is not live-model performance.");
+    // The live card is built from the live record, never the baseline file.
+    expect(card.textContent).toContain(live.date);
+    expect(card.textContent).toContain(live.gitCommit);
   });
 });
 
 describe("the baseline calibration card", () => {
   it("is labelled deterministic-baseline and says no model was called", () => {
+    const baseline = readPublished(
+      CALIBRATION_RESULT_FILES["deterministic-baseline"].json,
+    );
     render(<CalibrationReportCard view={baselineView()} />);
     const card = screen.getByTestId("calibration-baseline");
 
@@ -149,7 +192,7 @@ describe("the baseline calibration card", () => {
       "npm run calibrate:baseline",
     );
     expect(within(card).getByTestId("metric-slot-kind").textContent).toContain(
-      "31/31",
+      `${baseline.scores.slotKindCorrect}/${baseline.scores.slotKindDenominator}`,
     );
     expect(card.textContent).toContain("rule-engine-v1");
     expect(card.textContent.toLowerCase()).toContain("no model calls");
@@ -194,11 +237,10 @@ describe("the missing-results state", () => {
 
 describe("a recall below target", () => {
   it("says so plainly instead of smoothing it over", () => {
-    const weaker = structuredClone(
-      readPublished(CALIBRATION_RESULT_FILES.live.json),
-    ) as CalibrationReport;
-    weaker.scores.safetyTruePositiveCount = 6;
-    weaker.scores.safetyRecall = 0.8571;
+    const weaker = structuredClone(liveReport()) as CalibrationReport;
+    const misses = Math.max(1, weaker.scores.safetyCaseCount - 1);
+    weaker.scores.safetyTruePositiveCount = misses;
+    weaker.scores.safetyRecall = 0.5;
 
     render(
       <CalibrationReportCard view={buildCalibrationReportView(weaker, CURRENT)} />,
@@ -206,7 +248,8 @@ describe("a recall below target", () => {
 
     const warning = screen.getByTestId("safety-recall-below-target");
     expect(warning.textContent).toContain("below the 100% target");
-    expect(warning.textContent).toContain("6 of 7");
-    expect(warning.textContent).toContain("85.7%");
+    expect(warning.textContent).toContain(
+      `${misses} of ${weaker.scores.safetyCaseCount}`,
+    );
   });
 });

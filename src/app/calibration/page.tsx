@@ -59,9 +59,12 @@ export default async function CalibrationPage() {
           The two runs are separate measurements of different engines. A live
           number is never relabelled as a baseline, a baseline number is never
           presented as live-model performance, and no figure is rounded up to
-          look complete. A rerun replaces only its own current card; the record
-          it replaced stays in the history list below with the case set it was
-          measured against. The tables behind these numbers are on{" "}
+          look complete. No recall or precision figure is quoted here without
+          its own denominator, the date of the run that produced it, and the
+          case set it was measured on. A rerun replaces only its own current
+          card; the record it replaced stays in the history list below with the
+          case set it was measured against. The tables behind these numbers are
+          on{" "}
           <Link
             href="/how-it-works"
             className="font-semibold text-ink underline decoration-accent underline-offset-4"
@@ -148,6 +151,18 @@ export default async function CalibrationPage() {
             <span className="font-semibold text-ink">Personal-care recall</span>{" "}
             uses only the labelled personal-care asks. A personal-care flag never
             becomes a slot; it routes to a person with professional referrals.
+          </li>
+          <li className="max-w-prose text-base leading-relaxed text-ink-muted">
+            <span className="font-semibold text-ink">
+              Personal-care precision
+            </span>{" "}
+            is stated twice. The labelled-only figure counts the labelled
+            personal-care asks the engine flagged. The inclusive figure adds the
+            slottable asks that lost their times to a care hold. An ask already
+            held for safety is named beside the figure but not counted, because
+            it never had times to lose. Each card names both denominators and
+            the cases outside the labelled set, so a reader cannot take 100% on
+            the labelled set for every ask keeping its times.
           </li>
           <li className="max-w-prose text-base leading-relaxed text-ink-muted">
             <span className="font-semibold text-ink">

@@ -62,8 +62,12 @@ describe("the published calibration history", () => {
   it("keeps the record a rerun replaces instead of overwriting it", () => {
     const first = live();
     const second = structuredClone(first);
-    second.generatedAt = "2026-11-24T10:00:00.000Z";
-    second.date = "2026-11-24";
+    // Older than whatever the published live record is, so the test does not
+    // need editing every time the harness is rerun.
+    second.generatedAt = new Date(
+      new Date(first.generatedAt).getTime() - 3_600_000,
+    ).toISOString();
+    second.date = second.generatedAt.slice(0, 10);
 
     const once = appendSupersededRecord([], first);
     expect(once).toHaveLength(1);
@@ -71,8 +75,8 @@ describe("the published calibration history", () => {
 
     const twice = appendSupersededRecord(once, second);
     expect(twice.map((record) => record.generatedAt)).toEqual([
-      "2026-11-24T10:00:00.000Z",
       first.generatedAt,
+      second.generatedAt,
     ]);
 
     // Republishing the same record cannot duplicate it.
@@ -175,6 +179,40 @@ describe("the generated calibration markdown", () => {
     expect(markdown).toContain("6 near-miss negatives");
     expect(markdown).not.toContain("ten labelled personal-care cases");
     expect(markdown).not.toContain("seven personal-care asks");
+
+    // The precision row states its own denominator and the inclusive figure.
+    expect(markdown).toContain("on labelled personal-care asks only");
+    expect(markdown).toMatch(
+      /\d+\/\d+ \(\d+(\.\d)?%\) (including the \d+ slottable asks? a care hold removed|with no slottable ask lost to a care hold)/,
+    );
+    expect(markdown).toContain("labelled-only denominator, not every ask");
+  });
+
+  it("carries the earlier run's labelled-only and inclusive precision figures", () => {
+    const history = PublishedCalibrationHistorySchema.parse(
+      readJson(CALIBRATION_HISTORY_FILE),
+    ).records;
+
+    const markdown = renderCalibrationMarkdown(live(), history);
+    expect(markdown).toContain("## Earlier published runs");
+    // The 2026-11-24 live record: 10/10 on the labelled asks, 10/13 once the
+    // three slottable asks a care hold removed are counted.
+    expect(markdown).toContain("10/10 (100%) on the labelled asks only");
+    expect(markdown).toContain(
+      "10/13 (76.9%) including the 3 slottable asks a care hold removed",
+    );
+    expect(markdown).toContain(
+      "3 slottable asks lost their times to a care hold: CAL-002, CAL-016, CAL-024",
+    );
+
+    // The committed file is that same render, not a second statement.
+    const committed = readFileSync(
+      resolve(process.cwd(), CALIBRATION_RESULT_FILES.live.markdown),
+      "utf8",
+    );
+    expect(committed).toContain(
+      "10/13 (76.9%) including the 3 slottable asks a care hold removed",
+    );
   });
 });
 

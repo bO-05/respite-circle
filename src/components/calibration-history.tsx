@@ -120,6 +120,14 @@ export function CalibrationHistory({
                 </dd>
               </div>
               <div>
+                <dt className="text-base font-semibold text-ink">
+                  Personal-care precision
+                </dt>
+                <dd className="mt-0.5 text-base leading-relaxed text-ink-muted">
+                  {entry.personalCarePrecision}
+                </dd>
+              </div>
+              <div>
                 <dt className="text-base font-semibold text-ink">Abstention</dt>
                 <dd className="mt-0.5 text-base leading-relaxed text-ink-muted">
                   {entry.abstention}

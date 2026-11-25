@@ -23,6 +23,8 @@ import type {
 } from "@/server/services/decision-contract";
 import { decide } from "@/server/services/decide";
 import { createDeterministicProvider } from "@/server/services/providers";
+import { AUDITED_ASK_PERSONAL_CARE_PHRASES } from "../fixtures/personal-care-strings";
+import { AUDITED_SAFETY_PHRASES } from "../fixtures/audited-safety-phrases";
 
 const BASE_META: CalibrationRunMeta = {
   source: "deterministic-baseline",
@@ -423,21 +425,21 @@ describe("calibration scoring", () => {
 });
 
 describe("the committed case sets", () => {
-  it("carries 33 slot-kind/safety cases and 16 personal-care cases", () => {
-    expect(SLOT_CASES).toHaveLength(33);
-    expect(PERSONAL_CARE_CASES).toHaveLength(16);
+  it("carries 41 slot-kind/safety cases and 30 personal-care cases", () => {
+    expect(SLOT_CASES).toHaveLength(41);
+    expect(PERSONAL_CARE_CASES).toHaveLength(30);
 
     const combined = combineCalibrationCases(SLOT_CASES, PERSONAL_CARE_CASES);
-    expect(combined).toHaveLength(49);
-    expect(new Set(combined.map((entry) => entry.id)).size).toBe(49);
+    expect(combined).toHaveLength(71);
+    expect(new Set(combined.map((entry) => entry.id)).size).toBe(71);
 
-    expect(SLOT_CASES.filter((entry) => entry.expected.safety)).toHaveLength(7);
+    expect(SLOT_CASES.filter((entry) => entry.expected.safety)).toHaveLength(15);
     expect(SLOT_CASES.filter((entry) => entry.expected.slottable)).toHaveLength(25);
     expect(
       PERSONAL_CARE_CASES.filter(
         (entry) => entry.expected.personalCare === true,
       ),
-    ).toHaveLength(10);
+    ).toHaveLength(24);
     expect(
       PERSONAL_CARE_CASES.filter(
         (entry) => entry.expected.personalCare === false,
@@ -459,6 +461,28 @@ describe("the committed case sets", () => {
     }
 
     expect(SLOT_CASES[0].sourceExpectKinds).toEqual(["sit"]);
+  });
+
+  it("contains a labelled case for every audited safety phrasing", () => {
+    for (const phrase of AUDITED_SAFETY_PHRASES) {
+      const entry = SLOT_CASES.find((candidate) => candidate.ask === phrase);
+      expect(entry, `no calibration case carries "${phrase}"`).toBeDefined();
+      expect(entry?.expected.safety, phrase).toBe(true);
+      expect(entry?.expected.slottable, phrase).toBe(false);
+      expect(entry?.expected.kinds, phrase).toEqual([]);
+    }
+  });
+
+  it("contains a labelled case for every audited personal-care phrasing", () => {
+    for (const phrase of AUDITED_ASK_PERSONAL_CARE_PHRASES) {
+      const entry = PERSONAL_CARE_CASES.find(
+        (candidate) => candidate.ask === phrase,
+      );
+      expect(entry, `no personal-care case carries "${phrase}"`).toBeDefined();
+      expect(entry?.expected.personalCare, phrase).toBe(true);
+      expect(entry?.expected.slottable, phrase).toBe(false);
+      expect(entry?.expected.kinds, phrase).toEqual([]);
+    }
   });
 
   it("rejects inconsistent or malformed case data", () => {

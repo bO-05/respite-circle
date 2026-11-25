@@ -2,6 +2,7 @@ import {
   CALIBRATION_SOURCE_LABEL,
   type CalibrationCaseResult,
   type CalibrationReport,
+  type CalibrationScores,
   type CalibrationSource,
 } from "@/server/domain/calibration";
 import { DECISION_MIN_CONFIDENCE } from "@/server/services/decision-contract";
@@ -53,6 +54,139 @@ export function formatMetricRatio(
 
 export function describeKinds(kinds: readonly string[]): string {
   return kinds.length === 0 ? "no slots" : kinds.join(" + ");
+}
+
+/**
+ * The personal-care precision figure, with both denominators.
+ *
+ * The precision the harness gates on uses only the labelled personal-care
+ * cases. That is the right denominator for "did it catch the care asks", but
+ * on its own it lets a reader believe 100% means every ask kept its times.
+ * This disclosure states the labelled-only denominator, names the slottable
+ * asks whose times a care hold removed from it, and gives the inclusive figure
+ * over the slottable asks those holds could have cost. Both numbers are derived
+ * from the same per-case rows; neither is written by hand. Safety-held asks
+ * that also raise a care flag are named, not counted: they never had times.
+ */
+export type PersonalCarePrecisionDisclosure = {
+  labelledNumerator: number;
+  labelledDenominator: number;
+  labelledRatio: string;
+  inclusiveNumerator: number;
+  inclusiveDenominator: number;
+  inclusiveRatio: string;
+  /** Slottable asks whose times a care hold removed, in case order. */
+  slottableCareHeldIds: string[];
+  /** Safety-held asks that also raised a care flag; no times existed to lose. */
+  safetyHeldIds: string[];
+  /** Every flag outside the labelled set, in case order. */
+  otherFlaggedIds: string[];
+  /** One plain sentence stating both denominators and what was excluded. */
+  sentence: string;
+};
+
+function countWithNoun(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+export function describePersonalCarePrecision(
+  perCase: readonly CalibrationCaseResult[],
+  scores: Pick<
+    CalibrationScores,
+    "personalCareTruePositiveCount" | "personalCareFlaggedCount"
+  >,
+): PersonalCarePrecisionDisclosure {
+  const labelledNumerator = scores.personalCareTruePositiveCount;
+  const labelledDenominator = scores.personalCareFlaggedCount;
+
+  const flaggedOutsideLabelled = perCase.filter(
+    (entry) => entry.personalCare === null && entry.personalCareFlagged,
+  );
+  const slottableCareHeldIds = flaggedOutsideLabelled
+    .filter((entry) => entry.slottable)
+    .map((entry) => entry.id);
+  const safetyHeldIds = flaggedOutsideLabelled
+    .filter((entry) => !entry.slottable && entry.safety === true)
+    .map((entry) => entry.id);
+  const otherFlaggedIds = flaggedOutsideLabelled
+    .filter((entry) => !entry.slottable && entry.safety !== true)
+    .map((entry) => entry.id);
+
+  // The inclusive denominator is the labelled asks plus the slottable asks a
+  // care hold removed: every ask whose times could have been lost. A
+  // safety-held ask may also raise a care flag, but it never had times to
+  // lose, so it is named in the sentence and excluded from the ratio.
+  const inclusiveDenominator = labelledDenominator + slottableCareHeldIds.length;
+  const labelledRatio = `${labelledNumerator}/${labelledDenominator} (${formatMetricRatio(
+    labelledNumerator,
+    labelledDenominator,
+  )})`;
+  const inclusiveRatio = `${labelledNumerator}/${inclusiveDenominator} (${formatMetricRatio(
+    labelledNumerator,
+    inclusiveDenominator,
+  )})`;
+
+  const parts: string[] = [
+    `Personal-care precision is ${labelledRatio} over the ${countWithNoun(
+      labelledDenominator,
+      "labelled personal-care ask",
+    )} the engine flagged. That is the labelled-only denominator, not every ask.`,
+  ];
+
+  if (slottableCareHeldIds.length === 0) {
+    parts.push("No slottable ask outside the labelled set raised a care flag.");
+  } else {
+    parts.push(
+      `${countWithNoun(
+        slottableCareHeldIds.length,
+        "slottable ask",
+      )} outside the labelled set also raised a care flag and lost ${
+        slottableCareHeldIds.length === 1 ? "its" : "their"
+      } times to a care hold (${slottableCareHeldIds.join(", ")}).`,
+    );
+  }
+
+  if (safetyHeldIds.length > 0) {
+    parts.push(
+      `${countWithNoun(
+        safetyHeldIds.length,
+        "ask",
+      )} already held for safety also raised a care flag (${
+        safetyHeldIds.join(", ")
+      }); no times existed to lose, so ${
+        safetyHeldIds.length === 1 ? "it is" : "they are"
+      } named here and not counted.`,
+    );
+  }
+  if (otherFlaggedIds.length > 0) {
+    parts.push(
+      `${countWithNoun(
+        otherFlaggedIds.length,
+        "ask",
+      )} outside both groups also raised a care flag (${otherFlaggedIds.join(
+        ", ",
+      )}); no slottable time was involved, so ${
+        otherFlaggedIds.length === 1 ? "it is" : "they are"
+      } named here and not counted.`,
+    );
+  }
+
+  parts.push(
+    `Counting the slottable asks a care hold removed, precision is ${inclusiveRatio}.`,
+  );
+
+  return {
+    labelledNumerator,
+    labelledDenominator,
+    labelledRatio,
+    inclusiveNumerator: labelledNumerator,
+    inclusiveDenominator,
+    inclusiveRatio,
+    slottableCareHeldIds,
+    safetyHeldIds,
+    otherFlaggedIds,
+    sentence: parts.join(" "),
+  };
 }
 
 export type CalibrationMetric = {
@@ -112,6 +246,7 @@ export type CalibrationHistoryEntry = {
   slotKind: string;
   safetyRecall: string;
   personalCareRecall: string;
+  personalCarePrecision: string;
   abstention: string;
   gatePass: boolean;
 };
@@ -140,6 +275,8 @@ export type CalibrationReportView = {
   perCase: CalibrationCaseRow[];
   engineNote: string;
   recallSummary: string;
+  /** Both personal-care precision denominators, with what each one excludes. */
+  personalCarePrecisionDisclosure: PersonalCarePrecisionDisclosure;
   warnings: string[];
   belowTargetWarnings: CalibrationBelowTargetWarning[];
   stale: boolean;
@@ -261,7 +398,10 @@ function engineNote(report: CalibrationReport): string {
   return parts.join(" ");
 }
 
-function recallSummary(report: CalibrationReport): string {
+function recallSummary(
+  report: CalibrationReport,
+  precision: PersonalCarePrecisionDisclosure,
+): string {
   const scores = report.scores;
   const safety = `${scores.safetyTruePositiveCount} of ${scores.safetyCaseCount} (${formatMetricRatio(
     scores.safetyTruePositiveCount,
@@ -276,7 +416,12 @@ function recallSummary(report: CalibrationReport): string {
     (scores.safetyCaseCount > 0 && scores.safetyRecall < 1) ||
     (scores.personalCarePositiveCount > 0 && scores.personalCareRecall < 1);
 
-  const sentence = `Safety recall is ${safety}; personal-care recall is ${personalCare}.`;
+  const sentence = `On this ${report.date} run at commit ${report.gitCommit.slice(
+    0,
+    7,
+  )}, safety recall is ${safety}; personal-care recall is ${personalCare}. ${
+    precision.sentence
+  }`;
   return below
     ? `${sentence} A recall below the 100% target is stated plainly on this page, not rounded up.`
     : sentence;
@@ -323,6 +468,7 @@ export function buildCalibrationReportView(
   const perCase = report.perCase.map((entry) => toCaseRow(report, entry));
   const failures = perCase.filter((entry) => !entry.pass);
   const stale = isCalibrationStale(report, current);
+  const precision = describePersonalCarePrecision(report.perCase, scores);
 
   const warnings: string[] = [];
   if (stale) {
@@ -364,7 +510,7 @@ export function buildCalibrationReportView(
       "Personal-care recall",
       scores.personalCareTruePositiveCount,
       scores.personalCarePositiveCount,
-      "Labelled personal-care asks routed to a care hold.",
+      "Labelled personal-care asks routed to a care hold. This denominator is the labelled positives, not the size of the personal-care case file.",
       scores.personalCarePositiveCount > 0 && scores.personalCareRecall < 1,
     ),
     ratioMetric(
@@ -372,7 +518,7 @@ export function buildCalibrationReportView(
       "Personal-care precision",
       scores.personalCareTruePositiveCount,
       scores.personalCareFlaggedCount,
-      "Raised personal-care flags that were on a labelled personal-care ask.",
+      precision.sentence,
     ),
     ratioMetric(
       "abstention",
@@ -428,7 +574,8 @@ export function buildCalibrationReportView(
     failures,
     perCase,
     engineNote: engineNote(report),
-    recallSummary: recallSummary(report),
+    recallSummary: recallSummary(report, precision),
+    personalCarePrecisionDisclosure: precision,
     warnings,
     belowTargetWarnings: belowTargetWarnings(report),
     stale,
@@ -451,6 +598,7 @@ export function buildCalibrationHistoryView(
     .sort((left, right) => right.generatedAt.localeCompare(left.generatedAt))
     .map((report) => {
       const scores = report.scores;
+      const precision = describePersonalCarePrecision(report.perCase, scores);
       return {
         key: `${report.source}-${report.generatedAt}`,
         source: report.source,
@@ -483,6 +631,13 @@ export function buildCalibrationHistoryView(
           scores.personalCareTruePositiveCount,
           scores.personalCarePositiveCount,
         )})`,
+        personalCarePrecision:
+          precision.slottableCareHeldIds.length > 0
+            ? `${precision.labelledRatio} labelled · ${precision.inclusiveRatio} including the ${countWithNoun(
+                precision.slottableCareHeldIds.length,
+                "slottable ask",
+              )} a care hold removed`
+            : `${precision.labelledRatio} labelled · ${precision.inclusiveRatio} with no slottable ask lost to a care hold`,
         abstention: `${scores.abstainedCaseCount}/${report.caseCount} (${formatMetricRatio(
           scores.abstainedCaseCount,
           report.caseCount,

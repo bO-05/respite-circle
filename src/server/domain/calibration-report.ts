@@ -3,7 +3,10 @@ import {
   type CalibrationReport,
   type SlotKind,
 } from "@/server/domain/calibration";
-import { formatMetricRatio } from "@/server/domain/calibration-page";
+import {
+  describePersonalCarePrecision,
+  formatMetricRatio,
+} from "@/server/domain/calibration-page";
 
 /**
  * The human-readable calibration report. It carries the same numbers as the
@@ -21,12 +24,22 @@ function describeKinds(kinds: readonly SlotKind[]): string {
   return kinds.length === 0 ? "no slots" : kinds.join(" + ");
 }
 
-export function renderCalibrationMarkdown(report: CalibrationReport): string {
+export function renderCalibrationMarkdown(
+  report: CalibrationReport,
+  history: readonly CalibrationReport[] = [],
+): string {
   const scores = report.scores;
   const failures = report.perCase.filter((entry) => !entry.pass);
+  const precision = describePersonalCarePrecision(report.perCase, scores);
   const personalCareNegatives =
     report.personalCareCaseCount - scores.personalCarePositiveCount;
   const slotKindCaseCount = report.caseCount - report.personalCareCaseCount;
+  const inclusiveLabel =
+    precision.slottableCareHeldIds.length > 0
+      ? `including the ${precision.slottableCareHeldIds.length} slottable ask${
+          precision.slottableCareHeldIds.length === 1 ? "" : "s"
+        } a care hold removed`
+      : "with no slottable ask lost to a care hold";
 
   const lines: string[] = [];
   lines.push("# Calibration — Respite Circle typed decisions");
@@ -81,9 +94,7 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
     )}) — labelled personal-care cases only |`,
   );
   lines.push(
-    `| Personal-care precision | ${scores.personalCareTruePositiveCount}/${scores.personalCareFlaggedCount} (${percent(
-      scores.personalCarePrecision,
-    )}) |`,
+    `| Personal-care precision | ${precision.labelledRatio} on labelled personal-care asks only · ${precision.inclusiveRatio} ${inclusiveLabel} |`,
   );
   lines.push(
     `| Extra predicted kinds on slottable asks | ${scores.falsePositiveKinds} |`,
@@ -114,7 +125,7 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
     "- **Safety recall** is the share of safety-labelled cases routed to a human hold. **Safety precision** is the share of safety flags raised on safety-labelled cases that were true positives; a false positive goes to a person and is reported, not hidden. The personal-care set is not safety-labelled, so a safety flag raised there does not move this score.",
   );
   lines.push(
-    `- **Personal-care recall and precision** use only the ${report.personalCareCaseCount} labelled personal-care cases (${scores.personalCarePositiveCount} personal-care asks and ${personalCareNegatives} near-miss negatives). Safety-labelled asks that also mention medication are not counted as personal-care false positives because the safety hold already wins.`,
+    `- **Personal-care recall and precision** use only the ${report.personalCareCaseCount} labelled personal-care cases (${scores.personalCarePositiveCount} personal-care asks and ${personalCareNegatives} near-miss negatives). ${precision.sentence} Safety-labelled asks that also mention medication are not counted as personal-care false positives in the labelled-only figure because the safety hold already wins; they are named in that sentence and excluded from the inclusive figure too, because they never had times to lose.`,
   );
   lines.push(
     "- **Abstention** counts a case when any of the nine answers was below the stated confidence threshold (0.60). Live provider latency is measured around the whole case, including the Q5/Q9 samples.",
@@ -181,14 +192,50 @@ export function renderCalibrationMarkdown(report: CalibrationReport): string {
   lines.push("## Case sets");
   lines.push("");
   lines.push(
-    `- \`data/calibration.json\` — ${slotKindCaseCount} slot-kind/safety cases from the approved spec. The spec's \`sit\` label is recorded as \`companion\` in this app's vocabulary; \`sourceExpectKinds\` keeps the original label on each case.`,
+    `- \`data/calibration.json\` — ${slotKindCaseCount} slot-kind/safety cases: the approved spec's labelled cases plus the plain safety phrasings added by the round-2 audit. The spec's \`sit\` label is recorded as \`companion\` in this app's vocabulary; \`sourceExpectKinds\` keeps the original label on each case.`,
   );
   lines.push(
-    `- \`data/personal-care-cases.json\` — ${report.personalCareCaseCount} hand-labelled personal-care cases: ${scores.personalCarePositiveCount} asks that name personal care (medication, bathing, toileting, lifting, dressing, washing, pads, tablets, a catheter, or a feeding tube) and ${personalCareNegatives} near-miss negatives that say the person manages their own care.`,
+    `- \`data/personal-care-cases.json\` — ${report.personalCareCaseCount} hand-labelled personal-care cases: ${scores.personalCarePositiveCount} asks that name personal care (medication, bathing, toileting, lifting, dressing, washing, pads, tablets, a catheter, a feeding tube, nappies, diapers, the loo, accidents, an injection, eye drops, an inhaler, brushing teeth, or undressing) and ${personalCareNegatives} near-miss negatives that say the person manages their own care.`,
   );
   lines.push(
     "- A case is scored for kinds only when `slottable` is true. Safety, personal-care, and bilingual routes never construct a slot.",
   );
   lines.push("");
+  if (history.length > 0) {
+    lines.push("## Earlier published runs");
+    lines.push("");
+    lines.push(
+      "Kept in `data/calibration-history.json` and on `/calibration`, each with the case set it was measured against. They are not the current record.",
+    );
+    lines.push("");
+    const earliestFirst = [...history].sort((left, right) =>
+      right.generatedAt.localeCompare(left.generatedAt),
+    );
+    for (const record of earliestFirst) {
+      const recordPrecision = describePersonalCarePrecision(
+        record.perCase,
+        record.scores,
+      );
+      const recordInclusiveLabel =
+        recordPrecision.slottableCareHeldIds.length > 0
+          ? `including the ${recordPrecision.slottableCareHeldIds.length} slottable ask${
+              recordPrecision.slottableCareHeldIds.length === 1 ? "" : "s"
+            } a care hold removed`
+          : "with no slottable ask lost to a care hold";
+      const label =
+        record.source === "live" ? "live run" : "deterministic baseline";
+      lines.push(
+        `- **${record.date} ${label}** at commit \`${record.gitCommit.slice(0, 7)}\` over ${record.caseCount} cases (${record.slottableCaseCount} slottable, ${record.safetyCaseCount} safety, ${record.personalCareCaseCount} personal-care): slot-kind ${record.scores.slotKindCorrect}/${record.scores.slotKindDenominator}, safety recall ${record.scores.safetyTruePositiveCount}/${record.scores.safetyCaseCount}, personal-care precision ${recordPrecision.labelledRatio} on the labelled asks only and ${recordPrecision.inclusiveRatio} ${recordInclusiveLabel}.`,
+      );
+      if (recordPrecision.slottableCareHeldIds.length > 0) {
+        lines.push(
+          `  ${recordPrecision.slottableCareHeldIds.length} slottable ask${
+            recordPrecision.slottableCareHeldIds.length === 1 ? "" : "s"
+          } lost their times to a care hold: ${recordPrecision.slottableCareHeldIds.join(", ")}.`,
+        );
+      }
+    }
+    lines.push("");
+  }
   return lines.join("\n");
 }

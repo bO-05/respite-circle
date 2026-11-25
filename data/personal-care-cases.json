@@ -1,5 +1,5 @@
 {
-  "note": "Sixteen hand-labelled fictional personal-care cases for the calibration run: ten asks that need medication, bathing, toileting, lifting, dressing, a catheter, a feeding tube, washing, pads, or tablets, and six near-miss negatives where the person manages their own care. The last six were added by the 2026-11-24 audit: three positives whose only personal-care signal is a weak word ('wash and get dressed', 'pads', 'tablets') and three negatives that decline those words in the same breath. A personal-care YES or an abstention routes to care_hold and proposes no slots. The negatives make personal-care precision a real measurement rather than a foregone conclusion. This set is not safety-labelled; safety recall and precision use the 33-case slot-kind/safety set.",
+  "note": "Thirty hand-labelled fictional personal-care cases for the calibration run: twenty-four asks that name personal care and six near-miss negatives where the person manages their own care. Ten of the positives need medication, bathing, toileting, lifting, dressing, a catheter, a feeding tube, washing, pads, or tablets; six were added by the 2026-11-24 audit (three positives whose only signal is a weak word, and three negatives that decline those words in the same breath); and fourteen are the audited phrasings from the round-2 audit (PC-017 to PC-030) whose only personal-care signal is the word a family actually uses: nappies, diapers, an injection, eye drops, an inhaler, teeth, getting changed for bed, undressing, accidents, the loo. A personal-care YES or an abstention routes to care_hold and proposes no slots. The negatives make personal-care precision a real measurement rather than a foregone conclusion. This set is not safety-labelled; safety recall and precision use the slot-kind/safety set.",
   "cases": [
     {
       "id": "PC-001",
@@ -96,6 +96,90 @@
       "ask": "She takes her own tablets with dinner, so no medication needed. Could a volunteer drop off a meal on Thursday?",
       "expected": { "slottable": true, "kinds": ["meal"], "personalCare": false },
       "notes": "Audit-fix near-miss negative: the person manages their own tablets; the need is a meal."
+    },
+    {
+      "id": "PC-017",
+      "ask": "nappies",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: the word a family uses. Continence care is a professional route, never a volunteer time."
+    },
+    {
+      "id": "PC-018",
+      "ask": "diapers",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: the plural is part of the term; a singular-only rule never matches it."
+    },
+    {
+      "id": "PC-019",
+      "ask": "he needs an injection",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: an injection is medication, whatever the word around it."
+    },
+    {
+      "id": "PC-020",
+      "ask": "eye drops",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: administering eye drops is medication."
+    },
+    {
+      "id": "PC-021",
+      "ask": "inhaler",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: an inhaler is medication."
+    },
+    {
+      "id": "PC-022",
+      "ask": "brush his teeth",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: help with the person's body is personal care."
+    },
+    {
+      "id": "PC-023",
+      "ask": "get changed for bed",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: dressing and undressing are personal care."
+    },
+    {
+      "id": "PC-024",
+      "ask": "help him undress",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: undressing is personal care, never a volunteer time."
+    },
+    {
+      "id": "PC-025",
+      "ask": "he has accidents",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: accidents mean continence care even without the word."
+    },
+    {
+      "id": "PC-026",
+      "ask": "clean him up after accidents",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: cleaning a person up is personal care."
+    },
+    {
+      "id": "PC-027",
+      "ask": "loo",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: the word a family uses for the toilet."
+    },
+    {
+      "id": "PC-028",
+      "ask": "help her to the loo",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: toileting help is personal care."
+    },
+    {
+      "id": "PC-029",
+      "ask": "change his nappies",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: changing a person is personal care."
+    },
+    {
+      "id": "PC-030",
+      "ask": "insulin injection",
+      "expected": { "slottable": false, "kinds": [], "personalCare": true },
+      "notes": "Round-2 audit, VAL-R2CARE-001: an insulin injection is clinical medication."
     }
   ]
 }

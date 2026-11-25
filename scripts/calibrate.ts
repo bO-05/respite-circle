@@ -30,7 +30,10 @@ import {
   parsePublishedCalibrationHistory,
 } from "../src/server/calibration/published";
 import { renderCalibrationMarkdown } from "../src/server/domain/calibration-report";
-import { formatMetricRatio } from "../src/server/domain/calibration-page";
+import {
+  describePersonalCarePrecision,
+  formatMetricRatio,
+} from "../src/server/domain/calibration-page";
 import { PROMPT_VERSION } from "../src/server/services/decision-contract";
 import { decide } from "../src/server/services/decide";
 import {
@@ -221,8 +224,17 @@ function printSummary(report: CalibrationReport, files: { json: string; markdown
       scores.personalCareRecall,
     )}) · precision ${scores.personalCareTruePositiveCount}/${scores.personalCareFlaggedCount} (${percent(
       scores.personalCarePrecision,
-    )})`,
+    )}) on labelled asks only`,
   );
+  const precision = describePersonalCarePrecision(report.perCase, scores);
+  console.log(
+    `Personal-care precision, every care flag: ${precision.inclusiveRatio}`,
+  );
+  if (precision.slottableCareHeldIds.length > 0) {
+    console.log(
+      `  Slottable asks that lost their times to a care hold: ${precision.slottableCareHeldIds.join(", ")}`,
+    );
+  }
   console.log(
     `Abstention rate: ${scores.abstainedCaseCount}/${report.caseCount} (${percent(
       scores.abstentionRate,
@@ -339,7 +351,11 @@ function writeReport(report: CalibrationReport): { json: string; markdown: strin
 
   mkdirSync(dirname(jsonPath), { recursive: true });
   writeFileSync(jsonPath, `${JSON.stringify(validated, null, 2)}\n`, "utf8");
-  writeFileSync(markdownPath, renderCalibrationMarkdown(validated), "utf8");
+  writeFileSync(
+    markdownPath,
+    renderCalibrationMarkdown(validated, nextHistory),
+    "utf8",
+  );
   return files;
 }
 

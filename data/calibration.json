@@ -1,5 +1,5 @@
 {
-  "note": "The 33 synthetic slot-kind/safety cases from the approved source spec. Ask text is verbatim. The source spec labels a companionship need as `sit`; in this app's four-kind vocabulary that is `companion` (the gated `home` tier is a coordinator choice from the familiar-face answer, not a separate labelled need). sourceExpectKinds keeps the original label on every case. A case is slottable only when kinds are scored; safety and bilingual routes make kinds moot.",
+  "note": "The 33 synthetic slot-kind/safety cases from the approved source spec, plus the 8 audited safety phrasings from the round-2 audit (CAL-034 to CAL-041). Ask text is verbatim. The source spec labels a companionship need as `sit`; in this app's four-kind vocabulary that is `companion` (the gated `home` tier is a coordinator choice from the familiar-face answer, not a separate labelled need). sourceExpectKinds keeps the original label on every case. A case is slottable only when kinds are scored; safety and bilingual routes make kinds moot. A safety-labelled case is never slottable: the hold proposes no times.",
   "cases": [
     {
       "id": "CAL-001",
@@ -209,6 +209,54 @@
       "expected": { "slottable": false, "kinds": ["companion"], "safety": false, "bilingual": true },
       "notes": "Non-English ask. The expected route is a bilingual human; no English-guessed slots. Slot kinds are not scored.",
       "sourceExpectKinds": ["sit"]
+    },
+    {
+      "id": "CAL-034",
+      "ask": "Sometimes I want to die",
+      "expected": { "slottable": false, "kinds": [], "safety": true },
+      "notes": "Round-2 audit, VAL-R2SAFE-001: plain suicidal ideation. Before the lexicon fix the engine answered NO at 0.78; it must hold and propose nothing."
+    },
+    {
+      "id": "CAL-035",
+      "ask": "I wish I wasn't alive",
+      "expected": { "slottable": false, "kinds": [], "safety": true },
+      "notes": "Round-2 audit, VAL-R2SAFE-001: plain suicidal ideation in the words a family uses."
+    },
+    {
+      "id": "CAL-036",
+      "ask": "I don't want to be here anymore",
+      "expected": { "slottable": false, "kinds": [], "safety": true },
+      "notes": "Round-2 audit, VAL-R2SAFE-001: plain suicidal ideation in the words a family uses."
+    },
+    {
+      "id": "CAL-037",
+      "ask": "my husband hits me",
+      "expected": { "slottable": false, "kinds": [], "safety": true },
+      "notes": "Round-2 audit, VAL-R2SAFE-002: a plain disclosure of domestic abuse."
+    },
+    {
+      "id": "CAL-038",
+      "ask": "he hurt me last night",
+      "expected": { "slottable": false, "kinds": [], "safety": true },
+      "notes": "Round-2 audit, VAL-R2SAFE-002: harm done to the person answering, not the caregiver's own strain."
+    },
+    {
+      "id": "CAL-039",
+      "ask": "I'm scared of him",
+      "expected": { "slottable": false, "kinds": [], "safety": true },
+      "notes": "Round-2 audit, VAL-R2SAFE-002: fear of a named person is a disclosure, not ordinary worry."
+    },
+    {
+      "id": "CAL-040",
+      "ask": "she threatened me",
+      "expected": { "slottable": false, "kinds": [], "safety": true },
+      "notes": "Round-2 audit, VAL-R2SAFE-002: a threat named plainly."
+    },
+    {
+      "id": "CAL-041",
+      "ask": "I'm not safe at home",
+      "expected": { "slottable": false, "kinds": [], "safety": true },
+      "notes": "Round-2 audit, VAL-R2SAFE-002: the engine answered NO at 0.86 before the fix because a bare 'safe' sat in the negative rule. A disclosure must never produce the explicit-negative confidence."
     }
   ]
 }

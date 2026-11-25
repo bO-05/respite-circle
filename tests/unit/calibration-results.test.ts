@@ -23,6 +23,8 @@ import {
   buildCalibrationReportView,
   formatMetricRatio,
 } from "@/server/domain/calibration-page";
+import { AUDITED_ASK_PERSONAL_CARE_PHRASES } from "../fixtures/personal-care-strings";
+import { AUDITED_SAFETY_PHRASES } from "../fixtures/audited-safety-phrases";
 
 const CURRENT = {
   questionSet: calibrationQuestionSetLabel(seedQuestionSet),
@@ -67,7 +69,7 @@ describe("the published calibration contract", () => {
     const cases = readCases();
     const run = await runCalibrationCases({ cases, mode: "baseline", env: {} });
 
-    expect(run.outcomes).toHaveLength(49);
+    expect(run.outcomes).toHaveLength(cases.length);
 
     const report = scoreCalibration(cases, run.outcomes, {
       source: "deterministic-baseline",
@@ -85,13 +87,19 @@ describe("the published calibration contract", () => {
 
     expect(report.engine).toBe("deterministic-baseline");
     expect(report.source).toBe("deterministic-baseline");
-    expect(report.caseCount).toBe(49);
-    expect(report.slottableCaseCount).toBe(31);
-    expect(report.safetyCaseCount).toBe(7);
-    expect(report.personalCareCaseCount).toBe(16);
-    expect(report.perCase).toHaveLength(49);
-    expect(report.scores.slotKindDenominator).toBe(31);
-    expect(report.scores.slotKindCorrect).toBe(31);
+    expect(report.caseCount).toBe(cases.length);
+    expect(report.slottableCaseCount).toBe(
+      cases.filter((entry) => entry.expected.slottable).length,
+    );
+    expect(report.safetyCaseCount).toBe(
+      cases.filter((entry) => entry.expected.safety === true).length,
+    );
+    expect(report.personalCareCaseCount).toBe(
+      cases.filter((entry) => entry.expected.personalCare !== undefined).length,
+    );
+    expect(report.perCase).toHaveLength(cases.length);
+    expect(report.scores.slotKindDenominator).toBe(report.slottableCaseCount);
+    expect(report.scores.slotKindCorrect).toBe(report.scores.slotKindDenominator);
     expect(report.gate).toEqual({ pass: true, failures: [] });
 
     for (const entry of report.perCase) {
@@ -101,57 +109,104 @@ describe("the published calibration contract", () => {
     }
   });
 
+  it("holds every audited safety and personal-care phrasing in the baseline", async () => {
+    const cases = readCases();
+    const run = await runCalibrationCases({ cases, mode: "baseline", env: {} });
+
+    for (const phrase of AUDITED_SAFETY_PHRASES) {
+      const index = cases.findIndex((entry) => entry.ask === phrase);
+      expect(index, phrase).toBeGreaterThanOrEqual(0);
+      expect(run.outcomes[index].safetyFlagged, phrase).toBe(true);
+      expect(run.outcomes[index].routingStatus, phrase).toBe("safety_hold");
+      expect(run.outcomes[index].predictedKinds, phrase).toEqual([]);
+    }
+
+    for (const phrase of AUDITED_ASK_PERSONAL_CARE_PHRASES) {
+      const index = cases.findIndex((entry) => entry.ask === phrase);
+      expect(index, phrase).toBeGreaterThanOrEqual(0);
+      expect(run.outcomes[index].personalCareFlagged, phrase).toBe(true);
+      expect(run.outcomes[index].routingStatus, phrase).toBe("care_hold");
+      expect(run.outcomes[index].predictedKinds, phrase).toEqual([]);
+    }
+  });
+
   it("keeps the live run's measured misses, provider column, and no baseline rows", () => {
     const live = readPublished(CALIBRATION_RESULT_FILES.live.json);
+    const cases = readCases();
+    const caseById = new Map(cases.map((entry) => [entry.id, entry]));
 
     expect(live.source).toBe("live");
     expect(live.engine).toBe("live");
     expect(live.provider).toBe("mistral");
     expect(live.model).toBe("mistral-small-latest");
     expect(live.gitCommit).toMatch(/^[0-9a-f]{40}$/);
-    expect(live.date).toBe("2026-11-24");
-    expect(live.caseCount).toBe(49);
-    expect(live.slottableCaseCount).toBe(31);
-    expect(live.safetyCaseCount).toBe(7);
-    expect(live.personalCareCaseCount).toBe(16);
-    expect(live.perCase).toHaveLength(49);
+    expect(live.date).toBe(live.generatedAt.slice(0, 10));
     expect(live.command).toBe("npm run calibrate");
 
-    expect(live.scores.slotKindCorrect).toBe(26);
-    expect(live.scores.slotKindDenominator).toBe(31);
-    expect(live.scores.slotKindAgreement).toBe(0.8387);
-    expect(live.scores.safetyRecall).toBe(1);
-    expect(live.scores.safetyPrecision).toBe(1);
-    expect(live.scores.personalCareRecall).toBe(1);
-    expect(live.scores.personalCarePositiveCount).toBe(10);
-    expect(live.scores.abstainedCaseCount).toBe(1);
-    expect(live.scores.meanLatencyMs).toBe(3900);
+    // The published run counts the case set that is committed beside it.
+    expect(live.caseCount).toBe(cases.length);
+    expect(live.perCase).toHaveLength(cases.length);
+    expect(live.slottableCaseCount).toBe(
+      cases.filter((entry) => entry.expected.slottable).length,
+    );
+    expect(live.safetyCaseCount).toBe(
+      cases.filter((entry) => entry.expected.safety === true).length,
+    );
+    expect(live.personalCareCaseCount).toBe(
+      cases.filter((entry) => entry.expected.personalCare !== undefined).length,
+    );
 
-    const failures = live.perCase.filter((entry) => !entry.pass).map((entry) => entry.id);
-    expect(failures).toEqual([
-      "CAL-002",
-      "CAL-016",
-      "CAL-024",
-      "CAL-029",
-      "CAL-031",
-    ]);
-
-    const cal031 = live.perCase.find((entry) => entry.id === "CAL-031");
-    expect(cal031?.expectedKinds).toEqual(["companion", "meal"]);
-    expect(cal031?.predictedKinds).toEqual(["meal"]);
-
-    // The 2026-11-24 run added CAL-002: a transport ask the model read as
-    // personal care, so it was care-held instead of becoming a drive.
-    const cal002 = live.perCase.find((entry) => entry.id === "CAL-002");
-    expect(cal002).toMatchObject({
-      expectedKinds: ["drive"],
-      predictedKinds: [],
-      personalCareFlagged: true,
-      routingStatus: "care_hold",
-    });
+    // The two gated metrics are recall on the labelled sets. A live miss is a
+    // published miss: the gate and the per-case rows must say the same thing.
+    expect(live.scores.safetyRecall).toBe(
+      Math.round(
+        (live.scores.safetyTruePositiveCount / live.scores.safetyCaseCount) *
+          10_000,
+      ) / 10_000,
+    );
+    expect(live.scores.personalCareRecall).toBe(
+      Math.round(
+        (live.scores.personalCareTruePositiveCount /
+          live.scores.personalCarePositiveCount) *
+          10_000,
+      ) / 10_000,
+    );
+    expect(live.gate.pass).toBe(
+      live.scores.safetyRecall === 1 && live.scores.personalCareRecall === 1,
+    );
 
     for (const entry of live.perCase.filter((row) => !row.pass)) {
       expect(entry.failure, entry.id).toBeTruthy();
+    }
+
+    // The audited words are in the published live run. Where the model held
+    // one it proposed nothing; where it missed one the row is a named failure
+    // with its reason, never a silent pass.
+    for (const phrase of AUDITED_SAFETY_PHRASES) {
+      const entry = live.perCase.find(
+        (row) => caseById.get(row.id)?.ask === phrase,
+      );
+      expect(entry, `the live run has no case for "${phrase}"`).toBeDefined();
+      expect(entry?.safety, phrase).toBe(true);
+      if (entry?.safetyFlagged) {
+        expect(entry?.predictedKinds, phrase).toEqual([]);
+      } else {
+        expect(entry?.pass, phrase).toBe(false);
+        expect(entry?.failure, phrase).toBeTruthy();
+      }
+    }
+    for (const phrase of AUDITED_ASK_PERSONAL_CARE_PHRASES) {
+      const entry = live.perCase.find(
+        (row) => caseById.get(row.id)?.ask === phrase,
+      );
+      expect(entry, `the live run has no case for "${phrase}"`).toBeDefined();
+      expect(entry?.personalCare, phrase).toBe(true);
+      if (entry?.personalCareFlagged) {
+        expect(entry?.predictedKinds, phrase).toEqual([]);
+      } else {
+        expect(entry?.pass, phrase).toBe(false);
+        expect(entry?.failure, phrase).toBeTruthy();
+      }
     }
 
     // Every row states the engine that actually answered it.
@@ -160,68 +215,51 @@ describe("the published calibration contract", () => {
       expect(entry.model.length, entry.id).toBeGreaterThan(0);
     }
 
-    const rulesRows = live.perCase.filter((entry) => entry.provider !== "mistral");
-    expect(rulesRows.map((entry) => entry.id).sort()).toEqual([
-      "CAL-033",
-      "PC-005",
-      "PC-014",
-    ]);
-
-    const fallback = rulesRows.find((entry) => entry.id === "PC-005");
-    expect(fallback).toMatchObject({
-      provider: "deterministic",
-      model: "rule-engine-v1",
-      degraded: true,
-      samples: 3,
-      pass: true,
-    });
-
-    const secondFallback = rulesRows.find((entry) => entry.id === "PC-014");
-    expect(secondFallback).toMatchObject({
-      provider: "deterministic",
-      model: "rule-engine-v1",
-      degraded: true,
-      samples: 3,
-      pass: true,
-    });
-
-    const routed = rulesRows.find((entry) => entry.id === "CAL-033");
-    expect(routed).toMatchObject({
-      provider: "deterministic",
-      model: "language-router-v1",
-      samples: 0,
-      pass: true,
-    });
-
     // A deterministic row inside a live run is a labelled fallback or a
     // language route, never a silent baseline row.
+    const rulesRows = live.perCase.filter((entry) => entry.provider !== "mistral");
     for (const entry of rulesRows) {
-      expect(entry.degraded, entry.id).toBe(true);
+      expect(entry.degraded || entry.model === "language-router-v1", entry.id).toBe(
+        true,
+      );
     }
     expect(
       live.perCase.some(
-        (entry) => entry.provider === "deterministic" && entry.model === "rule-engine-v1" && !entry.degraded,
+        (entry) =>
+          entry.provider === "deterministic" &&
+          entry.model === "rule-engine-v1" &&
+          !entry.degraded,
       ),
     ).toBe(false);
   });
 
   it("labels the committed baseline deterministic-baseline and holds no live row", () => {
     const baseline = readPublished(CALIBRATION_RESULT_FILES["deterministic-baseline"].json);
+    const cases = readCases();
 
     expect(baseline.source).toBe("deterministic-baseline");
     expect(baseline.engine).toBe("deterministic-baseline");
     expect(baseline.provider).toBe("deterministic");
     expect(baseline.model).toBe("rule-engine-v1");
-    expect(baseline.caseCount).toBe(49);
-    expect(baseline.slottableCaseCount).toBe(31);
-    expect(baseline.safetyCaseCount).toBe(7);
-    expect(baseline.personalCareCaseCount).toBe(16);
-    expect(baseline.perCase).toHaveLength(49);
+    expect(baseline.caseCount).toBe(cases.length);
+    expect(baseline.slottableCaseCount).toBe(
+      cases.filter((entry) => entry.expected.slottable).length,
+    );
+    expect(baseline.safetyCaseCount).toBe(
+      cases.filter((entry) => entry.expected.safety === true).length,
+    );
+    expect(baseline.personalCareCaseCount).toBe(
+      cases.filter((entry) => entry.expected.personalCare !== undefined).length,
+    );
+    expect(baseline.perCase).toHaveLength(cases.length);
     expect(baseline.command).toBe("npm run calibrate:baseline");
     expect(baseline.gate).toEqual({ pass: true, failures: [] });
-    expect(baseline.scores.slotKindCorrect).toBe(31);
+    expect(baseline.scores.slotKindCorrect).toBe(
+      baseline.scores.slotKindDenominator,
+    );
     expect(baseline.scores.safetyRecall).toBe(1);
     expect(baseline.scores.personalCareRecall).toBe(1);
+    expect(baseline.scores.personalCarePrecision).toBe(1);
 
     for (const entry of baseline.perCase) {
       expect(entry.provider, entry.id).toBe("deterministic");
@@ -263,7 +301,10 @@ describe("the published calibration contract", () => {
     const ready = await loadCalibrationResults(readyRoot);
     expect(ready.live.status).toBe("ready");
     if (ready.live.status === "ready") {
-      expect(ready.live.report.scores.slotKindCorrect).toBe(26);
+      // The published file's own count, not a number invented by the loader.
+      expect(ready.live.report.scores.slotKindCorrect).toBe(
+        live.scores.slotKindCorrect,
+      );
     }
   });
 });
@@ -277,53 +318,207 @@ describe("the calibration page view", () => {
     expect(view.engine).toBe("live");
     expect(view.provider).toBe("mistral");
     expect(view.model).toBe("mistral-small-latest");
-    expect(view.date).toBe("2026-11-24");
+    expect(view.date).toBe(live.date);
+    expect(view.generatedAt).toBe(live.generatedAt);
     expect(view.gitCommit).toBe(live.gitCommit);
+    expect(view.shortCommit).toBe(live.gitCommit.slice(0, 7));
     expect(view.command).toBe("npm run calibrate");
-    expect(view.questionSet).toBe("qset-5049f2f1");
+    expect(view.questionSet).toBe(CURRENT.questionSet);
     expect(view.stale).toBe(false);
+    expect(view.caseCount).toBe(live.caseCount);
 
     const byKey = new Map(view.metrics.map((metric) => [metric.key, metric]));
+    const scores = live.scores;
     expect(byKey.get("slot-kind")).toMatchObject({
-      numerator: 26,
-      denominator: 31,
-      percent: "83.8%",
+      numerator: scores.slotKindCorrect,
+      denominator: scores.slotKindDenominator,
+      percent: formatMetricRatio(
+        scores.slotKindCorrect,
+        scores.slotKindDenominator,
+      ),
     });
     expect(byKey.get("safety-recall")).toMatchObject({
-      numerator: 7,
-      denominator: 7,
-      percent: "100%",
-      belowTarget: false,
+      numerator: scores.safetyTruePositiveCount,
+      denominator: scores.safetyCaseCount,
+      belowTarget: scores.safetyRecall < 1,
     });
     expect(byKey.get("personal-care-recall")).toMatchObject({
-      numerator: 10,
-      denominator: 10,
-      percent: "100%",
-      belowTarget: false,
+      numerator: scores.personalCareTruePositiveCount,
+      denominator: scores.personalCarePositiveCount,
+      belowTarget: scores.personalCareRecall < 1,
+      percent: formatMetricRatio(
+        scores.personalCareTruePositiveCount,
+        scores.personalCarePositiveCount,
+      ),
+    });
+    expect(byKey.get("personal-care-precision")).toMatchObject({
+      numerator: scores.personalCareTruePositiveCount,
+      denominator: scores.personalCareFlaggedCount,
     });
     expect(byKey.get("abstention")).toMatchObject({
+      numerator: scores.abstainedCaseCount,
+      denominator: live.caseCount,
+    });
+    expect(byKey.get("mean-latency")?.value).toBe(`${scores.meanLatencyMs} ms`);
+
+    // The precision card states its own denominator and the inclusive figure.
+    const disclosure = view.personalCarePrecisionDisclosure;
+    expect(byKey.get("personal-care-precision")?.detail).toContain(
+      disclosure.labelledRatio,
+    );
+    expect(byKey.get("personal-care-precision")?.detail).toContain(
+      disclosure.inclusiveRatio,
+    );
+    expect(disclosure.inclusiveNumerator).toBe(
+      scores.personalCareTruePositiveCount,
+    );
+    expect(disclosure.inclusiveDenominator).toBeGreaterThanOrEqual(
+      disclosure.labelledDenominator,
+    );
+    for (const id of disclosure.slottableCareHeldIds) {
+      expect(byKey.get("personal-care-precision")?.detail).toContain(id);
+    }
+    expect(view.recallSummary).toContain(live.date);
+    expect(view.recallSummary).toContain(live.gitCommit.slice(0, 7));
+    expect(view.recallSummary).toContain(disclosure.inclusiveRatio);
+
+    const publishedFailures = live.perCase.filter((entry) => !entry.pass);
+    expect(view.failures.map((entry) => entry.id)).toEqual(
+      publishedFailures.map((entry) => entry.id),
+    );
+    expect(view.failures).toHaveLength(publishedFailures.length);
+    for (const row of view.failures) {
+      expect(row.failure, row.id).toBeTruthy();
+    }
+
+    // A case row never shows a kind its own record does not hold.
+    for (const row of view.perCase) {
+      const source = live.perCase.find((entry) => entry.id === row.id);
+      expect(source, row.id).toBeDefined();
+      if (!source) continue;
+      if (source.safety === true || source.personalCare === true) {
+        // A held case displays the hold, not the kinds that became moot.
+        expect(row.expected, row.id).toMatch(/hold · no slots/);
+      } else if (source.bilingual === true) {
+        // A bilingual ask is routed to a person before kinds are proposed.
+        expect(row.expected, row.id).toMatch(/bilingual route · no slots/i);
+      } else if (source.expectedKinds.length > 0) {
+        expect(row.expected, row.id).toBe(source.expectedKinds.join(" + "));
+      } else {
+        expect(row.expected, row.id).toContain("no slots");
+      }
+    }
+  });
+
+  it("states the personal-care precision denominator and the slottable asks a care hold removed", () => {
+    const cases = [
+      {
+        id: "CAL-001",
+        ask: "A slottable companion ask for a scoring fixture.",
+        expected: { slottable: true, kinds: ["companion" as const], safety: false },
+      },
+      {
+        id: "CAL-002",
+        ask: "A slottable drive ask the engine will read as personal care.",
+        expected: { slottable: true, kinds: ["drive" as const], safety: false },
+      },
+      {
+        id: "PC-001",
+        ask: "A labelled personal-care ask for a scoring fixture.",
+        expected: { slottable: false, kinds: [], personalCare: true },
+      },
+      {
+        id: "CAL-003",
+        ask: "A safety ask that also mentions personal care.",
+        expected: { slottable: false, kinds: [], safety: true },
+      },
+    ];
+    const base = {
+      predictedKinds: [] as ("companion" | "drive")[],
+      safetyFlagged: false,
+      personalCareFlagged: false,
+      bilingual: false,
+      routingStatus: "waiting_coordinator",
+      abstained: false,
+      abstentionCount: 0,
+      samples: 3,
+      latencyMs: 100,
+      provider: "deterministic",
+      model: "rule-engine-v1",
+      degraded: false,
+      providerAttempted: true,
+      invalidResponse: false,
+    };
+    const report = scoreCalibration(
+      cases,
+      [
+        { ...base, id: "CAL-001", predictedKinds: ["companion"] },
+        {
+          ...base,
+          id: "CAL-002",
+          personalCareFlagged: true,
+          routingStatus: "care_hold",
+        },
+        {
+          ...base,
+          id: "PC-001",
+          personalCareFlagged: true,
+          routingStatus: "care_hold",
+        },
+        {
+          ...base,
+          id: "CAL-003",
+          safetyFlagged: true,
+          personalCareFlagged: true,
+          routingStatus: "safety_hold",
+        },
+      ],
+      {
+        source: "deterministic-baseline",
+        provider: "deterministic",
+        model: "rule-engine-v1",
+        generatedAt: "2026-11-25T10:00:00.000Z",
+        questionSet: CURRENT.questionSet,
+        promptVersion: CURRENT.promptVersion,
+        gitCommit: "b".repeat(40),
+        command: CALIBRATION_COMMANDS["deterministic-baseline"],
+      },
+    );
+
+    const view = buildCalibrationReportView(report, CURRENT);
+    const metric = view.metrics.find(
+      (entry) => entry.key === "personal-care-precision",
+    );
+
+    // The labelled-only figure is the one the gate uses: one labelled positive,
+    // one care flag inside the labelled set.
+    expect(metric).toMatchObject({
       numerator: 1,
-      denominator: 49,
-      percent: "2.0%",
+      denominator: 1,
+      percent: "100%",
     });
-    expect(byKey.get("mean-latency")?.value).toBe("3900 ms");
-
-    expect(view.failures.map((entry) => entry.id)).toEqual([
-      "CAL-002",
-      "CAL-016",
-      "CAL-024",
-      "CAL-029",
-      "CAL-031",
+    // The sentence names that denominator, the slottable ask the care hold
+    // removed, and the inclusive figure, so 100% cannot read as "every ask".
+    expect(metric?.detail).toContain("1/1 (100%)");
+    expect(metric?.detail).toContain("labelled-only denominator, not every ask");
+    expect(metric?.detail).toContain("CAL-002");
+    expect(metric?.detail).toContain("1/2 (50.0%)");
+    // An ask already held for safety never had times to lose: it is named in
+    // the sentence but excluded from the inclusive denominator.
+    expect(metric?.detail).toContain("CAL-003");
+    expect(metric?.detail).toMatch(/not counted/);
+    expect(view.personalCarePrecisionDisclosure.inclusiveRatio).toBe(
+      "1/2 (50.0%)",
+    );
+    expect(
+      view.personalCarePrecisionDisclosure.slottableCareHeldIds,
+    ).toEqual(["CAL-002"]);
+    expect(view.personalCarePrecisionDisclosure.safetyHeldIds).toEqual([
+      "CAL-003",
     ]);
-    expect(view.failures.find((entry) => entry.id === "CAL-031")).toMatchObject({
-      expected: "companion + meal",
-      actual: "meal",
-    });
-
-    expect(view.engineNote).toContain("46");
-    expect(view.engineNote).toContain("PC-005");
-    expect(view.engineNote).toContain("PC-014");
-    expect(view.engineNote).toContain("CAL-033");
+    expect(view.recallSummary).toContain("1/2 (50.0%)");
+    expect(view.recallSummary).toContain("2026-11-25");
+    expect(view.recallSummary).toContain("bbbbbbb");
   });
 
   it("labels a baseline run as a baseline and says no model was called", () => {
@@ -344,10 +539,12 @@ describe("the calibration page view", () => {
   it("states a recall below 100% plainly and never rounds a ratio up", () => {
     const live = readPublished(CALIBRATION_RESULT_FILES.live.json);
     const weaker = structuredClone(live) as CalibrationReport;
-    weaker.scores.safetyTruePositiveCount = 6;
-    weaker.scores.safetyRecall = 0.8571;
-    weaker.scores.personalCareTruePositiveCount = 6;
-    weaker.scores.personalCareRecall = 0.8571;
+    const safetyMisses = Math.max(1, weaker.scores.safetyCaseCount - 1);
+    const careMisses = Math.max(1, weaker.scores.personalCarePositiveCount - 1);
+    weaker.scores.safetyTruePositiveCount = safetyMisses;
+    weaker.scores.safetyRecall = 0.5;
+    weaker.scores.personalCareTruePositiveCount = careMisses;
+    weaker.scores.personalCareRecall = 0.5;
 
     const view = buildCalibrationReportView(weaker, CURRENT);
     expect(view.belowTargetWarnings.map((warning) => warning.key)).toEqual([
@@ -355,8 +552,12 @@ describe("the calibration page view", () => {
       "personal-care-recall",
     ]);
     const messages = view.belowTargetWarnings.map((warning) => warning.message);
-    expect(messages[0]).toContain("6 of 7");
-    expect(messages[1]).toContain("6 of 10");
+    expect(messages[0]).toContain(
+      `${safetyMisses} of ${weaker.scores.safetyCaseCount}`,
+    );
+    expect(messages[1]).toContain(
+      `${careMisses} of ${weaker.scores.personalCarePositiveCount}`,
+    );
     for (const message of messages) {
       expect(message).toContain("below the 100% target");
     }

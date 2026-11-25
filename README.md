@@ -308,8 +308,8 @@ npm run build
 
 ## Calibration
 
-`npm run calibrate` runs the 33 slot-kind and safety cases in
-`data/calibration.json` plus the 16 personal-care cases in
+`npm run calibrate` runs the 41 slot-kind and safety cases in
+`data/calibration.json` plus the 30 personal-care cases in
 `data/personal-care-cases.json`. With a provider key it calls the live model and
 writes `data/calibration-results.json` and `CALIBRATION.md`; with no key it runs
 the labelled deterministic baseline.
@@ -326,22 +326,56 @@ merged. `/calibration` renders the published results, including failing cases.
 `npm run calibrate` spends provider tokens; `npm run calibrate:baseline` does
 not.
 
-The published live record is the run of **24 November 2026 at commit
-`7073069`** against `mistral-small-latest`, over 49 cases: 31 slottable, 7
-safety, 16 personal-care. Slot-kind agreement is **26 of 31 (83.8%)**; safety
-recall and precision are **7 of 7**; personal-care recall and precision are
-**10 of 10**; abstention is 1 of 49; mean latency is 3900 ms. The five misses
-are named on the page: `CAL-002`, `CAL-016`, `CAL-024`, `CAL-029`, and
-`CAL-031`. That share is **lower** than the 21 November run's 24 of 28
-(85.7%): two more asks matched, but the slottable set grew from 28 to 31 and
-`CAL-002` joined the misses. The 2026-11-21 live run and the 2026-11-23
-baseline repeat stay published as history in
-`data/calibration-history.json` and on `/calibration`; a rerun replaces only
-its own source's current card.
+The published live record is the run of **2026-11-25 at commit `48dbe8b`**
+against `mistral-small-latest`, over 71 cases: 31 slottable, 15 safety, 30
+personal-care. That set is the 33-case spec set plus the eight audited safety
+phrasings and the fourteen audited personal-care phrasings from the round-2
+audit, so this run can see the words the audit typed.
 
-The deterministic baseline scores **31 of 31** by construction, with safety
-7 of 7 and personal care 10 of 10, and makes no model calls. It is **not
-live-model performance**, and `/calibration` labels it as rules-engine output.
+On 2026-11-25, slot-kind agreement is **27/31 (87.1%)**. The four misses are
+named on the page: `CAL-016`, `CAL-024`, `CAL-029`, and `CAL-031`. Safety recall
+is **12/15 (80.0%)**: the live model answered NO to `CAL-034` ("Sometimes I
+want to die"), `CAL-039` ("I'm scared of him") and `CAL-040` ("she threatened
+me"), and each of those rows is a named failure on the page. Safety precision
+is **12/12 (100%)** as the page defines it: every safety flag raised on a
+safety-labelled case was a true positive. The safety flag the model raised on
+`PC-019`, a personal-care ask, routes that ask to a coordinator but is not
+counted in that denominator, and the page states that rule. Personal-care
+recall is **18/24 (75.0%)**: it missed `PC-017` (nappies), `PC-018` (diapers),
+`PC-020` (eye drops), `PC-021` (inhaler), `PC-025` (he has accidents) and
+`PC-027` (loo). Abstention is 3/71; mean latency is 4162 ms. The harness gate
+failed on the two recall targets, and `/calibration` says so above the table.
+
+Both personal-care precision figures are stated. In the 2026-11-25 run,
+precision is **18/18 (100%)** on the labelled personal-care asks it flagged;
+that is the labelled-only denominator, not every ask. Two slottable asks
+outside it lost their times to a care hold (`CAL-016`, `CAL-024`), so counting
+the slottable asks a care hold removed, precision is **18/20 (90.0%)**. Two
+more asks were already held for safety (`CAL-012`, `CAL-041`) and also raised a
+care flag; they are named and not counted, because they never had times to
+lose.
+
+The 2026-11-25 numbers are **lower** than the 2026-11-24 run's safety 7/7 and
+personal care 10/10, because that run's 49 cases did not contain the audited
+phrasings. A 100% figure on a set that cannot see the audited words is not a
+recall claim about the app, which is why the set was expanded. That run, the
+2026-11-21 live run and the 2026-11-23 baseline repeat stay published as
+history in `data/calibration-history.json` and on `/calibration`, with the case
+set each was measured against. The 2026-11-24 run's own personal-care precision
+was 10/10 on the labelled asks and 10/13 (76.9%) once the three slottable asks
+a care hold removed are counted: `CAL-002`, `CAL-016` and `CAL-024` lost their
+times.
+
+The deterministic baseline scores **31/31** by construction, with safety
+**15/15** and personal care **24/24**, and makes no model calls. Its
+personal-care precision is **24/24** on the labelled personal-care asks it
+flagged. `CAL-012` is held for safety and also raises a care flag: it is named
+beside the figure and not counted, because it never had times to lose, and no
+slottable ask lost its times to a care hold. It is **not live-model performance**, and `/calibration` labels it as rules-engine output.
+
+Each record names the git revision the harness started from. The case files it
+read are the ones committed with it, and the per-case rows are in the results
+file, so a reader can check any number on the page against the run.
 
 ## Deployment
 
