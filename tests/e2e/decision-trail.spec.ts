@@ -478,6 +478,40 @@ test.describe("VAL-DECIDE-001, VAL-DECIDE-003, VAL-DECIDE-004, VAL-DECIDE-006 an
     await context.close();
   });
 
+  test("VAL-R2SAFE-005 — the caregiver's own pain keeps the ordinary route", async ({
+    browser,
+  }) => {
+    // Bare "hurt" once read the caregiver's own strain as a safety YES at 90%
+    // ("my knees hurt"), and "lifting her" made a care hold of the same kind of
+    // sentence. Both turned away the person the app exists for.
+    const { context, page } = await signIn(browser, seedAccessTokens.marta);
+    const created = await createAsk(context, "my back hurts from lifting her");
+
+    await page.goto(`/ask/${created.askId}`);
+
+    await expect(page.getByTestId("safety-banner")).toHaveCount(0);
+    await expect(page.getByTestId("care-banner")).toHaveCount(0);
+    await expect(page.getByTestId("ask-status")).toContainText("not read yet");
+
+    const safetyRow = page.getByTestId("decision-Q5");
+    await expect(safetyRow).toBeVisible();
+    await expect(safetyRow.getByTestId("decision-answer")).toHaveText("No");
+    // 0.86 is the explicit-negative confidence: the rules recognised the
+    // caregiver's own strain, not the 0.9 word-level YES that held it.
+    await expect(safetyRow).toContainText("86%");
+
+    // Q9 is not a care hold either: "lifting her" here is the caregiver's own
+    // body, not a request for a volunteer to transfer anyone.
+    const careRow = page.getByTestId("decision-Q9");
+    await expect(careRow.getByTestId("decision-answer")).toHaveText("No");
+
+    expect(await readAskStatus(db, created.askId)).toBe("waiting_coordinator");
+    expect(await countSlots(db, created.askId)).toBe(0);
+
+    await shot(page, "trail-caregiver-own-pain");
+    await context.close();
+  });
+
   test("VAL-SAFETY-003 — shows the personal-care banner and human referrals for a care hold", async ({
     browser,
   }) => {

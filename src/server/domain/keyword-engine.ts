@@ -125,8 +125,16 @@ const WINDOW_CLOCK =
 // not wanting to be here, no reason to live, better off dead, killing oneself,
 // and the self-harm terms. Never remove a disclosure term to clear a false
 // hold; narrow the pattern and add the ordinary form to the negative side.
+//
+// Bare "hurt" was the last of the word-level positives, and it read the
+// caregiver's own strain as harm done to someone: "my knees hurt and I am
+// exhausted" answered YES at 0.9 and held the ask. It now names harm done to a
+// person — "hurt me", "he hurt me", "she hurt him" — and the caregiver's own
+// pain sits on the ordinary-talk side below. Bare "fall" stays: Q5 asks about
+// a recent fall, so "she fell yesterday" is exactly the signal the question
+// exists to catch.
 const SAFETY_POSITIVE =
-  /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt|hurting|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|gone missing|missing|got lost|locked out|abuse|abusive|neglect|chest pain|seizure|overdose|suicid(?:e|al)|self.?harm|can'?t breathe|bleeding|police|aggressive|violent|left the stove|stove on|fire|leav(?:e|es|ing) the (house|home|flat|apartment)|left the (house|home)|out of the house at night|found (her|him|them)[^.;]{0,24}(streets?|blocks?|miles?) away|hiding (her|his|their) (medication|meds|medicine|pills|tablets)|refus(?:es|ing) to eat|won'?t eat|stopped eating|not eating|(?:do not|don'?t|does not|doesn'?t) want to be here|no reason to live|better off dead|front door (wide )?open|coat gone|burn(?:s|ed|ing)?|(?:having|had|signs? of|suspected|possible) (?:a )?stroke|stroke (?:last night|this morning|today)|want(?:s|ed)? (?:to die|to be dead)|wish (?:i|he|she|they) (?:was|were)n'?t (?:still )?alive|wish (?:i|he|she|they) (?:was|were) dead|kill(?:s|ed|ing)?\s+(?:my|your|her|him|our|them)sel(?:f|ves)|hit(?:s|ting)? me|threaten(?:s|ed|ing)?|scared of (?:him|her|them)|(?:not|never)\s+(?:felt\s+|feel(?:ing)?\s+)?safe|(?:don'?t|doesn'?t|didn'?t)\s+(?:feel|feeling)\s+safe|(?:isn'?t|aren'?t|wasn'?t|weren'?t)\s+safe)\b/i;
+  /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt(?:s|ing)?\s+(?:me|us|him|her|them)|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|gone missing|missing|got lost|locked out|abuse|abusive|neglect|chest pain|seizure|overdose|suicid(?:e|al)|self.?harm|can'?t breathe|bleeding|police|aggressive|violent|left the stove|stove on|fire|leav(?:e|es|ing) the (house|home|flat|apartment)|left the (house|home)|out of the house at night|found (her|him|them)[^.;]{0,24}(streets?|blocks?|miles?) away|hiding (her|his|their) (medication|meds|medicine|pills|tablets)|refus(?:es|ing) to eat|won'?t eat|stopped eating|not eating|(?:do not|don'?t|does not|doesn'?t) want to be here|no reason to live|better off dead|front door (wide )?open|coat gone|burn(?:s|ed|ing)?|(?:having|had|signs? of|suspected|possible) (?:a )?stroke|stroke (?:last night|this morning|today)|want(?:s|ed)? (?:to die|to be dead)|wish (?:i|he|she|they) (?:was|were)n'?t (?:still )?alive|wish (?:i|he|she|they) (?:was|were) dead|kill(?:s|ed|ing)?\s+(?:my|your|her|him|our|them)sel(?:f|ves)|hit(?:s|ting)? me|threaten(?:s|ed|ing)?|scared of (?:him|her|them)|(?:not|never)\s+(?:felt\s+|feel(?:ing)?\s+)?safe|(?:don'?t|doesn'?t|didn'?t)\s+(?:feel|feeling)\s+safe|(?:isn'?t|aren'?t|wasn'?t|weren'?t)\s+safe)\b/i;
 
 // The risk words a denial may name. `SAFETY_NEGATIVE` and `NEGATED_CARE_TERM`
 // are both built from this one fragment, so a declining phrase and the strip
@@ -145,7 +153,12 @@ const SAFETY_DECLINE_TERMS = String.raw`falls?|fallen|falling|injur(?:y|ed|ies)|
 // confidence. If a disclosure phrase appears beside one of them — "my husband
 // died and sometimes I want to die" — `resolveBoolean` abstains and the ask
 // holds, so the ordinary form can never suppress a disclosure.
-const SAFETY_ORDINARY_TALK = String.raw`(?:husband|wife|partner|mother|mum|mom|father|dad|nana|grandma|grandad|grandpa|granny|brother|sister|son|daughter|friend|neighbou?r|uncle|aunt|he|she|they)\s+(?:died|has died|passed away)|still\s+(?:alive|with us)|(?:garden|gardens|plant|plants|flowers?|tree|trees|bush|bushes|lawn|grass|crops?|roses?)\s+(?:died|dies)|dead on (?:my|her|his|their|your|our) feet|when (?:i|he|she|they|we)\s+(?:die|dies)`;
+//
+// The caregiver's own body belongs here for the same reason. "My back hurts
+// from lifting her", "my knees hurt and I am exhausted" and "it hurts to lift
+// him" describe the strain of caring, not danger to anyone. They are the asks
+// the app exists for, so they settle Q5 at 0.86 and keep the ordinary route.
+const SAFETY_ORDINARY_TALK = String.raw`(?:husband|wife|partner|mother|mum|mom|father|dad|nana|grandma|grandad|grandpa|granny|brother|sister|son|daughter|friend|neighbou?r|uncle|aunt|he|she|they)\s+(?:died|has died|passed away)|still\s+(?:alive|with us)|(?:garden|gardens|plant|plants|flowers?|tree|trees|bush|bushes|lawn|grass|crops?|roses?)\s+(?:died|dies)|dead on (?:my|her|his|their|your|our) feet|when (?:i|he|she|they|we)\s+(?:die|dies)|(?:my|our|her|his|their)\s+(?:back|knees?|shoulders?|hips?|legs?|arms?|hands?|wrists?|joints?)\s+(?:hurts?|aches?|is sore|are sore|is going|are going|is giving out|are giving out)|it\s+hurts?(?:\s+me)?\s+to\s+(?:lift|bend|kneel|get up|stand|walk|sit|move|carry|dress|wash|roll)`;
 
 const SAFETY_DENIALS = String.raw`(?:i'?m|i am|we'?re|we are|they'?re|they are|he'?s|she'?s|he is|she is|it'?s|it is|is|are|am)\s+safe|safe\s+(?:for now|at the moment|for the moment|right now)|not unsafe|nothing dangerous|not in danger|no\s+(?:${SAFETY_DECLINE_TERMS})|(?:hasn'?t|haven'?t|never)\s+fallen|${SAFETY_ORDINARY_TALK}`;
 
@@ -229,6 +242,19 @@ const SELF_CARE_STATEMENT = new RegExp(
 const CAREGIVER_SELF_CARE =
   /\b(?:so|while) (?:i|we) (?:can |could )?(?:shower|bathe|wash|sleep|rest|shop|work|go|eat|breathe)\b/gi;
 
+/**
+ * A caregiver's own body is not a personal-care need for the person they care
+ * for. "My back hurts from lifting her" and "it hurts to lift him" describe
+ * the strain of caring, not a request for a volunteer to transfer anyone; Q9
+ * answers NO so the ordinary route keeps its slot. A lift the person needs
+ * ("he needs lifting from the bed to his wheelchair") still counts: the strip
+ * needs the caregiver's own body in the clause, or an "it hurts to lift" form.
+ */
+const CAREGIVER_LIFTING_STRAIN = new RegExp(
+  String.raw`\b(?:my|our|her|his|their)\s+(?:back|knees?|shoulders?|hips?|legs?|arms?|hands?|wrists?|joints?)\b[^.;]{0,32}\blift(?:s|ing|ed)?\b|\bit\s+hurts?(?:\s+me)?\s+to\s+(?:lift|transfer|roll|move)\b`,
+  "gi",
+);
+
 function positiveTextForPersonalCare(text: string): string {
   // The declined-clause and self-care strips run first, on the original words:
   // "doesn't need help with bathing or medication" must lose the whole list,
@@ -237,7 +263,8 @@ function positiveTextForPersonalCare(text: string): string {
     text
       .replace(PERSONAL_CARE_DECLINED_CLAUSE, " omitted ")
       .replace(SELF_CARE_STATEMENT, " omitted ")
-      .replace(CAREGIVER_SELF_CARE, " omitted "),
+      .replace(CAREGIVER_SELF_CARE, " omitted ")
+      .replace(CAREGIVER_LIFTING_STRAIN, " omitted "),
   );
 }
 

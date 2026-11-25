@@ -7,9 +7,11 @@ import { decide } from "@/server/services/decide";
 import { createDeterministicProvider } from "@/server/services/providers";
 
 /**
- * VAL-R2SAFE-001, VAL-R2SAFE-002, VAL-R2SAFE-003 and VAL-R2SAFE-004 — the
- * offline safety screen for plain disclosures, and the ordinary talk it must
- * not mistake for one.
+ * VAL-R2SAFE-001, VAL-R2SAFE-002, VAL-R2SAFE-003, VAL-R2SAFE-004 and
+ * VAL-R2SAFE-005 — the offline safety screen for plain disclosures, and the
+ * ordinary talk it must not mistake for one. The caregiver's own strain ("my
+ * back hurts from lifting her") is ordinary talk, not a disclosure; harm done
+ * to the person answering ("he hurt me") is a disclosure and still holds.
  *
  * The deterministic engine is the labelled fallback whenever no model provider
  * is configured or the provider errors, and it is the engine every published
@@ -319,6 +321,109 @@ describe("the safety rules keep the ordinary ask and the built-in notes working"
         false,
       );
       expect(mentionsPersonalCare(proposal.label), proposal.kind).toBe(false);
+    }
+  });
+});
+
+/**
+ * VAL-R2SAFE-005 — a caregiver's own pain is not a disclosure about the person
+ * they care for.
+ *
+ * Bare "hurt" answered "my knees hurt and I am exhausted" YES at 0.9 and held
+ * the ask, which turns away the person the app exists for. The other two
+ * own-pain sentences were care holds because "lifting"/"lift him" fired Q9.
+ * The positive rule now names harm done to the person answering; the
+ * caregiver's own strain sits on the ordinary-talk side and its lifting forms
+ * are stripped from Q9, so Q5 settles at the explicit-negative 0.86 with the
+ * ordinary route and a slot allowed.
+ */
+const CAREGIVER_OWN_PAIN = [
+  "my back hurts from lifting her",
+  "my knees hurt and I am exhausted",
+  "it hurts to lift him",
+] as const;
+
+/** Harm done to the person answering — still a disclosure, still holds. */
+const HARM_TO_THE_ANSWERER = [
+  "hurt me",
+  "he hurt me last night",
+  "she hurt me",
+  "he hurt her again",
+  "she hurt him again",
+  "they hurt them again",
+] as const;
+
+/**
+ * A recent fall stays a genuine safety signal: Q5 asks about a recent fall, so
+ * "fall" is not precision debt and may not be narrowed away.
+ */
+const RECENT_FALLS = [
+  "she fell yesterday",
+  "Mum had a fall on Sunday",
+  "he fell in the bathroom this morning",
+] as const;
+
+describe("VAL-R2SAFE-005 — a caregiver's own pain is not a disclosure", () => {
+  for (const phrase of CAREGIVER_OWN_PAIN) {
+    it(`answers Q5 NO at the explicit-negative confidence with a slot allowed for "${phrase}"`, async () => {
+      const { result, q5, plan } = await runPipeline(phrase);
+
+      expect(q5.answer, phrase).toBe(false);
+      // 0.86 is EXPLICIT_NEGATIVE_CONFIDENCE: the ordinary route, not a guess
+      // and not a sub-0.60 abstention that would hold the ask.
+      expect(q5.confidence, phrase).toBe(0.86);
+      expect(result.routing.safetyReview, phrase).toBe(false);
+      expect(result.routing.status, phrase).toBe("waiting_coordinator");
+      expect(result.routing.slotConstructionAllowed, phrase).toBe(true);
+      expect(plan.blocked, phrase).toBeNull();
+    });
+  }
+
+  for (const phrase of HARM_TO_THE_ANSWERER) {
+    it(`still holds harm done to the person answering, "${phrase}"`, async () => {
+      await expectSafetyHold(phrase);
+    });
+  }
+
+  for (const phrase of RECENT_FALLS) {
+    it(`still holds a recent fall, "${phrase}"`, async () => {
+      const { result, q5, plan } = await runPipeline(phrase);
+
+      // A fall can sit beside a care word ("he fell in the bathroom"), and the
+      // personal-care block is checked first when a slot is built. What Q5
+      // owes here is the hold itself: a YES, the safety route, and nothing
+      // proposed.
+      expect(q5.answer, phrase).toBe(true);
+      expect(q5.confidence, phrase).toBeGreaterThanOrEqual(0.6);
+      expect(result.routing.safetyReview, phrase).toBe(true);
+      expect(result.routing.status, phrase).toBe("safety_hold");
+      expect(result.routing.slotConstructionAllowed, phrase).toBe(false);
+      expect(plan.proposals, phrase).toEqual([]);
+    });
+  }
+
+  it("still holds a disclosure beside the caregiver's own pain", async () => {
+    const askText =
+      "my back hurts from lifting her and sometimes I want to die";
+    const { result, q5, plan } = await runPipeline(askText);
+
+    // The ordinary-talk strip and the disclosure both match, so the engine
+    // abstains rather than choosing. An abstention is a hold, never a NO.
+    expect(q5.confidence, askText).toBeLessThan(0.6);
+    expect(q5.abstained, askText).toBe(true);
+    expect(result.routing.safetyReview, askText).toBe(true);
+    expect(result.routing.status, askText).toBe("safety_hold");
+    expect(result.routing.slotConstructionAllowed, askText).toBe(false);
+    expect(plan.blocked?.reason, askText).toBe("safety_flag");
+    expect(plan.proposals, askText).toEqual([]);
+  });
+
+  it("still holds every audited phrase while the caregiver's pain stays ordinary", async () => {
+    for (const phrase of [...SUICIDAL_IDEATION_PHRASES, ...ABUSE_PHRASES]) {
+      const { q5, result } = await runPipeline(phrase);
+      expect(q5.answer, phrase).toBe(true);
+      expect(q5.confidence, phrase).not.toBe(0.86);
+      expect(result.routing.status, phrase).toBe("safety_hold");
     }
   });
 });
