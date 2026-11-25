@@ -163,6 +163,7 @@ const ACTION_LABELS: Record<string, string> = {
   slot_reoffered: "Offered a time again after a call",
   slot_expired_unclaimed: "Closed a time nobody claimed",
   absence_proof_refused: "Tried to close a time and the proof refused",
+  coverage_close_refused: "Tried to close a time before the call was recorded",
   reminder_written: "Wrote the one reminder",
   reminder_refused: "Tried to write a reminder and was refused",
   policy_version_saved: "Saved a signed policy version",

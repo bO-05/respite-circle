@@ -137,9 +137,10 @@ export async function revokeClaimAction(
  * close it without a claim.
  *
  * Each re-derives the desk session, then the repository re-locks the slot and
- * re-checks the state and the live outbox count. None of them writes a
- * notification row. An expiry with any message on the family's page comes back
- * as an error state, not a quiet success.
+ * re-checks the state, the recorded call, and the live outbox count. None of
+ * them writes a notification row. An expiry with any message on the family's
+ * page, or with a call promise still unkept, comes back as an error state, not
+ * a quiet success.
  */
 
 function coverageError(

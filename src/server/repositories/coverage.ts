@@ -27,6 +27,7 @@ import {
   callAfterOpenHoursFromPolicy,
   callThresholdHoursFromPolicy,
   caregiverWorkingSentence,
+  coverageCloseRefusal,
   coverageExpiryRefusalCopy,
   coverageOpenFor,
   coverageReofferRefusal,
@@ -62,6 +63,8 @@ import type {
  *     a stored number;
  *   - a call is a `call_log` row with the coordinator, the instant, the
  *     closed outcome vocabulary, and an optional note;
+ *   - a time whose card says it needs a call cannot be offered again or closed
+ *     without one; both paths read that through `coverageCallGate`;
  *   - expiring writes `absence_proof` only when that live count is exactly
  *     zero, and the database's CHECK refuses a non-zero row even from a
  *     direct caller; the digest binds the slot id, that count, the written
@@ -188,7 +191,7 @@ export type CoverageExpiryResult =
     }
   | {
       ok: false;
-      code: "not_found" | "not_open" | "outbox_not_empty";
+      code: "not_found" | "not_open" | "outbox_not_empty" | "needs_call";
       message: string;
     };
 
@@ -197,6 +200,7 @@ export const COVERAGE_AUDIT_ACTIONS = {
   reoffered: "slot_reoffered",
   expired: "slot_expired_unclaimed",
   refused: "absence_proof_refused",
+  closeRefused: "coverage_close_refused",
 } as const;
 
 export const COVERAGE_CALL_SAVED_MESSAGE =
@@ -452,13 +456,19 @@ export async function getDeskSlotCoverage(
     reoffers: item.reofferCount,
   });
 
+  // The close control's own truth, from the same predicate the repository
+  // enforces. The card still renders the form while the time is open, so the
+  // refusal itself is what the coordinator reads.
+  const closeGuard = coverageCloseRefusal({
+    status: item.status,
+    calls: item.calls.length,
+    isDue: item.isDue,
+  });
+
   return {
     ...item,
-    canExpire: item.status === "open",
-    expireRefusal:
-      item.status === "open"
-        ? null
-        : coverageExpiryRefusalCopy(item.status),
+    canExpire: closeGuard.ok,
+    expireRefusal: closeGuard.ok ? null : closeGuard.message,
     canReoffer: reofferGuard.ok,
     reofferRefusal: reofferGuard.ok ? null : reofferGuard.message,
   };
@@ -911,7 +921,9 @@ export async function reofferSlot(
 /**
  * Close a published time without a claim.
  *
- * Inside one transaction: lock the time, count every notification row for it,
+ * Inside one transaction: lock the time, refuse the close when the card says
+ * "This time needs a call now." and no `call_log` row exists (the same
+ * predicate the re-offer path uses), count every notification row for it,
  * refuse loudly if that count is not zero, write the zero-row `absence_proof`
  * with the exact query text and a digest bound to this slot, this count, and
  * this written instant (`absence-proof/v1`), audit the closure, and close the
@@ -940,6 +952,8 @@ export async function expireSlotUnclaimed(
           status: slot.status,
           windowStart: slot.windowStart,
           windowEnd: slot.windowEnd,
+          approvedAt: slot.approvedAt,
+          createdAt: slot.createdAt,
         })
         .from(slot)
         .where(and(eq(slot.id, slotId), eq(slot.churchId, actor.churchId)))
@@ -959,6 +973,57 @@ export async function expireSlotUnclaimed(
           ok: false,
           code: "not_open",
           message: coverageExpiryRefusalCopy(locked.status),
+        };
+      }
+
+      // The same read and the same predicate the re-offer path uses. A time
+      // whose card says "This time needs a call now." cannot close until a
+      // person has recorded a call about it. A time that has not reached the
+      // watch made no such promise and closes exactly as it did before.
+      const clocks = await callClocksFor(actor.churchId, tx);
+
+      const callRows = await tx
+        .select({ id: callLog.id })
+        .from(callLog)
+        .where(eq(callLog.slotId, slotId))
+        .orderBy(desc(callLog.createdAt), desc(callLog.id))
+        .limit(1);
+
+      const closeGuard = coverageCloseRefusal({
+        status: locked.status,
+        calls: callRows.length,
+        isDue: isCoverageWatchDue({
+          windowStart: locked.windowStart,
+          openSince: locked.approvedAt ?? locked.createdAt,
+          thresholdHours: clocks.thresholdHours,
+          openAfterHours: clocks.openAfterHours,
+          now,
+        }),
+      });
+
+      if (!closeGuard.ok) {
+        if (closeGuard.code === "needs_call") {
+          await tx.insert(auditEvent).values({
+            churchId: actor.churchId,
+            actorType: "human",
+            actorId: actor.personId,
+            action: COVERAGE_AUDIT_ACTIONS.closeRefused,
+            entity: "slot",
+            entityId: slotId,
+            detail: {
+              reason: "call_not_recorded",
+              askId: locked.askId,
+              calls: 0,
+              at: now.toISOString(),
+            },
+            createdAt: now,
+          });
+        }
+
+        return {
+          ok: false,
+          code: closeGuard.code,
+          message: closeGuard.message,
         };
       }
 

@@ -483,7 +483,9 @@ Next.js 16 App Router — server components, server actions, route handlers
   never erases who said yes. Safety and personal-care asks never produce slots.
 - **The failure path.** An unclaimed slot creates no notification at all.
   Coverage watch writes an `absence_proof` from the live zero-row query and its
-  digest, and the coordinator logs the call.
+  digest, and the coordinator logs the call. A time whose card says it needs a
+  call cannot close without one: the close is refused until that call is on
+  record, and a time that has not reached the watch yet closes as before.
 
 Directory map: `src/app` routes, `src/server/domain` rules, `src/server/services`
 application services, `src/db` schema and client, `drizzle/` migrations,

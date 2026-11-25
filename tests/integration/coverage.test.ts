@@ -375,7 +375,11 @@ describe("the coverage watch and the failure-path proof", () => {
     const card = await getDeskSlotCoverage(GRACE, homeId, t.db, NOW);
     expect(card).not.toBeNull();
     expect(card?.caregiverOutboxCount).toBe(0);
-    expect(card?.canExpire).toBe(true);
+    // The card says "This time needs a call now.", so the close waits for that
+    // call. The form stays on the card; the repository refuses with this
+    // sentence until the call is on record.
+    expect(card?.canExpire).toBe(false);
+    expect(card?.expireRefusal).toMatch(/record the call first/i);
     expect(card?.canReoffer).toBe(false);
     expect(card?.reofferRefusal).toMatch(/call/i);
 
@@ -656,6 +660,16 @@ describe("the coverage watch and the failure-path proof", () => {
 
     expect(await askStatus(t, askId)).toBe("approved");
 
+    // The card says this time needs a call now, so the call comes first.
+    const call = await recordCoverageCall(
+      GRACE,
+      homeId,
+      { outcome: "try_later", note: "Called about the Saturday visit." },
+      t.db,
+      CALLED_AT,
+    );
+    expect(call.ok).toBe(true);
+
     const outcome = await expireSlotUnclaimed(GRACE, homeId, t.db, CALLED_AT);
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
@@ -730,8 +744,112 @@ describe("the coverage watch and the failure-path proof", () => {
     expect(await listCoverageWatch(GRACE, t.db, CALLED_AT)).toHaveLength(0);
   });
 
+  it("VAL-R2PROM-002 — refuses to close a time that needs a call until the call is recorded", async () => {
+    const { askId, homeId } = await publishedAsk(t);
+    const start = new Date(NOW.getTime() + 12 * 3_600_000);
+    await makeAtRisk(t, homeId, start, new Date(start.getTime() + 2 * 3_600_000));
+
+    // The card's own copy for this state, and the condition the gate reads.
+    const card = await getDeskSlotCoverage(GRACE, homeId, t.db, CALLED_AT);
+    expect(card?.isDue).toBe(true);
+    expect(card?.calls).toHaveLength(0);
+    expect(await notificationCount(t, homeId)).toBe(0);
+
+    const refused = await expireSlotUnclaimed(GRACE, homeId, t.db, CALLED_AT);
+    expect(refused.ok).toBe(false);
+    if (!refused.ok) {
+      expect(refused.code).toBe("needs_call");
+      expect(refused.message).toMatch(/call/i);
+      expect(refused.message).toMatch(/nothing was changed/i);
+    }
+
+    // The time, the ask, and the proof table are exactly as they were.
+    const [stillOpen] = await t.db
+      .select({ status: slot.status })
+      .from(slot)
+      .where(eq(slot.id, homeId))
+      .limit(1);
+    expect(stillOpen.status).toBe("open");
+    expect(await absenceProofRows(t, homeId)).toHaveLength(0);
+    expect(await askStatus(t, askId)).toBe("approved");
+
+    const refusals = await auditRows(t, homeId, ["coverage_close_refused"]);
+    expect(refusals).toHaveLength(1);
+    expect(refusals[0].actorId).toBe(seedIds.people.grace);
+    expect(refusals[0].detail).toMatchObject({
+      reason: "call_not_recorded",
+      askId,
+    });
+
+    // One recorded call opens the same close, and the proof is written as
+    // before.
+    const call = await recordCoverageCall(
+      GRACE,
+      homeId,
+      { outcome: "try_later", note: "She would rather try next week." },
+      t.db,
+      CALLED_AT,
+    );
+    expect(call.ok).toBe(true);
+
+    const closed = await expireSlotUnclaimed(GRACE, homeId, t.db, CALLED_AT);
+    expect(closed.ok).toBe(true);
+    if (!closed.ok) return;
+    expect(closed.caregiverOutboxCount).toBe(0);
+    expect(closed.absenceProofId).toBeTruthy();
+
+    const proofs = await absenceProofRows(t, homeId);
+    expect(proofs).toHaveLength(1);
+    expect(proofs[0].caregiverOutboxCount).toBe(0);
+
+    const [after] = await t.db
+      .select({ status: slot.status })
+      .from(slot)
+      .where(eq(slot.id, homeId))
+      .limit(1);
+    expect(after.status).toBe("expired_unclaimed");
+    expect(await notificationCount(t, homeId)).toBe(0);
+  });
+
+  it("VAL-R2PROM-002 — a time that never promised a call still closes without one", async () => {
+    const { companionId } = await publishedAsk(t);
+
+    // Published just now, and its Respite Morning is days away: the card says
+    // the time enters the watch later, so no call was promised yet.
+    const card = await getDeskSlotCoverage(GRACE, companionId, t.db, NOW);
+    expect(card?.isDue).toBe(false);
+    expect(card?.calls).toHaveLength(0);
+
+    const outcome = await expireSlotUnclaimed(GRACE, companionId, t.db, NOW);
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    expect(outcome.caregiverOutboxCount).toBe(0);
+    expect(outcome.absenceProofId).toBeTruthy();
+
+    expect(
+      await t.db.select({ id: callLog.id }).from(callLog),
+    ).toHaveLength(0);
+    expect(await absenceProofRows(t, companionId)).toHaveLength(1);
+    expect(await auditRows(t, companionId, ["coverage_close_refused"])).toHaveLength(
+      0,
+    );
+  });
+
   it("gives two proofs from different times different digests that each recompute from the row", async () => {
     const { companionId, homeId } = await publishedAsk(t);
+
+    // Both times are past their call threshold, so each needs its own call
+    // before it can close without a claim.
+    for (const slotId of [homeId, companionId]) {
+      const call = await recordCoverageCall(
+        GRACE,
+        slotId,
+        { outcome: "reached", note: "" },
+        t.db,
+        CALLED_AT,
+      );
+      expect(call.ok).toBe(true);
+    }
 
     const first = await expireSlotUnclaimed(GRACE, homeId, t.db, CALLED_AT);
     if (!first.ok) throw new Error(first.message);
@@ -801,6 +919,17 @@ describe("the coverage watch and the failure-path proof", () => {
       .where(eq(notification.slotId, companionId));
 
     expect(await notificationCount(t, homeId)).toBe(1);
+
+    // The time is past its threshold, so the call is recorded first. The
+    // outbox check is then the refusal this case is about.
+    const call = await recordCoverageCall(
+      GRACE,
+      homeId,
+      { outcome: "reached", note: "" },
+      t.db,
+      CALLED_AT,
+    );
+    expect(call.ok).toBe(true);
 
     const outcome = await expireSlotUnclaimed(GRACE, homeId, t.db, CALLED_AT);
     expect(outcome.ok).toBe(false);

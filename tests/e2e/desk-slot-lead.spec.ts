@@ -385,6 +385,16 @@ test.describe.serial("VAL-AUDITFIX-016 — the desk slot page's lead follows the
     // A retry keeps the state the earlier attempt advanced to. The open
     // sentence itself is pinned by the open time's own test.
     if ((await slotStatus(db, SLOT.expired)) === "open") {
+      // This time is past its call threshold, so the call is recorded before
+      // the close. The close is otherwise refused, which is the product's
+      // promise on the card.
+      const coverage = grace.page.getByTestId("desk-coverage");
+      await coverage.getByLabel("Reached them").check();
+      await coverage.getByTestId("save-coverage-call").click();
+      await expect(coverage.getByTestId("coverage-calls")).toContainText(
+        "Reached them",
+        { timeout: 20_000 },
+      );
       await grace.page.getByTestId("coverage-expire").click();
       await expect(grace.page.getByTestId("absence-proof")).toBeVisible({
         timeout: 45_000,

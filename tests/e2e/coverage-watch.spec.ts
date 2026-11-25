@@ -759,6 +759,14 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
       await expect(card.getByTestId("coverage-message-count")).toHaveText(
         MESSAGE_LINE,
       );
+      // A time whose card says it needs a call cannot close without one, so
+      // the coordinator records the call on the card first.
+      await card.getByLabel("Reached them").check();
+      await card.getByTestId("save-coverage-call").click();
+      await expect(card.getByTestId("coverage-calls")).toContainText(
+        "Reached them",
+        { timeout: 20_000 },
+      );
       await card.getByTestId("coverage-expire").click();
       // The card leaves the watch once the time closes; the proof lives on the
       // time's own review page.
@@ -865,6 +873,14 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
     await grace.page.goto(`/desk/slot/${QUIET_CLOSURE_TARGET_SLOT}`);
 
     if ((await slotStatus(db, QUIET_CLOSURE_TARGET_SLOT)) === "open") {
+      // This time is inside the watch, so its call promise comes first.
+      const coverage = grace.page.getByTestId("desk-coverage");
+      await coverage.getByLabel("Reached them").check();
+      await coverage.getByTestId("save-coverage-call").click();
+      await expect(coverage.getByTestId("coverage-calls")).toContainText(
+        "Reached them",
+        { timeout: 20_000 },
+      );
       await grace.page.getByTestId("coverage-expire").click();
       await expect(grace.page.getByTestId("absence-proof")).toBeVisible({
         timeout: 45_000,

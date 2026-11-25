@@ -192,7 +192,8 @@ export function CoverageExpireForm({ slotId }: { slotId: string }) {
       <p className="max-w-prose text-base leading-relaxed text-ink-muted">
         This writes the church&apos;s proof that no message was sent about this
         time. It is refused, and nothing changes, if the family&apos;s page
-        already has a message.
+        already has a message, or if this time needs a call and no call is
+        recorded.
       </p>
       <Feedback state={state} testId="coverage-expire-feedback" />
     </form>

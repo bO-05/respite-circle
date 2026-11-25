@@ -9,6 +9,7 @@ import {
   DEFAULT_CALL_THRESHOLD_HOURS,
   caregiverWorkingSentence,
   coverageCallLeadLine,
+  coverageCloseRefusal,
   coverageExpiryRefusalCopy,
   coverageMessageCountLine,
   coverageOpenFor,
@@ -342,6 +343,72 @@ describe("closing a time unclaimed", () => {
     expect(
       coverageExpiryRefusalCopy("open").toLowerCase(),
     ).not.toMatch(SHAME_WORDS);
+  });
+
+  it("VAL-R2PROM-002 — a time that needs a call cannot close without one, and closes with one", () => {
+    const refused = coverageCloseRefusal({
+      status: "open",
+      calls: 0,
+      isDue: true,
+    });
+    expect(refused.ok).toBe(false);
+    if (!refused.ok) {
+      expect(refused.code).toBe("needs_call");
+      // The coordinator reads what is missing in plain words, and that the
+      // refusal left the time alone.
+      expect(refused.message.toLowerCase()).toContain("call");
+      expect(refused.message.toLowerCase()).toContain("nothing was changed");
+      expect(refused.message.toLowerCase()).not.toMatch(SHAME_WORDS);
+    }
+
+    // One recorded call opens the same close.
+    expect(
+      coverageCloseRefusal({ status: "open", calls: 1, isDue: true }).ok,
+    ).toBe(true);
+
+    // A time that has not promised a call yet closes exactly as before: the
+    // card says it enters the watch later, so zero calls is not a broken
+    // promise.
+    expect(
+      coverageCloseRefusal({ status: "open", calls: 0, isDue: false }).ok,
+    ).toBe(true);
+
+    // A time that is no longer published keeps the existing refusal, because
+    // the call promise is not the reason it cannot close.
+    const closed = coverageCloseRefusal({
+      status: "expired_unclaimed",
+      calls: 0,
+      isDue: true,
+    });
+    expect(closed.ok).toBe(false);
+    if (!closed.ok) {
+      expect(closed.code).toBe("not_open");
+      expect(closed.message).toBe(
+        coverageExpiryRefusalCopy("expired_unclaimed"),
+      );
+    }
+  });
+
+  it("VAL-R2PROM-002 — the close path and the re-offer path share one call gate", () => {
+    // Two entry points, one predicate: neither invents its own rule for
+    // "a person has spoken with the family".
+    const close = coverageCloseRefusal({
+      status: "open",
+      calls: 0,
+      isDue: true,
+    });
+    const reoffer = coverageReofferRefusal({
+      status: "open",
+      calls: 0,
+      reoffers: 0,
+    });
+
+    expect(close.ok).toBe(false);
+    expect(reoffer.ok).toBe(false);
+    if (!close.ok && !reoffer.ok) {
+      expect(close.code).toBe("needs_call");
+      expect(reoffer.code).toBe("needs_call");
+    }
   });
 });
 

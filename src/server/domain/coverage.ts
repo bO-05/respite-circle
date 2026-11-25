@@ -290,6 +290,38 @@ export function validateCoverageCall(input: {
 }
 
 // ---------------------------------------------------------------------------
+// The one gate both coverage paths share
+// ---------------------------------------------------------------------------
+
+export type CoverageCallGate =
+  | { ok: true }
+  | { ok: false; code: "needs_call"; message: string };
+
+/**
+ * Has a person spoken with the family about this time?
+ *
+ * Both the re-offer path and the close path call this predicate, so a time
+ * that promised a call cannot move on either route with zero `call_log` rows.
+ * Each caller supplies its own plain sentence, because the next human action
+ * differs; the rule itself is written once here.
+ */
+export function coverageCallGate(input: {
+  calls: number;
+  refusal: string;
+}): CoverageCallGate {
+  if (input.calls >= 1) return { ok: true };
+  return { ok: false, code: "needs_call", message: input.refusal };
+}
+
+/** The sentence when a re-offer is attempted before any call. */
+export const COVERAGE_REOFFER_NEEDS_CALL =
+  "Record a call first. A time is never offered to the congregation again until a person has spoken with the family.";
+
+/** The sentence when a close is attempted before any call. */
+export const COVERAGE_CLOSE_NEEDS_CALL =
+  "Record the call first. This time needs a call, and a time is never closed without one. Nothing was changed.";
+
+// ---------------------------------------------------------------------------
 // Offering the same time again
 // ---------------------------------------------------------------------------
 
@@ -368,12 +400,10 @@ export function coverageReofferRefusal(input: {
   }
 
   if (input.calls < 1) {
-    return {
-      ok: false,
-      code: "needs_call",
-      message:
-        "Record a call first. A time is never offered to the congregation again until a person has spoken with the family.",
-    };
+    return coverageCallGate({
+      calls: input.calls,
+      refusal: COVERAGE_REOFFER_NEEDS_CALL,
+    });
   }
 
   return { ok: true };
@@ -382,6 +412,40 @@ export function coverageReofferRefusal(input: {
 // ---------------------------------------------------------------------------
 // Closing a time without a claim
 // ---------------------------------------------------------------------------
+
+export type CoverageCloseGuard =
+  | { ok: true }
+  | { ok: false; code: "not_open" | "needs_call"; message: string };
+
+/**
+ * The close path's gate.
+ *
+ * A card that says "This time needs a call now." made a promise. That promise
+ * is kept or the close is refused: the same call predicate the re-offer path
+ * uses, applied only while the card actually carries the call promise. A time
+ * still waiting for its watch to open never promised a call, so it closes
+ * exactly as it did before.
+ */
+export function coverageCloseRefusal(input: {
+  status: string;
+  calls: number;
+  isDue: boolean;
+}): CoverageCloseGuard {
+  if (input.status !== "open") {
+    return {
+      ok: false,
+      code: "not_open",
+      message: coverageExpiryRefusalCopy(input.status),
+    };
+  }
+
+  if (!input.isDue) return { ok: true };
+
+  return coverageCallGate({
+    calls: input.calls,
+    refusal: COVERAGE_CLOSE_NEEDS_CALL,
+  });
+}
 
 /**
  * One calm sentence for the state a coordinator actually met. A time can only
