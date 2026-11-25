@@ -189,6 +189,206 @@ export function describePersonalCarePrecision(
   };
 }
 
+/**
+ * The same disclosure on the public page, in words.
+ *
+ * It keeps both denominators and names what the labelled-only count leaves
+ * out, but it does not make a church volunteer decode "numerator",
+ * "denominator", or a fraction. Every figure is still taken from the same
+ * per-case rows; nothing here is written by hand or rounded.
+ */
+export function describePersonalCarePrecisionInWords(
+  disclosure: PersonalCarePrecisionDisclosure,
+): string {
+  const parts: string[] = [
+    `A care hold sends an ask to a person instead of offering a time. ${disclosure.labelledNumerator} of ${countWithNoun(
+      disclosure.labelledDenominator,
+      "care hold",
+    )} raised on an ask with a personal-care label were on an ask labelled as needing personal care. That counts only the labelled asks, not every ask in the run.`,
+  ];
+
+  if (disclosure.slottableCareHeldIds.length === 0) {
+    parts.push("No ordinary ask outside the labelled set lost its times to a care hold.");
+  } else {
+    parts.push(
+      `${countWithNoun(
+        disclosure.slottableCareHeldIds.length,
+        "ordinary ask",
+      )} outside the labelled set lost ${
+        disclosure.slottableCareHeldIds.length === 1 ? "its" : "their"
+      } times to a care hold (${disclosure.slottableCareHeldIds.join(", ")}).`,
+    );
+  }
+
+  if (disclosure.safetyHeldIds.length > 0) {
+    parts.push(
+      `${countWithNoun(
+        disclosure.safetyHeldIds.length,
+        "ask",
+      )} already held for safety also raised a care word (${
+        disclosure.safetyHeldIds.join(", ")
+      }); no times existed to lose, so ${
+        disclosure.safetyHeldIds.length === 1 ? "it is" : "they are"
+      } named here and not counted.`,
+    );
+  }
+  if (disclosure.otherFlaggedIds.length > 0) {
+    parts.push(
+      `${countWithNoun(
+        disclosure.otherFlaggedIds.length,
+        "ask",
+      )} outside both groups also raised a care word (${
+        disclosure.otherFlaggedIds.join(", ")
+      }); no time that could be offered was involved, so ${
+        disclosure.otherFlaggedIds.length === 1 ? "it is" : "they are"
+      } named here and not counted.`,
+    );
+  }
+
+  parts.push(
+    `Counting the ordinary asks a care hold cost, ${disclosure.inclusiveNumerator} of ${disclosure.inclusiveDenominator}.`,
+  );
+
+  return parts.join(" ");
+}
+
+/** One group in the case strip. Every value is counted from the per-case rows. */
+export type CalibrationCaseGroupKey =
+  | "slottable"
+  | "safety"
+  | "personal-care"
+  | "bilingual"
+  | "other";
+
+export type CalibrationCaseGroup = {
+  key: CalibrationCaseGroupKey;
+  label: string;
+  /** The short form used in the history card's "case set at that date" line. */
+  shortLabel: string;
+  definition: string;
+  value: number;
+};
+
+const CASE_GROUP_META: Record<
+  CalibrationCaseGroupKey,
+  { label: string; shortLabel: string; definition: string }
+> = {
+  slottable: {
+    label: "A time could be offered",
+    shortLabel: "where a time could be offered",
+    definition:
+      "The ask was about a kind of break the app can arrange, so a time could be offered.",
+  },
+  safety: {
+    label: "A safety concern",
+    shortLabel: "safety",
+    definition:
+      "The ask was labelled a safety concern. It goes to a person and no time is offered.",
+  },
+  "personal-care": {
+    label: "Help with personal care",
+    shortLabel: "personal care",
+    definition:
+      "The ask was labelled as needing help with personal care. It goes to a person and no time is offered.",
+  },
+  bilingual: {
+    label: "Another language",
+    shortLabel: "another language",
+    definition:
+      "The ask was labelled as needing a bilingual coordinator. No time is offered from an English guess.",
+  },
+  other: {
+    label: "Something else",
+    shortLabel: "other",
+    definition:
+      "No time could be offered, and the ask is not in any group above.",
+  },
+};
+
+const CASE_GROUP_ORDER: CalibrationCaseGroupKey[] = [
+  "slottable",
+  "safety",
+  "personal-care",
+  "bilingual",
+  "other",
+];
+
+export type CalibrationCaseGroups = {
+  groups: CalibrationCaseGroup[];
+  sum: number;
+  matchesTotal: boolean;
+  sentence: string;
+};
+
+/**
+ * Partition every case into one group, in a fixed order.
+ *
+ * The groups overlap in the raw labels (a slottable ask can also sit in the
+ * personal-care case file as a near-miss control), so the first matching group
+ * wins. That makes the displayed parts add up to the case count instead of to
+ * a larger number, and it is the reason the personal-care group is the
+ * labelled count rather than the size of the personal-care case file.
+ */
+export function buildCalibrationCaseGroups(
+  perCase: readonly CalibrationCaseResult[],
+): CalibrationCaseGroups {
+  const counts: Record<CalibrationCaseGroupKey, number> = {
+    slottable: 0,
+    safety: 0,
+    "personal-care": 0,
+    bilingual: 0,
+    other: 0,
+  };
+
+  for (const entry of perCase) {
+    if (entry.slottable) counts.slottable += 1;
+    else if (entry.safety === true) counts.safety += 1;
+    else if (entry.personalCare === true) counts["personal-care"] += 1;
+    else if (entry.bilingual) counts.bilingual += 1;
+    else counts.other += 1;
+  }
+
+  const groups = CASE_GROUP_ORDER.filter(
+    (key) => key !== "other" || counts.other > 0,
+  ).map((key) => ({ key, ...CASE_GROUP_META[key], value: counts[key] }));
+
+  const sum = groups.reduce((total, group) => total + group.value, 0);
+  const matchesTotal = sum === perCase.length;
+  const sentence = matchesTotal
+    ? `${groups.map((group) => group.value).join(" + ")} = ${sum} cases, so every case is counted once.`
+    : `These groups add to ${sum}, but the run holds ${perCase.length} cases.`;
+
+  return { groups, sum, matchesTotal, sentence };
+}
+
+function personalCareCountNote(
+  perCase: readonly CalibrationCaseResult[],
+  disclosure: PersonalCarePrecisionDisclosure,
+): string {
+  const labelled = perCase.filter((entry) => entry.personalCare === true).length;
+  const controls = perCase.filter(
+    (entry) => entry.personalCare === false,
+  ).length;
+  const fileRows = labelled + controls;
+  const parts = [
+    `${labelled} of the ${fileRows} rows in the personal-care case file are labelled as needing personal care.`,
+  ];
+  if (controls > 0) {
+    parts.push(
+      `The other ${controls} are ordinary asks that check a care word does not stop a time that could be offered; they sit in the first group above.`,
+    );
+  }
+  const held = disclosure.slottableCareHeldIds;
+  parts.push(
+    held.length === 0
+      ? "No ordinary ask lost its times to a care hold."
+      : `${countWithNoun(held.length, "ordinary ask")} outside the labelled set lost ${
+          held.length === 1 ? "its" : "their"
+        } times to a care hold (${held.join(", ")}).`,
+  );
+  return parts.join(" ");
+}
+
 export type CalibrationMetric = {
   key: string;
   label: string;
@@ -243,6 +443,8 @@ export type CalibrationHistoryEntry = {
   slottableCaseCount: number;
   safetyCaseCount: number;
   personalCareCaseCount: number;
+  /** The one labelled group each case belongs to, so the parts add up. */
+  caseSetSentence: string;
   slotKind: string;
   safetyRecall: string;
   personalCareRecall: string;
@@ -269,7 +471,20 @@ export type CalibrationReportView = {
   slottableCaseCount: number;
   safetyCaseCount: number;
   personalCareCaseCount: number;
-  caseCounts: { label: string; value: number }[];
+  /** The one labelled group a case belongs to, so the parts add to the total. */
+  caseGroups: CalibrationCaseGroup[];
+  caseGroupSum: number;
+  caseGroupMatchesTotal: boolean;
+  caseGroupSumSentence: string;
+  /**
+   * The personal-care group's own denominator and the ordinary asks a care
+   * hold removed, in words, beside the count.
+   */
+  personalCareCountNote: string;
+  /** The live result a first viewport shows, taken from the metrics above. */
+  headline: CalibrationMetric[];
+  /** A plain phrase for the engine; the recorded token stays in `engine`. */
+  engineLabel: string;
   metrics: CalibrationMetric[];
   failures: CalibrationCaseRow[];
   perCase: CalibrationCaseRow[];
@@ -303,7 +518,7 @@ function ratioMetric(
     numerator,
     denominator,
     percent: formatMetricRatio(numerator, denominator),
-    value: `${numerator}/${denominator}`,
+    value: `${numerator} of ${denominator}`,
     detail,
     belowTarget,
   };
@@ -390,11 +605,6 @@ function engineNote(report: CalibrationReport): string {
   const parts = [
     `${modelRows.length} of the ${report.caseCount} cases ${modelRows.length === 1 ? "was" : "were"} answered by ${report.provider} / ${report.model}.`,
   ];
-  if (report.holdScreen) {
-    parts.push(
-      "Every case also ran the app's fixed safety and personal-care screen over its own words, so a hold the model missed is still counted as a hold.",
-    );
-  }
   if (fallbackRows.length > 0) {
     parts.push(
       `${countCases(fallbackRows.length)} fell back to the labelled rules engine after a provider failure: ${ids(fallbackRows)}.`,
@@ -408,10 +618,7 @@ function engineNote(report: CalibrationReport): string {
   return parts.join(" ");
 }
 
-function recallSummary(
-  report: CalibrationReport,
-  precision: PersonalCarePrecisionDisclosure,
-): string {
+function recallSummary(report: CalibrationReport): string {
   const scores = report.scores;
   const safety = `${scores.safetyTruePositiveCount} of ${scores.safetyCaseCount} (${formatMetricRatio(
     scores.safetyTruePositiveCount,
@@ -429,11 +636,9 @@ function recallSummary(
   const sentence = `On this ${report.date} run at commit ${report.gitCommit.slice(
     0,
     7,
-  )}, safety recall is ${safety}; personal-care recall is ${personalCare}. ${
-    precision.sentence
-  }`;
+  )}, of the safety-labelled asks, ${safety} reached a person; of the personal-care-labelled asks, ${personalCare} reached a person. The scores below state the counts behind each figure, including the ordinary asks a care hold cost.`;
   return below
-    ? `${sentence} A recall below the 100% target is stated plainly on this page, not rounded up.`
+    ? `${sentence} A score below the 100% target is stated plainly on this page, not rounded up.`
     : sentence;
 }
 
@@ -446,9 +651,9 @@ function belowTargetWarnings(
   if (scores.safetyCaseCount > 0 && scores.safetyRecall < 1) {
     warnings.push({
       key: "safety-recall",
-      message: `Safety recall is ${scores.safetyTruePositiveCount} of ${
-        scores.safetyCaseCount
-      } (${formatMetricRatio(
+      message: `Safety asks that reached a person: ${
+        scores.safetyTruePositiveCount
+      } of ${scores.safetyCaseCount} (${formatMetricRatio(
         scores.safetyTruePositiveCount,
         scores.safetyCaseCount,
       )}). That is below the 100% target. The misses are listed below rather than hidden.`,
@@ -458,7 +663,7 @@ function belowTargetWarnings(
   if (scores.personalCarePositiveCount > 0 && scores.personalCareRecall < 1) {
     warnings.push({
       key: "personal-care-recall",
-      message: `Personal-care recall is ${
+      message: `Personal-care asks that reached a person: ${
         scores.personalCareTruePositiveCount
       } of ${scores.personalCarePositiveCount} (${formatMetricRatio(
         scores.personalCareTruePositiveCount,
@@ -479,6 +684,8 @@ export function buildCalibrationReportView(
   const failures = perCase.filter((entry) => !entry.pass);
   const stale = isCalibrationStale(report, current);
   const precision = describePersonalCarePrecision(report.perCase, scores);
+  const personalCarePrecisionText =
+    describePersonalCarePrecisionInWords(precision);
 
   const warnings: string[] = [];
   if (stale) {
@@ -495,66 +702,76 @@ export function buildCalibrationReportView(
   const metrics: CalibrationMetric[] = [
     ratioMetric(
       "slot-kind",
-      "Slot-kind agreement",
+      "Times offered that matched the label",
       scores.slotKindCorrect,
       scores.slotKindDenominator,
-      `Exact set equality on the ${scores.slotKindDenominator} slottable asks. Safety-held, personal-care-held, and bilingual asks are excluded because kinds are moot.`,
+      `The app's rules turn the nine answers into the kinds of time to propose. This counts the ${scores.slotKindDenominator} asks where a time could be offered and the proposed kinds matched the hand-written label exactly. Safety, personal-care and another-language asks are left out, because no time is ever offered for them.`,
     ),
     ratioMetric(
       "safety-recall",
-      "Safety recall",
+      "Safety asks that reached a person",
       scores.safetyTruePositiveCount,
       scores.safetyCaseCount,
-      "Safety-labelled asks routed to a human hold.",
+      "Every ask marked as a safety concern should reach a person instead of becoming a time. This counts how often that happened.",
       scores.safetyCaseCount > 0 && scores.safetyRecall < 1,
     ),
     ratioMetric(
       "safety-precision",
-      "Safety precision",
+      "Safety holds that were right",
       scores.safetyTruePositiveCount,
       scores.safetyFlaggedCount,
-      "Raised safety flags that were on a safety-labelled ask.",
+      "How many of the safety holds the app raised were on an ask marked as a safety concern. A hold on the wrong ask still sends that ask to a person; the page shows it rather than hiding it.",
     ),
     ratioMetric(
       "personal-care-recall",
-      "Personal-care recall",
+      "Personal-care asks that reached a person",
       scores.personalCareTruePositiveCount,
       scores.personalCarePositiveCount,
-      "Labelled personal-care asks routed to a care hold. This denominator is the labelled positives, not the size of the personal-care case file.",
+      "Every ask marked as needing personal care should reach a person instead of becoming a time. The count starts from the asks labelled that way, not from every row in the personal-care case file.",
       scores.personalCarePositiveCount > 0 && scores.personalCareRecall < 1,
     ),
     ratioMetric(
       "personal-care-precision",
-      "Personal-care precision",
+      "Personal-care holds that were right",
       scores.personalCareTruePositiveCount,
       scores.personalCareFlaggedCount,
-      precision.sentence,
+      personalCarePrecisionText,
     ),
     ratioMetric(
       "abstention",
-      "Questions the model left to a person",
+      "Cases with an unsure answer",
       scores.abstainedCaseCount,
       report.caseCount,
-      `Cases where the model was less sure than the ${DECISION_MIN_CONFIDENCE} threshold on at least one of the nine answers. Reported, not gated.`,
+      `The AI was less than ${Math.round(
+        DECISION_MIN_CONFIDENCE * 100,
+      )}% sure on at least one of the nine questions in these cases. Shown here, not graded.`,
     ),
     ratioMetric(
       "invalid-responses",
-      "Invalid provider responses",
+      "Answers that failed the check",
       scores.invalidResponseCount,
       scores.providerAttemptCount,
-      "Provider responses that did not validate and fell back to the labelled rules engine.",
+      "Provider answers that did not pass the app's check and were replaced by the app's own rules.",
     ),
     {
       key: "mean-latency",
-      label: "Mean latency",
+      label: "Average time for one case",
       numerator: null,
       denominator: null,
       percent: null,
-      value: `${scores.meanLatencyMs} ms`,
-      detail: `p95 ${scores.p95LatencyMs} ms across all ${report.caseCount} cases. Reported, not gated.`,
+      value: `about ${(scores.meanLatencyMs / 1000).toFixed(1)} seconds`,
+      detail: `Measured as ${scores.meanLatencyMs} ms per case. Nine cases in ten finished within about ${(
+        scores.p95LatencyMs / 1000
+      ).toFixed(1)} seconds. Shown here, not graded.`,
       belowTarget: false,
     },
   ];
+
+  const headline: CalibrationMetric[] = metrics.filter((metric) =>
+    ["slot-kind", "safety-recall", "personal-care-recall"].includes(metric.key),
+  );
+
+  const caseStrip = buildCalibrationCaseGroups(report.perCase);
 
   return {
     source: report.source,
@@ -574,12 +791,13 @@ export function buildCalibrationReportView(
     slottableCaseCount: report.slottableCaseCount,
     safetyCaseCount: report.safetyCaseCount,
     personalCareCaseCount: report.personalCareCaseCount,
-    caseCounts: [
-      { label: "Cases", value: report.caseCount },
-      { label: "Slottable asks", value: report.slottableCaseCount },
-      { label: "Safety-labelled", value: report.safetyCaseCount },
-      { label: "Personal-care-labelled", value: report.personalCareCaseCount },
-    ],
+    caseGroups: caseStrip.groups,
+    caseGroupSum: caseStrip.sum,
+    caseGroupMatchesTotal: caseStrip.matchesTotal,
+    caseGroupSumSentence: caseStrip.sentence,
+    personalCareCountNote: personalCareCountNote(report.perCase, precision),
+    headline,
+    engineLabel: report.source === "live" ? "The live model" : "The app's own rules",
     metrics,
     failures,
     perCase,
@@ -587,14 +805,14 @@ export function buildCalibrationReportView(
     holdScreenNote: report.holdScreen
       ? `Safety and personal care are measured with the app's fixed screen over each ask's own words beside the provider (${report.holdScreen}). A rule hold is counted even when the model misses it, because production holds it too.`
       : null,
-    recallSummary: recallSummary(report, precision),
+    recallSummary: recallSummary(report),
     personalCarePrecisionDisclosure: precision,
     warnings,
     belowTargetWarnings: belowTargetWarnings(report),
     stale,
     gate: report.gate,
     gateSentence: report.gate.pass
-      ? "The harness gate passed. Safety recall and personal-care recall are the two gates; latency and unanswered questions are reported, not gated."
+      ? "The harness gate passed. Two things are gates: every safety-labelled ask reaches a person, and every personal-care-labelled ask reaches a person. Speed and unsure answers are shown, not graded."
       : `The harness gate did not pass: ${report.gate.failures.join(" ")}`,
   };
 }
@@ -612,6 +830,14 @@ export function buildCalibrationHistoryView(
     .map((report) => {
       const scores = report.scores;
       const precision = describePersonalCarePrecision(report.perCase, scores);
+      const caseStrip = buildCalibrationCaseGroups(report.perCase);
+      const heldCount = precision.slottableCareHeldIds.length;
+      const heldLabel =
+        heldCount > 0
+          ? `${precision.inclusiveNumerator} of ${precision.inclusiveDenominator} including the ${heldCount} slottable ask${
+              heldCount === 1 ? "" : "s"
+            } a care hold removed`
+          : `${precision.inclusiveNumerator} of ${precision.inclusiveDenominator} with no slottable ask lost to a care hold`;
       return {
         key: `${report.source}-${report.generatedAt}`,
         source: report.source,
@@ -632,26 +858,23 @@ export function buildCalibrationHistoryView(
         slottableCaseCount: report.slottableCaseCount,
         safetyCaseCount: report.safetyCaseCount,
         personalCareCaseCount: report.personalCareCaseCount,
-        slotKind: `${scores.slotKindCorrect}/${scores.slotKindDenominator} (${formatMetricRatio(
+        caseSetSentence: `${report.caseCount} total · ${caseStrip.groups
+          .map((group) => `${group.value} ${group.shortLabel}`)
+          .join(" · ")}`,
+        slotKind: `${scores.slotKindCorrect} of ${scores.slotKindDenominator} (${formatMetricRatio(
           scores.slotKindCorrect,
           scores.slotKindDenominator,
         )})`,
-        safetyRecall: `${scores.safetyTruePositiveCount}/${scores.safetyCaseCount} (${formatMetricRatio(
+        safetyRecall: `${scores.safetyTruePositiveCount} of ${scores.safetyCaseCount} (${formatMetricRatio(
           scores.safetyTruePositiveCount,
           scores.safetyCaseCount,
         )})`,
-        personalCareRecall: `${scores.personalCareTruePositiveCount}/${scores.personalCarePositiveCount} (${formatMetricRatio(
+        personalCareRecall: `${scores.personalCareTruePositiveCount} of ${scores.personalCarePositiveCount} (${formatMetricRatio(
           scores.personalCareTruePositiveCount,
           scores.personalCarePositiveCount,
         )})`,
-        personalCarePrecision:
-          precision.slottableCareHeldIds.length > 0
-            ? `${precision.labelledRatio} labelled · ${precision.inclusiveRatio} including the ${countWithNoun(
-                precision.slottableCareHeldIds.length,
-                "slottable ask",
-              )} a care hold removed`
-            : `${precision.labelledRatio} labelled · ${precision.inclusiveRatio} with no slottable ask lost to a care hold`,
-        abstention: `${scores.abstainedCaseCount}/${report.caseCount} (${formatMetricRatio(
+        personalCarePrecision: `${precision.labelledNumerator} of ${precision.labelledDenominator} labelled · ${heldLabel}`,
+        abstention: `${scores.abstainedCaseCount} of ${report.caseCount} (${formatMetricRatio(
           scores.abstainedCaseCount,
           report.caseCount,
         )})`,

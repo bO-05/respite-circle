@@ -87,32 +87,41 @@ test("VAL-CALIB-003, VAL-CALIB-004 and VAL-CALIB-005 — the calibration page ke
   await expect(liveCard.getByTestId("calibration-source")).toHaveText(
     "Measured with live model",
   );
-  await expect(liveCard.getByTestId("calibration-engine")).toHaveText("live");
+  // The machine token is data for this spec; the visible label is a phrase a
+  // church volunteer can read.
+  await expect(liveCard.getByTestId("calibration-engine")).toHaveAttribute(
+    "data-engine",
+    "live",
+  );
+  await expect(liveCard.getByTestId("calibration-engine")).toHaveText(
+    "The live model",
+  );
   await expect(liveCard.getByTestId("calibration-command")).toHaveText(
     "npm run calibrate",
   );
 
-  // Every displayed count comes from the published live record.
+  // Every displayed count comes from the published live record, and every
+  // score says "X of Y" rather than printing a fraction.
   const scores = live.scores;
   await expect(liveCard.getByTestId("metric-slot-kind")).toContainText(
-    `${scores.slotKindCorrect}/${scores.slotKindDenominator}`,
+    `${scores.slotKindCorrect} of ${scores.slotKindDenominator}`,
   );
   await expect(liveCard.getByTestId("metric-safety-recall")).toContainText(
-    `${scores.safetyTruePositiveCount}/${scores.safetyCaseCount}`,
+    `${scores.safetyTruePositiveCount} of ${scores.safetyCaseCount}`,
   );
   await expect(liveCard.getByTestId("metric-safety-precision")).toContainText(
-    `${scores.safetyTruePositiveCount}/${scores.safetyFlaggedCount}`,
+    `${scores.safetyTruePositiveCount} of ${scores.safetyFlaggedCount}`,
   );
   await expect(liveCard.getByTestId("metric-personal-care-recall")).toContainText(
-    `${scores.personalCareTruePositiveCount}/${scores.personalCarePositiveCount}`,
+    `${scores.personalCareTruePositiveCount} of ${scores.personalCarePositiveCount}`,
   );
   await expect(
     liveCard.getByTestId("metric-personal-care-precision"),
   ).toContainText(
-    `${scores.personalCareTruePositiveCount}/${scores.personalCareFlaggedCount}`,
+    `${scores.personalCareTruePositiveCount} of ${scores.personalCareFlaggedCount}`,
   );
   await expect(liveCard.getByTestId("metric-abstention")).toContainText(
-    `${scores.abstainedCaseCount}/${live.caseCount}`,
+    `${scores.abstainedCaseCount} of ${live.caseCount}`,
   );
   await expect(liveCard.getByTestId("metric-mean-latency")).toContainText(
     `${scores.meanLatencyMs} ms`,
@@ -124,9 +133,16 @@ test("VAL-CALIB-003, VAL-CALIB-004 and VAL-CALIB-005 — the calibration page ke
     (await liveCard.getByTestId("metric-personal-care-precision").innerText()) ??
     "";
   const precision = describePersonalCarePrecision(live.perCase, live.scores);
-  expect(precisionText).toContain(precision.labelledRatio);
-  expect(precisionText).toContain(precision.inclusiveRatio);
-  expect(precisionText).toContain("labelled-only denominator, not every ask");
+  // Both figures and their denominators are in the card, in words rather than
+  // a fraction.
+  expect(precisionText).toContain(
+    `${precision.labelledNumerator} of ${precision.labelledDenominator}`,
+  );
+  expect(precisionText).toContain(
+    `${precision.inclusiveNumerator} of ${precision.inclusiveDenominator}`,
+  );
+  expect(precisionText).toContain("labelled");
+  expect(precisionText).not.toMatch(/numerator|denominator/i);
   for (const id of precision.slottableCareHeldIds) {
     expect(precisionText).toContain(id);
   }
@@ -152,7 +168,16 @@ test("VAL-CALIB-003, VAL-CALIB-004 and VAL-CALIB-005 — the calibration page ke
     await expect(liveCard.getByTestId(`failure-${entry.id}`)).toBeVisible();
   }
 
-  const perCase = liveCard.getByRole("table", { name: "Every case" });
+  const perCase = liveCard.getByTestId("all-cases");
+  await expect(perCase).toHaveCount(1);
+  await expect(perCase.locator("table")).toHaveCount(1);
+  // The full table sits behind a disclosure so the page reads as a record,
+  // not a data appendix. Opening it shows the published rows.
+  await page.getByTestId("all-cases-summary").click();
+  await expect(perCase).toHaveAttribute("open", "");
+  await expect(
+    perCase.getByRole("table", { name: "Every case" }),
+  ).toBeVisible();
   await expect(
     perCase.getByRole("columnheader", { name: "Provider" }),
   ).toBeVisible();
@@ -187,15 +212,22 @@ test("VAL-CALIB-003, VAL-CALIB-004 and VAL-CALIB-005 — the calibration page ke
   await expect(baselineCard.getByTestId("calibration-source")).toHaveText(
     "Deterministic baseline (no model calls)",
   );
-  await expect(baselineCard.getByTestId("calibration-engine")).toHaveText(
+  await expect(baselineCard.getByTestId("calibration-engine")).toHaveAttribute(
+    "data-engine",
     "deterministic-baseline",
+  );
+  await expect(baselineCard.getByTestId("calibration-engine")).toHaveText(
+    "The app's own rules",
   );
   await expect(baselineCard.getByTestId("calibration-command")).toHaveText(
     "npm run calibrate:baseline",
   );
   await expect(baselineCard.getByTestId("metric-slot-kind")).toContainText(
-    `${baseline.scores.slotKindCorrect}/${baseline.scores.slotKindDenominator}`,
+    `${baseline.scores.slotKindCorrect} of ${baseline.scores.slotKindDenominator}`,
   );
+  // The 71-row table is rendered once, on the live card.
+  await expect(baselineCard.getByTestId("all-cases")).toHaveCount(0);
+  await expect(baselineCard.getByTestId("case-table-elsewhere")).toBeVisible();
   await expect(baselineCard.getByTestId("baseline-not-live")).toHaveText(
     "This is not live-model performance.",
   );
@@ -212,13 +244,13 @@ test("VAL-CALIB-003, VAL-CALIB-004 and VAL-CALIB-005 — the calibration page ke
   await expect(historySection).toBeVisible();
   const oldLive = historySection.getByTestId("history-live-2026-11-21");
   await expect(oldLive).toBeVisible();
-  await expect(oldLive).toContainText("24/28");
+  await expect(oldLive).toContainText("24 of 28");
   await expect(oldLive).toContainText("43 total");
   const repeat = historySection.getByTestId(
     "history-deterministic-baseline-2026-11-23",
   );
   await expect(repeat).toBeVisible();
-  await expect(repeat).toContainText("28/28");
+  await expect(repeat).toContainText("28 of 28");
   await expect(repeat.getByTestId("history-not-live")).toHaveText(
     "This is not live-model performance.",
   );
@@ -233,9 +265,12 @@ test("VAL-CALIB-003, VAL-CALIB-004 and VAL-CALIB-005 — the calibration page ke
       previousLive.perCase,
       previousLive.scores,
     );
-    await expect(previous).toContainText(previousPrecision.labelledRatio);
-    await expect(previous).toContainText(previousPrecision.inclusiveRatio);
-    // The three slottable asks a care hold removed are disclosed on that card.
+    await expect(previous).toContainText(
+      `${previousPrecision.labelledNumerator} of ${previousPrecision.labelledDenominator}`,
+    );
+    await expect(previous).toContainText(
+      `${previousPrecision.inclusiveNumerator} of ${previousPrecision.inclusiveDenominator}`,
+    );
     expect(previousPrecision.slottableCareHeldIds).toEqual([
       "CAL-002",
       "CAL-016",
@@ -244,6 +279,10 @@ test("VAL-CALIB-003, VAL-CALIB-004 and VAL-CALIB-005 — the calibration page ke
     await expect(previous).toContainText(
       "including the 3 slottable asks a care hold removed",
     );
+    // The historical card keeps the figures in words, not fractions.
+    const previousText = await previous.innerText();
+    expect(previousText).not.toMatch(/\b\d+\/\d+\b/);
+    expect(previousText).not.toMatch(/numerator|denominator/i);
   }
 
   const bodyText = await page.locator("body").innerText();

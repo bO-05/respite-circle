@@ -158,9 +158,22 @@ describe("the published calibration history", () => {
 
     const liveEntry = entries.find((entry) => entry.source === "live");
     expect(liveEntry?.notLiveNote).toBeNull();
-    expect(liveEntry?.slotKind).toMatch(/^\d+\/\d+ \(\d+\.\d%\)$/);
+    // The public card prints counts in words, not fractions.
+    expect(liveEntry?.slotKind).toMatch(/^\d+ of \d+ \(\d+\.\d%\)$/);
+    expect(liveEntry?.safetyRecall).toMatch(/^\d+ of \d+ \(\d+(\.\d)?%\)$/);
+    expect(liveEntry?.personalCareRecall).toMatch(
+      /^\d+ of \d+ \(\d+(\.\d)?%\)$/,
+    );
+    expect(liveEntry?.personalCarePrecision).toMatch(
+      /^\d+ of \d+ labelled · \d+ of \d+/,
+    );
+    expect(liveEntry?.personalCarePrecision).not.toMatch(/numerator|denominator/i);
     expect(liveEntry?.shortCommit).toBe(liveEntry?.gitCommit.slice(0, 7));
     expect(liveEntry?.caseCount).toBeGreaterThan(0);
+    expect(liveEntry?.caseSetSentence).toContain("personal care");
+    expect(liveEntry?.caseSetSentence).not.toContain(
+      `${liveEntry?.personalCareCaseCount} personal care`,
+    );
   });
 });
 

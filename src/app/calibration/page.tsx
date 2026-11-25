@@ -24,9 +24,10 @@ export const metadata: Metadata = {
 /**
  * The measured record, read at request time.
  *
- * The page renders the live and deterministic runs as two separate cards. It
- * never averages them, never fills a missing file with a remembered number,
- * and never re-runs the provider while rendering.
+ * The live run comes first and its headline is the first measured thing on the
+ * page. The baseline follows as its own card and is never combined with the
+ * live run. The full case table is rendered once; the baseline points at it
+ * rather than printing the same rows again.
  */
 export default async function CalibrationPage() {
   const results = await loadCalibrationResults();
@@ -36,45 +37,9 @@ export default async function CalibrationPage() {
     <PublicPage
       eyebrow="Calibration"
       title="Calibration results"
-      lead="Every number on this page was written by a calibration run on a stated date against hand-labelled fictional cases. A live run and a deterministic baseline are shown separately and never combined."
+      lead="Every number here comes from a dated calibration run against hand-labelled fictional cases. The live run is first; the app's own rules are measured separately and labelled as a baseline."
       width="wide"
     >
-      <section
-        aria-labelledby="calibration-how-to-read"
-        className="rounded-lg border border-line bg-surface p-5"
-      >
-        <h2
-          id="calibration-how-to-read"
-          className="font-serif text-2xl leading-snug text-ink"
-        >
-          How to read this page
-        </h2>
-        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
-          The badge says whether AI was used. The provider and model name who
-          answered, the date and commit say when, and every score shows how
-          many cases it counted. Cases that did not match their label stay on
-          the page with expected and actual values.
-        </p>
-        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-          The two runs are separate measurements of different engines. A live
-          number is never relabelled as a baseline, a baseline number is never
-          presented as live-model performance, and no figure is rounded up to
-          look complete. No recall or precision figure is quoted here without
-          its own denominator, the date of the run that produced it, and the
-          case set it was measured on. A rerun replaces only its own current
-          card; the record it replaced stays in the history list below with the
-          case set it was measured against. The tables behind these numbers are
-          on{" "}
-          <Link
-            href="/how-it-works"
-            className="font-semibold text-ink underline decoration-accent underline-offset-4"
-          >
-            How it works
-          </Link>
-          .
-        </p>
-      </section>
-
       {results.live.status === "ready" ? (
         <CalibrationReportCard
           view={buildCalibrationReportView(results.live.report, current)}
@@ -90,6 +55,7 @@ export default async function CalibrationPage() {
       {results.baseline.status === "ready" ? (
         <CalibrationReportCard
           view={buildCalibrationReportView(results.baseline.report, current)}
+          showCaseTable={results.live.status !== "ready"}
         />
       ) : (
         <CalibrationMissingReport
@@ -98,6 +64,39 @@ export default async function CalibrationPage() {
           command={CALIBRATION_COMMANDS["deterministic-baseline"]}
         />
       )}
+
+      <section
+        aria-labelledby="calibration-how-to-read"
+        className="rounded-lg border border-line bg-surface p-5"
+      >
+        <h2
+          id="calibration-how-to-read"
+          className="font-serif text-2xl leading-snug text-ink"
+        >
+          How to read this page
+        </h2>
+        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
+          Each card is one dated run. The badge and the &ldquo;What
+          answered&rdquo; line name the engine, and the provider and model name
+          who answered. Every score says how many cases it counted and what
+          that count means, so no figure is left without its context.
+        </p>
+        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+          The two runs are separate measurements of different engines. They are
+          never added together or averaged. A baseline number is never
+          presented as live-model performance, and no figure is rounded up to
+          look complete. When a run is replaced, it moves to &ldquo;Earlier
+          published runs&rdquo; with the case set it was measured against. The
+          two tables behind these numbers are on{" "}
+          <Link
+            href="/how-it-works"
+            className="font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            How it works
+          </Link>
+          .
+        </p>
+      </section>
 
       {results.history.status === "ready" ? (
         <CalibrationHistory
@@ -130,46 +129,48 @@ export default async function CalibrationPage() {
           id="calibration-method"
           className="font-serif text-2xl leading-snug text-ink"
         >
-          How the numbers are computed
+          How the numbers are worked out
         </h2>
         <ul className="mt-3 flex flex-col gap-3">
           <li className="max-w-prose text-base leading-relaxed text-ink-muted">
-            <span className="font-semibold text-ink">Slot-kind agreement</span>{" "}
-            is exact set equality between the labelled kinds and the kinds the
-            app&apos;s fixed rules would propose from the typed answers.
-            Safety-held, personal-care-held, and bilingual asks are excluded
-            from the count because kinds are moot there; the count is stated on
-            every run.
-          </li>
-          <li className="max-w-prose text-base leading-relaxed text-ink-muted">
-            <span className="font-semibold text-ink">Safety recall</span> is the
-            share of safety-labelled asks routed to a human hold. Safety
-            precision is the share of raised safety flags that were on a
-            safety-labelled case.
-          </li>
-          <li className="max-w-prose text-base leading-relaxed text-ink-muted">
-            <span className="font-semibold text-ink">Personal-care recall</span>{" "}
-            uses only the labelled personal-care asks. A personal-care flag never
-            becomes a slot; it routes to a person with professional referrals.
+            <span className="font-semibold text-ink">
+              Times offered that matched the label
+            </span>{" "}
+            counts the asks where a time could be offered and the kinds of time
+            the app proposed matched the hand-written label exactly. Safety,
+            personal-care and another-language asks are left out, because no
+            time is ever offered for them.
           </li>
           <li className="max-w-prose text-base leading-relaxed text-ink-muted">
             <span className="font-semibold text-ink">
-              Personal-care precision
+              Safety asks that reached a person
             </span>{" "}
-            is stated twice. The labelled-only figure counts the labelled
-            personal-care asks the engine flagged. The inclusive figure adds the
-            slottable asks that lost their times to a care hold. An ask already
-            held for safety is named beside the figure but not counted, because
-            it never had times to lose. Each card names both denominators and
-            the cases outside the labelled set, so a reader cannot take 100% on
-            the labelled set for every ask keeping its times.
+            counts how often an ask marked as a safety concern went to a person
+            instead of becoming a time.{" "}
+            <span className="font-semibold text-ink">
+              Safety holds that were right
+            </span>{" "}
+            counts how many of the safety holds the app raised were on the
+            right ask. A hold on the wrong ask still sends that ask to a
+            person; the page shows it rather than hiding it.
           </li>
           <li className="max-w-prose text-base leading-relaxed text-ink-muted">
             <span className="font-semibold text-ink">
-              Unanswered questions and latency
+              Personal-care asks that reached a person
             </span>{" "}
-            are reported, not gated. A case counts as unanswered when the model
-            was less sure than the stated threshold on any of the nine answers.
+            counts only the asks labelled as needing personal care. A care need
+            never becomes a time; it goes to a person with professional
+            referrals. The care score is stated twice: once over the labelled
+            asks, and once adding the ordinary asks that lost their times to a
+            care hold.
+          </li>
+          <li className="max-w-prose text-base leading-relaxed text-ink-muted">
+            <span className="font-semibold text-ink">
+              Cases with an unsure answer
+            </span>{" "}
+            counts a case when the AI was less than 60% sure on any of the nine
+            questions. Speed is measured around a whole case. Both are shown,
+            not graded.
           </li>
         </ul>
       </section>
@@ -186,7 +187,8 @@ export default async function CalibrationPage() {
         </h2>
         <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
           A live run calls the configured provider once per case, plus the
-          Q5/Q9 samples. The deterministic baseline makes no network calls.
+          extra samples the two hardest questions need. The baseline makes no
+          network calls.
         </p>
         <dl className="mt-3 flex flex-col gap-3">
           <div>

@@ -87,17 +87,15 @@ export function CalibrationHistory({
                   Case set at that date
                 </dt>
                 <dd className="mt-0.5 text-base leading-relaxed text-ink-muted">
-                  {entry.caseCount} total · {entry.slottableCaseCount} slottable ·{" "}
-                  {entry.safetyCaseCount} safety · {entry.personalCareCaseCount}{" "}
-                  personal-care
+                  {entry.caseSetSentence}
                 </dd>
               </div>
             </dl>
 
-            <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <dt className="text-base font-semibold text-ink">
-                  Slot-kind agreement
+                  Times offered that matched the label
                 </dt>
                 <dd className="mt-0.5 text-base leading-relaxed text-ink-muted">
                   {entry.slotKind}
@@ -105,7 +103,7 @@ export function CalibrationHistory({
               </div>
               <div>
                 <dt className="text-base font-semibold text-ink">
-                  Safety recall
+                  Safety asks that reached a person
                 </dt>
                 <dd className="mt-0.5 text-base leading-relaxed text-ink-muted">
                   {entry.safetyRecall}
@@ -113,7 +111,7 @@ export function CalibrationHistory({
               </div>
               <div>
                 <dt className="text-base font-semibold text-ink">
-                  Personal-care recall
+                  Personal-care asks that reached a person
                 </dt>
                 <dd className="mt-0.5 text-base leading-relaxed text-ink-muted">
                   {entry.personalCareRecall}
@@ -121,14 +119,16 @@ export function CalibrationHistory({
               </div>
               <div>
                 <dt className="text-base font-semibold text-ink">
-                  Personal-care precision
+                  Personal-care holds that were right
                 </dt>
                 <dd className="mt-0.5 text-base leading-relaxed text-ink-muted">
                   {entry.personalCarePrecision}
                 </dd>
               </div>
               <div>
-                <dt className="text-base font-semibold text-ink">Abstention</dt>
+                <dt className="text-base font-semibold text-ink">
+                  Cases with an unsure answer
+                </dt>
                 <dd className="mt-0.5 text-base leading-relaxed text-ink-muted">
                   {entry.abstention}
                 </dd>

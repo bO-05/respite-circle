@@ -10,7 +10,7 @@ import {
   type CalibrationReport,
 } from "@/server/domain/calibration";
 import { PublishedCalibrationSchema } from "@/server/calibration/published";
-import { buildCalibrationReportView } from "@/server/domain/calibration-page";
+import { buildCalibrationReportView, describePersonalCarePrecision } from "@/server/domain/calibration-page";
 import { CalibrationReportCard } from "@/components/calibration-report";
 import { CalibrationMissingReport } from "@/components/calibration-missing";
 import { PROMPT_VERSION } from "@/server/services/decision-contract";
@@ -50,7 +50,12 @@ describe("the live calibration card", () => {
     expect(
       within(card).getByTestId("calibration-source").textContent,
     ).toBe("Measured with live model");
-    expect(within(card).getByTestId("calibration-engine").textContent).toBe("live");
+    const engine = within(card).getByTestId("calibration-engine");
+    // The raw token stays available to the results spec; the visible label is
+    // a phrase a church volunteer can read.
+    expect(engine.textContent).toBe("The live model");
+    expect(engine.getAttribute("data-engine")).toBe("live");
+    expect(card.textContent).not.toContain("deterministic-baseline");
     expect(within(card).getByTestId("calibration-command").textContent).toBe(
       "npm run calibrate",
     );
@@ -60,7 +65,7 @@ describe("the live calibration card", () => {
     expect(card.textContent).toContain(report.gitCommit);
   });
 
-  it("reports each metric with its numerator, denominator, and a rate that is never rounded up", () => {
+  it("reports each score as a plain count of the cases it counted, never rounded up", () => {
     const report = liveReport();
     render(<CalibrationReportCard view={liveView()} />);
     const card = screen.getByTestId("calibration-live");
@@ -68,40 +73,160 @@ describe("the live calibration card", () => {
 
     const slotKind = within(card).getByTestId("metric-slot-kind");
     expect(slotKind.textContent).toContain(
-      `${scores.slotKindCorrect}/${scores.slotKindDenominator}`,
+      `${scores.slotKindCorrect} of ${scores.slotKindDenominator}`,
     );
 
     expect(
       within(card).getByTestId("metric-safety-recall").textContent,
-    ).toContain(`${scores.safetyTruePositiveCount}/${scores.safetyCaseCount}`);
+    ).toContain(`${scores.safetyTruePositiveCount} of ${scores.safetyCaseCount}`);
     expect(
       within(card).getByTestId("metric-safety-precision").textContent,
     ).toContain(
-      `${scores.safetyTruePositiveCount}/${scores.safetyFlaggedCount}`,
+      `${scores.safetyTruePositiveCount} of ${scores.safetyFlaggedCount}`,
     );
     expect(
       within(card).getByTestId("metric-personal-care-recall").textContent,
     ).toContain(
-      `${scores.personalCareTruePositiveCount}/${scores.personalCarePositiveCount}`,
+      `${scores.personalCareTruePositiveCount} of ${scores.personalCarePositiveCount}`,
     );
     expect(
       within(card).getByTestId("metric-personal-care-precision").textContent,
     ).toContain(
-      `${scores.personalCareTruePositiveCount}/${scores.personalCareFlaggedCount}`,
+      `${scores.personalCareTruePositiveCount} of ${scores.personalCareFlaggedCount}`,
     );
     expect(within(card).getByTestId("metric-abstention").textContent).toContain(
-      `${scores.abstainedCaseCount}/${report.caseCount}`,
+      `${scores.abstainedCaseCount} of ${report.caseCount}`,
     );
     expect(
       within(card).getByTestId("metric-mean-latency").textContent,
     ).toContain(`${scores.meanLatencyMs} ms`);
 
+    // No fraction and no statistical shorthand is rendered to a volunteer.
+    const rendered = card.textContent ?? "";
+    expect(rendered).not.toMatch(/\b\d+\/\d+\b/);
+    expect(rendered).not.toMatch(/numerator|denominator/i);
+    for (const word of ["recall", "precision", "abstention"]) {
+      expect(rendered.toLowerCase(), `card still says "${word}"`).not.toContain(
+        word,
+      );
+    }
+
     const summary = within(card).getByTestId("recall-summary").textContent ?? "";
     expect(summary).toContain(report.date);
     expect(summary).toContain(report.gitCommit.slice(0, 7));
     expect(summary).toContain(
-      `${scores.personalCareTruePositiveCount}/${scores.personalCareFlaggedCount}`,
+      `${scores.personalCareTruePositiveCount} of ${scores.personalCarePositiveCount}`,
     );
+  });
+
+  it("derives the case strip from the rows so the parts add up to the total", () => {
+    const report = liveReport();
+    render(<CalibrationReportCard view={liveView()} />);
+    const card = screen.getByTestId("calibration-live");
+
+    const labelledPersonalCare = report.perCase.filter(
+      (entry) => entry.personalCare === true,
+    ).length;
+    const slottable = report.perCase.filter((entry) => entry.slottable).length;
+    const safety = report.perCase.filter(
+      (entry) => !entry.slottable && entry.safety === true,
+    ).length;
+    const bilingual = report.perCase.filter(
+      (entry) =>
+        !entry.slottable &&
+        entry.safety !== true &&
+        entry.personalCare !== true &&
+        entry.bilingual,
+    ).length;
+
+    expect(
+      within(card).getByTestId("case-group-slottable").textContent,
+    ).toContain(String(slottable));
+    expect(
+      within(card).getByTestId("case-group-safety").textContent,
+    ).toContain(String(safety));
+    // The group is the labelled count, not the 30 rows in the care case file.
+    expect(labelledPersonalCare).not.toBe(report.personalCareCaseCount);
+    expect(
+      within(card).getByTestId("case-group-personal-care").textContent,
+    ).toContain(String(labelledPersonalCare));
+    expect(
+      within(card).getByTestId("case-group-bilingual").textContent,
+    ).toContain(String(bilingual));
+
+    const sum = within(card).getByTestId("case-group-sum").textContent ?? "";
+    expect(sum).toContain(
+      `${slottable} + ${safety} + ${labelledPersonalCare} + ${bilingual} = ${
+        report.caseCount
+      }`,
+    );
+
+    // Beside the count: the case file's own denominator and the ordinary asks
+    // a care hold removed from the times they could have had.
+    const note =
+      within(card).getByTestId("personal-care-count-note").textContent ?? "";
+    expect(note).toContain(
+      `${labelledPersonalCare} of the ${report.personalCareCaseCount}`,
+    );
+    const disclosure = describePersonalCarePrecision(
+      report.perCase,
+      report.scores,
+    );
+    for (const id of disclosure.slottableCareHeldIds) {
+      expect(note).toContain(id);
+    }
+  });
+
+  it("puts a live result in the headline, above the rest of the card", () => {
+    const report = liveReport();
+    render(<CalibrationReportCard view={liveView()} />);
+    const card = screen.getByTestId("calibration-live");
+
+    const headline = within(card).getByTestId("calibration-headline");
+    const scores = report.scores;
+    expect(
+      within(headline).getByTestId("headline-slot-kind").textContent,
+    ).toContain(`${scores.slotKindCorrect} of ${scores.slotKindDenominator}`);
+    expect(
+      within(headline).getByTestId("headline-safety-recall").textContent,
+    ).toContain(
+      `${scores.safetyTruePositiveCount} of ${scores.safetyCaseCount}`,
+    );
+    expect(
+      within(headline).getByTestId("headline-personal-care-recall").textContent,
+    ).toContain(
+      `${scores.personalCareTruePositiveCount} of ${scores.personalCarePositiveCount}`,
+    );
+
+    // The headline is the first measured block after the heading and engine
+    // line, before the provider table, command, and metrics.
+    const html = card.innerHTML;
+    const headlineAt = html.indexOf("calibration-headline");
+    const metricsAt = html.indexOf("calibration-metrics");
+    expect(headlineAt).toBeGreaterThan(-1);
+    expect(metricsAt).toBeGreaterThan(headlineAt);
+  });
+
+  it("renders the full case table once when both cards are on the page", () => {
+    const { container } = render(
+      <>
+        <CalibrationReportCard view={liveView()} />
+        <CalibrationReportCard view={baselineView()} showCaseTable={false} />
+      </>,
+    );
+
+    const fullTables = container.querySelectorAll('[data-testid="all-cases"]');
+    expect(fullTables).toHaveLength(1);
+    expect(
+      within(screen.getByTestId("calibration-baseline")).getByTestId(
+        "case-table-elsewhere",
+      ),
+    ).toBeTruthy();
+    // The live table holds exactly one row per published case.
+    const rows = screen
+      .getByTestId("calibration-live")
+      .querySelectorAll('tr[data-testid^="case-"]');
+    expect(rows).toHaveLength(liveReport().caseCount);
   });
 
   it("lists the published misses with expected and actual values", () => {
@@ -124,9 +249,14 @@ describe("the live calibration card", () => {
     render(<CalibrationReportCard view={liveView()} />);
     const card = screen.getByTestId("calibration-live");
 
-    const table = within(card).getByRole("table", { name: /every case/i });
+    const table = within(card)
+      .getByTestId("all-cases")
+      .querySelector("table");
+    expect(table).not.toBeNull();
     expect(
-      within(table).getByRole("columnheader", { name: "Provider" }),
+      within(table as HTMLTableElement).getByRole("columnheader", {
+        name: "Provider",
+      }),
     ).toBeTruthy();
 
     const fallback = report.perCase.find(
@@ -185,14 +315,14 @@ describe("the baseline calibration card", () => {
     expect(within(card).getByTestId("calibration-source").textContent).toBe(
       "Deterministic baseline (no model calls)",
     );
-    expect(within(card).getByTestId("calibration-engine").textContent).toBe(
-      "deterministic-baseline",
-    );
+    const engine = within(card).getByTestId("calibration-engine");
+    expect(engine.textContent).toBe("The app's own rules");
+    expect(engine.getAttribute("data-engine")).toBe("deterministic-baseline");
     expect(within(card).getByTestId("calibration-command").textContent).toBe(
       "npm run calibrate:baseline",
     );
     expect(within(card).getByTestId("metric-slot-kind").textContent).toContain(
-      `${baseline.scores.slotKindCorrect}/${baseline.scores.slotKindDenominator}`,
+      `${baseline.scores.slotKindCorrect} of ${baseline.scores.slotKindDenominator}`,
     );
     expect(card.textContent).toContain("rule-engine-v1");
     expect(card.textContent.toLowerCase()).toContain("no model calls");

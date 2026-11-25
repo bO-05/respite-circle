@@ -359,16 +359,24 @@ describe("the calibration page view", () => {
       numerator: scores.abstainedCaseCount,
       denominator: live.caseCount,
     });
-    expect(byKey.get("mean-latency")?.value).toBe(`${scores.meanLatencyMs} ms`);
+    expect(byKey.get("mean-latency")?.value).toBe(
+      `about ${(scores.meanLatencyMs / 1000).toFixed(1)} seconds`,
+    );
+    expect(byKey.get("mean-latency")?.detail).toContain(
+      `${scores.meanLatencyMs} ms`,
+    );
 
-    // The precision card states its own denominator and the inclusive figure.
+    // The precision card states both counts and what the second one adds.
     const disclosure = view.personalCarePrecisionDisclosure;
-    expect(byKey.get("personal-care-precision")?.detail).toContain(
-      disclosure.labelledRatio,
+    const precisionDetail =
+      byKey.get("personal-care-precision")?.detail ?? "";
+    expect(precisionDetail).toContain(
+      `${disclosure.labelledNumerator} of ${disclosure.labelledDenominator}`,
     );
-    expect(byKey.get("personal-care-precision")?.detail).toContain(
-      disclosure.inclusiveRatio,
+    expect(precisionDetail).toContain(
+      `${disclosure.inclusiveNumerator} of ${disclosure.inclusiveDenominator}`,
     );
+    expect(precisionDetail).not.toMatch(/numerator|denominator/i);
     expect(disclosure.inclusiveNumerator).toBe(
       scores.personalCareTruePositiveCount,
     );
@@ -376,11 +384,13 @@ describe("the calibration page view", () => {
       disclosure.labelledDenominator,
     );
     for (const id of disclosure.slottableCareHeldIds) {
-      expect(byKey.get("personal-care-precision")?.detail).toContain(id);
+      expect(precisionDetail).toContain(id);
     }
     expect(view.recallSummary).toContain(live.date);
     expect(view.recallSummary).toContain(live.gitCommit.slice(0, 7));
-    expect(view.recallSummary).toContain(disclosure.inclusiveRatio);
+    expect(view.recallSummary).toContain(
+      `${scores.personalCareTruePositiveCount} of ${scores.personalCarePositiveCount}`,
+    );
 
     const publishedFailures = live.perCase.filter((entry) => !entry.pass);
     expect(view.failures.map((entry) => entry.id)).toEqual(
@@ -410,7 +420,132 @@ describe("the calibration page view", () => {
     }
   });
 
-  it("states the personal-care precision denominator and the slottable asks a care hold removed", () => {
+  it("derives the case strip from the per-case rows so the parts add up to the total", () => {
+    const live = readPublished(CALIBRATION_RESULT_FILES.live.json);
+    const view = buildCalibrationReportView(live, CURRENT);
+    const byKey = new Map(
+      view.caseGroups.map((group) => [group.key, group.value]),
+    );
+
+    const slottable = live.perCase.filter((entry) => entry.slottable).length;
+    const safety = live.perCase.filter(
+      (entry) => !entry.slottable && entry.safety === true,
+    ).length;
+    const personalCare = live.perCase.filter(
+      (entry) =>
+        !entry.slottable &&
+        entry.safety !== true &&
+        entry.personalCare === true,
+    ).length;
+    const bilingual = live.perCase.filter(
+      (entry) =>
+        !entry.slottable &&
+        entry.safety !== true &&
+        entry.personalCare !== true &&
+        entry.bilingual,
+    ).length;
+
+    expect(byKey.get("slottable")).toBe(slottable);
+    expect(byKey.get("safety")).toBe(safety);
+    expect(byKey.get("personal-care")).toBe(personalCare);
+    expect(byKey.get("bilingual")).toBe(bilingual);
+    expect(view.caseGroupSum).toBe(live.caseCount);
+    expect(view.caseGroupMatchesTotal).toBe(true);
+    expect(view.caseGroupSumSentence).toContain(
+      `${slottable} + ${safety} + ${personalCare} + ${bilingual} = ${live.caseCount}`,
+    );
+  });
+
+  it("counts personal care by its label, not by the size of the case file", () => {
+    const live = readPublished(CALIBRATION_RESULT_FILES.live.json);
+    const view = buildCalibrationReportView(live, CURRENT);
+    const labelled = live.perCase.filter(
+      (entry) => entry.personalCare === true,
+    ).length;
+    const personalCareGroup = view.caseGroups.find(
+      (group) => group.key === "personal-care",
+    );
+
+    // The record's full personal-care case file holds labelled positives and
+    // ordinary near-miss controls; the strip counts only the positives.
+    expect(live.personalCareCaseCount).toBeGreaterThan(labelled);
+    expect(personalCareGroup?.value).toBe(labelled);
+    expect(personalCareGroup?.value).toBe(live.scores.personalCarePositiveCount);
+    expect(personalCareGroup?.value).not.toBe(live.personalCareCaseCount);
+
+    // The denominator and the ordinary asks a care hold removed are visible
+    // beside the count.
+    const disclosure = view.personalCarePrecisionDisclosure;
+    expect(view.personalCareCountNote).toContain(
+      `${labelled} of the ${live.personalCareCaseCount}`,
+    );
+    expect(view.personalCareCountNote).toContain(
+      `${live.personalCareCaseCount - labelled}`,
+    );
+    for (const id of disclosure.slottableCareHeldIds) {
+      expect(view.personalCareCountNote).toContain(id);
+    }
+  });
+
+  it("labels the engine in words while keeping the recorded token for the results spec", () => {
+    const live = readPublished(CALIBRATION_RESULT_FILES.live.json);
+    const baseline = readPublished(
+      CALIBRATION_RESULT_FILES["deterministic-baseline"].json,
+    );
+    const liveView = buildCalibrationReportView(live, CURRENT);
+    const baselineView = buildCalibrationReportView(baseline, CURRENT);
+
+    expect(liveView.engine).toBe("live");
+    expect(liveView.engineLabel).toBe("The live model");
+    expect(baselineView.engine).toBe("deterministic-baseline");
+    expect(baselineView.engineLabel).toBe("The app's own rules");
+    // The visible label never prints the machine token.
+    expect(baselineView.engineLabel).not.toContain(baselineView.engine);
+    for (const view of [liveView, baselineView]) {
+      const visible = [
+        view.engineLabel,
+        view.sourceLabel,
+        view.engineNote,
+        view.recallSummary,
+        view.gateSentence,
+        ...view.metrics.flatMap((metric) => [
+          metric.label,
+          metric.value,
+          metric.detail,
+        ]),
+        ...view.caseGroups.flatMap((group) => [
+          group.label,
+          group.definition,
+        ]),
+        view.personalCareCountNote,
+      ].join(" ");
+      expect(visible).not.toMatch(
+        /\b(numerator|denominator|recall|precision|abstention|slot-kind)\b/i,
+      );
+    }
+  });
+
+  it("puts a live result in the headline of the card", () => {
+    const live = readPublished(CALIBRATION_RESULT_FILES.live.json);
+    const view = buildCalibrationReportView(live, CURRENT);
+
+    expect(view.headline.map((item) => item.key)).toEqual([
+      "slot-kind",
+      "safety-recall",
+      "personal-care-recall",
+    ]);
+    expect(view.headline[0].value).toBe(
+      `${live.scores.slotKindCorrect} of ${live.scores.slotKindDenominator}`,
+    );
+    expect(view.headline[1].value).toBe(
+      `${live.scores.safetyTruePositiveCount} of ${live.scores.safetyCaseCount}`,
+    );
+    expect(view.headline[2].value).toBe(
+      `${live.scores.personalCareTruePositiveCount} of ${live.scores.personalCarePositiveCount}`,
+    );
+  });
+
+  it("states both personal-care denominators and the slottable ask a care hold removed, in words", () => {
     const cases = [
       {
         id: "CAL-001",
@@ -497,14 +632,17 @@ describe("the calibration page view", () => {
       denominator: 1,
       percent: "100%",
     });
-    // The sentence names that denominator, the slottable ask the care hold
-    // removed, and the inclusive figure, so 100% cannot read as "every ask".
-    expect(metric?.detail).toContain("1/1 (100%)");
-    expect(metric?.detail).toContain("labelled-only denominator, not every ask");
+    expect(metric?.value).toBe("1 of 1");
+    // The sentence names that count, the slottable ask the care hold removed,
+    // and the inclusive figure, so 100% cannot read as "every ask". It says
+    // them in words: no numerator/denominator shorthand on the public page.
+    expect(metric?.detail).toContain("1 of 1");
+    expect(metric?.detail).toContain("labelled");
+    expect(metric?.detail).not.toMatch(/numerator|denominator/i);
     expect(metric?.detail).toContain("CAL-002");
-    expect(metric?.detail).toContain("1/2 (50.0%)");
+    expect(metric?.detail).toContain("1 of 2");
     // An ask already held for safety never had times to lose: it is named in
-    // the sentence but excluded from the inclusive denominator.
+    // the sentence but excluded from the inclusive count.
     expect(metric?.detail).toContain("CAL-003");
     expect(metric?.detail).toMatch(/not counted/);
     expect(view.personalCarePrecisionDisclosure.inclusiveRatio).toBe(
@@ -516,9 +654,10 @@ describe("the calibration page view", () => {
     expect(view.personalCarePrecisionDisclosure.safetyHeldIds).toEqual([
       "CAL-003",
     ]);
-    expect(view.recallSummary).toContain("1/2 (50.0%)");
     expect(view.recallSummary).toContain("2026-11-25");
     expect(view.recallSummary).toContain("bbbbbbb");
+    expect(view.recallSummary).toContain("1 of 1");
+    expect(view.recallSummary).not.toMatch(/numerator|denominator/i);
   });
 
   it("labels a baseline run as a baseline and says no model was called", () => {

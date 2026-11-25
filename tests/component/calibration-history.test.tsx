@@ -25,7 +25,7 @@ describe("the published-run history", () => {
 
     const oldLive = within(section).getByTestId("history-live-2026-11-21");
     expect(oldLive.textContent).toContain("7d128da");
-    expect(oldLive.textContent).toContain("24/28");
+    expect(oldLive.textContent).toContain("24 of 28");
     expect(oldLive.textContent).toContain("43 total");
     expect(within(oldLive).queryByTestId("history-not-live")).toBeNull();
 
@@ -33,7 +33,7 @@ describe("the published-run history", () => {
       "history-deterministic-baseline-2026-11-23",
     );
     expect(repeat.textContent).toContain("4bf1043");
-    expect(repeat.textContent).toContain("28/28");
+    expect(repeat.textContent).toContain("28 of 28");
     expect(repeat.textContent).toContain("43 total");
     expect(within(repeat).getByTestId("history-not-live").textContent).toBe(
       "This is not live-model performance.",
@@ -49,10 +49,19 @@ describe("the published-run history", () => {
     const text = previous.textContent ?? "";
     expect(text).toContain("49 total");
     // The labelled-only figure, the inclusive figure, and the three slottable
-    // asks a care hold removed from it, all stated in the card.
+    // asks a care hold removed from it, all stated in the card. The figures are
+    // in words because this page is public.
     expect(text).toMatch(
-      /\d+\/\d+ \(\d+(\.\d)?%\) labelled · \d+\/\d+ \(\d+(\.\d)?%\) including the 3 slottable asks a care hold removed/,
+      /\d+ of \d+ labelled · \d+ of \d+ including the 3 slottable asks a care hold removed/,
     );
+    expect(text).not.toMatch(/\b\d+\/\d+\b/);
+    expect(text).not.toMatch(/numerator|denominator/i);
+
+    // The case set at that date is the labelled personal-care count, not the
+    // size of the personal-care case file.
+    expect(text).toContain("10 personal care");
+    expect(text).not.toContain("16 personal care");
+    expect(text).toContain("49 total · 31 where a time could be offered");
   });
 
   it("renders nothing when no earlier run exists", () => {
