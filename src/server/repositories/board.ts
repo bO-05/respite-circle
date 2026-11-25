@@ -1,6 +1,17 @@
-import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db as appDb } from "@/db/client";
+import { resolveNow } from "@/lib/clock";
 import {
   church,
   person,
@@ -33,6 +44,16 @@ import {
  * `covered`. `draft` is absent from the status filter, and an open row must
  * also carry an approval instant, so a row that somehow held `open` without
  * passing through `canPublishDraft` still cannot reach a neighbour.
+ *
+ * A time is offered only until it starts. Every visible status is filtered by
+ * `window_start > now` (a row with no window has no start to pass), so a time
+ * whose start has arrived is never listed as something a family can take. The
+ * clock is `resolveNow()`, the app's one reader, so `RC_FAKE_NOW` moves this
+ * boundary in tests and in a demo without moving the machine's clock. The row's
+ * stored status is left alone: closing a
+ * started time is the coordinator's deliberate `expireSlotUnclaimed`, which
+ * writes the absence proof and honours the call promise. A read must never
+ * counterfeit that transition.
  *
  * The gating facts are read in a second query that is never serialised to the
  * client. It is used only to answer "can this viewer take this time?" with the
@@ -87,7 +108,7 @@ export type BoardView = {
 export async function getBoard(
   actor: Actor,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<BoardView | null> {
   requireRoleSession(actor, BOARD_ROLES);
 
@@ -136,6 +157,9 @@ export async function getBoard(
             inArray(slot.status, [...BOARD_VISIBLE_STATUSES]),
             // Open means published by a person, not merely marked open.
             isNotNull(slot.approvedAt),
+            // A time that has started is no longer offered. A row with no
+            // window has no start to pass and stays visible.
+            or(isNull(slot.windowStart), gt(slot.windowStart, now)),
           ),
         )
         .orderBy(asc(slot.windowStart), asc(slot.id)),

@@ -31,6 +31,15 @@ export function isDeskSlotLeadStatus(
   return (DESK_SLOT_LEAD_STATUSES as readonly string[]).includes(value);
 }
 
+export type DeskSlotLeadOptions = {
+  /**
+   * The stored row is still `open`, but its start has arrived, so the board no
+   * longer offers it and the claim statement refuses it. The lead may not say
+   * "wait for a neighbour" about a time no neighbour can take.
+   */
+  started?: boolean;
+};
+
 /**
  * The one sentence the desk reads first, matched to what actually happened.
  *
@@ -40,7 +49,14 @@ export function isDeskSlotLeadStatus(
  * and points at the proof below. `covered`, `done` and `cancelled` describe
  * the finished states without offering a claim action that is no longer there.
  */
-export function deskSlotLead(status: DeskSlotLeadStatus): string {
+export function deskSlotLead(
+  status: DeskSlotLeadStatus,
+  options: DeskSlotLeadOptions = {},
+): string {
+  if (status === "open" && options.started) {
+    return "The start time has passed. This time is no longer on the board, and no one can take it now — call the family, then close it without a claim.";
+  }
+
   switch (status) {
     case "claimed":
       return "A neighbour has said yes. Confirm the claim, or take it back before the family hears anything.";

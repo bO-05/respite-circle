@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db as appDb } from "@/db/client";
+import { resolveNow } from "@/lib/clock";
 import {
   absenceProof,
   ask,
@@ -41,6 +42,7 @@ import {
   civilWeekday,
   partsInZone,
 } from "@/server/domain/time-zone";
+import { slotStatusAt } from "@/server/domain/slot-time";
 import { getPolicyInForce } from "@/server/repositories/policy";
 import { closeAskIfFinished } from "./ask-lifecycle";
 import type {
@@ -95,6 +97,13 @@ export type CoverageWatchItem = {
   label: string;
   gated: boolean;
   status: DeskSlotStatus;
+  /**
+   * True when the row is still `open` but its start has arrived. The board no
+   * longer offers it and the claim statement refuses it; the desk still sees it
+   * here because it needs the call and the deliberate close. `status` keeps the
+   * stored word; `started` says the time is no longer on offer.
+   */
+  started: boolean;
   windowStart: Date | null;
   windowEnd: Date | null;
   timeZone: string;
@@ -270,6 +279,9 @@ function buildItem(input: {
     label: input.row.label,
     gated: input.row.gated,
     status: input.row.status,
+    started:
+      slotStatusAt(input.row.status, input.row.windowStart, input.now) ===
+      "started",
     windowStart: input.row.windowStart,
     windowEnd: input.row.windowEnd,
     timeZone: input.row.timeZone,
@@ -318,7 +330,7 @@ export async function getDeskSlotCoverage(
   actor: Actor,
   slotId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<DeskSlotCoverage | null> {
   requireRoleSession(actor, DESK_ROLES);
 
@@ -461,7 +473,7 @@ export async function getDeskSlotCoverage(
 export async function listCoverageWatch(
   actor: Actor,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<CoverageWatchItem[]> {
   requireRoleSession(actor, DESK_ROLES);
 
@@ -600,7 +612,7 @@ export async function recordCoverageCall(
   slotId: string,
   input: { outcome: unknown; note: unknown },
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<CoverageCallResult> {
   requireRoleSession(actor, DESK_ROLES);
 
@@ -694,7 +706,7 @@ export async function reofferSlot(
   actor: Actor,
   slotId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<CoverageReofferResult> {
   requireRoleSession(actor, DESK_ROLES);
 
@@ -909,7 +921,7 @@ export async function expireSlotUnclaimed(
   actor: Actor,
   slotId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<CoverageExpiryResult> {
   requireRoleSession(actor, DESK_ROLES);
 

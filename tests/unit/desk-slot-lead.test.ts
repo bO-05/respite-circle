@@ -66,6 +66,27 @@ describe("desk slot lead", () => {
     }
   });
 
+  it("VAL-R2PROM-001 — says an open time whose start has passed is no longer on the board", () => {
+    const lead = deskSlotLead("open", { started: true });
+
+    expect(lead).toMatch(/start time has passed/i);
+    expect(lead).toMatch(/no longer on the board/i);
+    expect(lead).toMatch(/no one can take it now/i);
+    // The next human action, and the same control the coverage card offers.
+    expect(lead).toMatch(/call the family/i);
+    expect(lead).toMatch(/close it without a claim/i);
+    // It must not invite the coordinator to wait for a neighbour who cannot
+    // take a time the board has stopped offering.
+    expect(lead).not.toMatch(/wait for a neighbour/i);
+
+    // The option only changes an open row: every other status already says
+    // what happened and passing the start cannot make it untrue.
+    for (const status of DESK_SLOT_LEAD_STATUSES) {
+      if (status === "open") continue;
+      expect(deskSlotLead(status, { started: true })).toBe(deskSlotLead(status));
+    }
+  });
+
   it("has one distinct, non-empty sentence per status", () => {
     const leads = DESK_SLOT_LEAD_STATUSES.map((status) =>
       deskSlotLead(status),

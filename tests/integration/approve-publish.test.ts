@@ -232,7 +232,7 @@ describe("approve, publish, and send back", () => {
     expect(held.ok).toBe(true);
 
     // Before approval nothing is on the board.
-    expect((await getBoard(RUTH, t.db))?.slots).toHaveLength(0);
+    expect((await getBoard(RUTH, t.db, NOW))?.slots).toHaveLength(0);
 
     const result = await approveAskForCoordinator(GRACE, askId, t.db, NOW);
     expect(result).toMatchObject({
@@ -281,12 +281,12 @@ describe("approve, publish, and send back", () => {
     const { askId } = await insertAskWithAnswers(t);
     await buildDrafts(t, askId);
 
-    const before = await getBoard(RUTH, t.db);
+    const before = await getBoard(RUTH, t.db, NOW);
     expect(before?.slots).toHaveLength(0);
 
     await approveAskForCoordinator(GRACE, askId, t.db, NOW);
 
-    const board = await getBoard(RUTH, t.db);
+    const board = await getBoard(RUTH, t.db, NOW);
     expect(board?.timeZone).toBe("America/New_York");
     expect(board?.slots).toHaveLength(2);
     if (!board) throw new Error("expected a board view");
@@ -327,7 +327,7 @@ describe("approve, publish, and send back", () => {
     }
 
     // A caregiver cannot read the board projection at all.
-    await expect(getBoard(MARTA, t.db)).rejects.toBeInstanceOf(AuthError);
+    await expect(getBoard(MARTA, t.db, NOW)).rejects.toBeInstanceOf(AuthError);
   });
 
   it("keeps a held draft unpublished and only publishes it after the hold is resolved", async () => {
@@ -441,7 +441,7 @@ describe("approve, publish, and send back", () => {
     expect(drafts).toHaveLength(2);
     expect(drafts.every((row) => row.status === "draft")).toBe(true);
     expect(await auditRows(t, "slot_published")).toHaveLength(0);
-    expect((await getBoard(RUTH, t.db))?.slots).toHaveLength(0);
+    expect((await getBoard(RUTH, t.db, NOW))?.slots).toHaveLength(0);
 
     const audit = await auditRows(t, "ask_sent_back", askId);
     expect(audit).toHaveLength(1);
@@ -547,7 +547,7 @@ describe("approve, publish, and send back", () => {
     const [askRow] = await t.db.select().from(ask).where(eq(ask.id, askId));
     expect(askRow.approvedBy).toBe(seedIds.people.daniel);
 
-    const board = await getBoard(RUTH, t.db);
+    const board = await getBoard(RUTH, t.db, NOW);
     expect(
       board?.slots.every((row) => row.approvedByName === "Daniel"),
     ).toBe(true);

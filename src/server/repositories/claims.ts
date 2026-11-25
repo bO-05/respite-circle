@@ -1,6 +1,7 @@
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { db as appDb } from "@/db/client";
 import { auditEvent, church, slot } from "@/db/schema";
+import { resolveNow } from "@/lib/clock";
 import type { Actor } from "@/server/auth/policy";
 import {
   claimCopy,
@@ -8,6 +9,7 @@ import {
   type ClaimOutcomeCode,
 } from "@/server/domain/claim";
 import type { RuleCode } from "@/server/domain/gating";
+import { slotHasStarted } from "@/server/domain/slot-time";
 import type { AppDatabase } from "./coordinator";
 import { claimGatePredicate } from "./claim-gate";
 import {
@@ -20,9 +22,10 @@ import {
  * The only claim write path.
  *
  * Success is a single conditional `UPDATE` whose `WHERE` clause carries the
- * status, the empty claim column, the publication instant, and the whole gate.
- * The claim audit row commits in the same transaction as the update: a claim
- * that cannot be audited cannot happen.
+ * status, the empty claim column, the publication instant, the whole gate, and
+ * the window rule (a time that has started is no longer on offer). The claim
+ * audit row commits in the same transaction as the update: a claim that cannot
+ * be audited cannot happen.
  *
  * A zero-row update is not an error and never a 500. The route re-reads the row
  * and the same `canClaim` facts to answer with a closed code and one human
@@ -56,6 +59,8 @@ type RefusalDetail = {
   reason: Exclude<ClaimOutcomeCode, "claimed">;
   ruleCode?: RuleCode | null;
   slotStatus?: string | null;
+  /** A refusal because the time's own start had arrived. */
+  windowStarted?: boolean;
 };
 
 async function recordRefusal(
@@ -93,7 +98,7 @@ export async function claimSlot(
   actor: Actor,
   slotId: string,
   database: AppDatabase = appDb,
-  now: Date = new Date(),
+  now: Date = resolveNow(),
 ): Promise<ClaimOutcome> {
   // The route admits any signed-in person so this branch can be audited; a
   // desk role or a caregiver can never take a place from the board.
@@ -166,6 +171,7 @@ export async function claimSlot(
       status: slot.status,
       claimedBy: slot.claimedBy,
       approvedAt: slot.approvedAt,
+      windowStart: slot.windowStart,
       timeZone: church.timezone,
     })
     .from(slot)
@@ -185,6 +191,19 @@ export async function claimSlot(
       slotStatus: state.status,
     });
     return refusal("not_found", slotId);
+  }
+
+  // Still open in the row, but its start has arrived. It is no longer on the
+  // board and it is not on offer; the existing `not_open` sentence says exactly
+  // that without naming an internal state. Nothing is written to the slot: only
+  // a coordinator's `expireSlotUnclaimed` may close it, with its proof.
+  if (state.status === "open" && slotHasStarted(state.windowStart, now)) {
+    await recordRefusal(database, actor, slotId, {
+      reason: "not_open",
+      slotStatus: state.status,
+      windowStarted: true,
+    });
+    return refusal("not_open", slotId);
   }
 
   if (state.claimedBy === actor.personId) {

@@ -10,8 +10,13 @@ import { CHECKLIST_VALID_MONTHS, DAILY_SERVING_LIMIT } from "@/server/domain/gat
  * them can match; the losers re-read a row that is no longer `open` and get zero
  * rows. There is no advisory lock and no application mutex.
  *
- * This predicate mirrors `canClaim` in `src/server/domain/gating.ts` rule for
- * rule, in the same order:
+ * The first clause is a window rule, not an eligibility rule: the time has not
+ * started. `canClaim` answers "may this person take this place"; this also
+ * answers "is this place still on offer at all". The board stops listing a
+ * started time, so a perfect volunteer's request for one must match no row.
+ *
+ * The remaining clauses mirror `canClaim` in `src/server/domain/gating.ts` rule
+ * for rule, in the same order:
  *
  *   1. an active volunteer file in this church
  *   2. never the family's own caregiver
@@ -41,7 +46,11 @@ export function claimGatePredicate(input: ClaimGateInput): SQL {
   const nowIso = input.now.toISOString();
 
   return sql`(
-    EXISTS (
+    (
+      slot.window_start IS NULL
+      OR slot.window_start > ${nowIso}::timestamptz
+    )
+    AND EXISTS (
       SELECT 1
         FROM volunteer AS gate_volunteer
         JOIN person AS gate_person ON gate_person.id = gate_volunteer.person_id

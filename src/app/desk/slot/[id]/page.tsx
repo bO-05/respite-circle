@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { resolveNow } from "@/lib/clock";
 import { ClaimReviewSection } from "@/components/claim-review-section";
 import { CoverageSection } from "@/components/coverage-card";
 import { ReminderSection } from "@/components/reminder-section";
@@ -9,6 +10,7 @@ import { requirePage } from "@/server/auth/guards";
 import { formatApprovalLine } from "@/server/domain/ask-review";
 import { AUTO_PUBLISH_DESK_LABEL } from "@/server/domain/auto-publish";
 import { deskSlotLead } from "@/server/domain/desk-slot-lead";
+import { slotStatusAt } from "@/server/domain/slot-time";
 import { formatWindowLabel } from "@/server/domain/slots";
 import { getDeskSlotClaimReview } from "@/server/repositories/claim-review";
 import { getDeskSlotCoverage } from "@/server/repositories/coverage";
@@ -32,6 +34,10 @@ const STATUS_LABEL: Record<string, string> = {
   done: "Done",
   cancelled: "Cancelled",
   expired_unclaimed: "Closed unclaimed",
+  // Derived, never stored: an `open` row whose start has arrived. The board no
+  // longer lists it and the claim statement refuses it, so the status line
+  // must not say "Open on the board".
+  started: "Start time passed — not on the board",
 };
 
 /**
@@ -71,6 +77,14 @@ export default async function DeskSlotPage({
       coverage.calls.length > 0);
 
   const timeZone = review.timeZone;
+  // The app's one clock. An `open` row past its start is presented as started:
+  // the board no longer offers it, so this page cannot call it open either.
+  const presentedStatus = slotStatusAt(
+    review.status,
+    review.windowStart,
+    resolveNow(),
+  );
+  const started = presentedStatus === "started";
   // An auto-published time has no approving person, so it must not borrow the
   // "Approved — a person" line; it names the switch and the policy version.
   const autoPublished = review.publishedVia === "auto_low_risk";
@@ -89,7 +103,7 @@ export default async function DeskSlotPage({
       title="Time review"
       // The lead follows the row in front of the coordinator. Asking every
       // state to confirm a claim told the truth only for `claimed`.
-      lead={deskSlotLead(review.status)}
+      lead={deskSlotLead(review.status, { started })}
       leadTestId="slot-lead"
     >
       <dl className="grid gap-4 rounded-lg border border-line bg-surface p-5 sm:grid-cols-2">
@@ -103,10 +117,11 @@ export default async function DeskSlotPage({
           <dt className="text-base font-semibold text-ink">Status</dt>
           <dd
             data-testid="slot-status"
-            data-status={review.status}
+            data-status={presentedStatus}
+            data-stored-status={review.status}
             className="mt-1 text-base text-ink-muted"
           >
-            {STATUS_LABEL[review.status] ?? review.status}
+            {STATUS_LABEL[presentedStatus] ?? presentedStatus}
           </dd>
         </div>
         <div className="sm:col-span-2">
@@ -167,7 +182,7 @@ export default async function DeskSlotPage({
         </p>
       </section>
 
-      <ClaimReviewSection review={review} />
+      <ClaimReviewSection review={review} started={started} />
 
       {showCoverage && coverage ? (
         <CoverageSection

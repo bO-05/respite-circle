@@ -68,7 +68,13 @@ export function CoverageCard({
 }) {
   const timeZone = item.timeZone;
   const count = item.caregiverOutboxCount;
-  const statusLabel = STATUS_LABEL[item.status] ?? item.status;
+  // An open time whose start has arrived is no longer offered on the board and
+  // the claim statement refuses it. The desk still sees it here, because it
+  // needs the call and the deliberate close, but it must not read as a time a
+  // neighbour can still take.
+  const statusLabel = item.started
+    ? "Start time passed — no one has taken it"
+    : (STATUS_LABEL[item.status] ?? item.status);
   const proof = item.absenceProof;
   const reofferGuard = coverageReofferRefusal({
     status: item.status,
@@ -81,6 +87,7 @@ export function CoverageCard({
       data-testid="coverage-card"
       data-slot-id={item.slotId}
       data-status={item.status}
+      data-started={item.started ? "true" : "false"}
       data-messages={count}
       data-due={item.isDue ? "true" : "false"}
       data-open-hours={(item.openForMs / 3_600_000).toFixed(2)}

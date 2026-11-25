@@ -19,8 +19,15 @@ import type { DeskSlotClaimReview } from "@/server/repositories/claim-review";
  */
 export function ClaimReviewSection({
   review,
+  started = false,
 }: {
   review: DeskSlotClaimReview;
+  /**
+   * The row is still `open` but its start has arrived. The board has stopped
+   * offering it, so this section must not promise that a neighbour may still
+   * claim it; the next action is the coordinator's call and close.
+   */
+  started?: boolean;
 }) {
   const timeZone = review.timeZone;
   const volunteer = review.volunteerFirstName ?? "A neighbour";
@@ -35,7 +42,26 @@ export function ClaimReviewSection({
 
   let content: ReactNode;
 
-  if (review.status === "claimed") {
+  if (review.status === "open" && started) {
+    content = (
+      <>
+        <h2 id="claim-review-heading" className="font-serif text-2xl text-ink">
+          No one said yes before it began
+        </h2>
+        <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
+          The start time has passed. This time is no longer on the board, and no
+          neighbour can take it now.
+        </p>
+        <p
+          data-testid="claim-review-empty"
+          className="max-w-prose text-base leading-relaxed text-ink-muted"
+        >
+          Call the family yourself, then close it without a claim. Nothing is
+          sent to them automatically.
+        </p>
+      </>
+    );
+  } else if (review.status === "claimed") {
     content = (
       <>
         <div>
@@ -210,6 +236,7 @@ export function ClaimReviewSection({
     <section
       data-testid="claim-review"
       data-status={review.status}
+      data-started={started ? "true" : "false"}
       data-slot-id={review.slotId}
       aria-labelledby="claim-review-heading"
       className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
