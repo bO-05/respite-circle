@@ -316,7 +316,7 @@ export const seedSafeguardingPromises: string[] = [
   "Companions at Respite Morning complete our dementia-awareness training before their first morning.",
   "Anyone who visits a vulnerable adult at home is on that family's familiar-faces list, or has completed our church's safeguarding checklist (background check run by the church, two references).",
   "First home visit is two people, or introduced by the coordinator.",
-  "No personal care, ever. No medication, no bathing, no toileting, no lifting or transfers. Asks like that go to Grace, who connects the family with professional help (Area Agency on Aging, ARCH Respite Locator).",
+  "No personal care, ever. No medication, no bathing, no toileting, no lifting or transfers. Asks like that go to your coordinator, who connects the family with professional help (Area Agency on Aging, ARCH Respite Locator).",
   "Companions check in and out with the coordinator for home visits.",
   "If a slot goes unclaimed, the coordinator calls the caregiver personally. The software sends nothing.",
 ];

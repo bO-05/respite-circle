@@ -47,7 +47,7 @@ export default async function DeskPage() {
       person={person}
       role={session.role}
       title="Coordinator desk"
-      lead="A person reads every ask, and a signed low-risk policy can let a meal publish itself first; every other kind of time waits for that person. Safety and personal-care asks stay pinned in their own groups."
+      lead="A person reads every ask. If the church has signed the low-risk meal policy, a reheated meal can reach the board before a person sees it; every other kind of time waits for a person, and safety and personal-care asks sit in their own groups, ahead of the ordinary queue."
     >
       {/*
         Safety first. This group is the first thing on the page, above the

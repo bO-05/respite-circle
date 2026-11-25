@@ -7,6 +7,7 @@ import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import {
+  askAgainHint,
   careThanksFlashMessage,
   careThanksFlashTone,
   isCareThanksFlashCode,
@@ -101,7 +102,7 @@ export default async function CarePage({
             data-testid="care-working-next-action"
             className="inline-flex min-h-11 w-fit items-center font-semibold text-ink underline decoration-accent underline-offset-4"
           >
-            Read your words and the nine answers
+            Read the nine answers about this ask
           </Link>
         </section>
       ) : null}
@@ -328,6 +329,34 @@ export default async function CarePage({
           </ul>
         </section>
       ) : null}
+
+      {/*
+        One plain way to begin another ask. It is a link, not a form: the
+        intake page starts blank, and the earlier words are never copied,
+        quoted, or offered as a starting point.
+      */}
+      <section
+        data-testid="care-another-week"
+        aria-labelledby="care-another-week-heading"
+        className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-5"
+      >
+        <h2
+          id="care-another-week-heading"
+          className="font-serif text-2xl text-ink"
+        >
+          Another week
+        </h2>
+        <p className="max-w-prose text-base leading-relaxed text-ink-muted">
+          {askAgainHint()}
+        </p>
+        <Link
+          href="/ask"
+          data-testid="care-another-week-link"
+          className="mt-2 inline-flex min-h-14 w-full items-center justify-center rounded-md bg-accent px-6 py-3 text-xl font-semibold text-accent-foreground sm:w-auto"
+        >
+          Tell us about another week
+        </Link>
+      </section>
     </RolePage>
   );
 }

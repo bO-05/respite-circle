@@ -177,10 +177,11 @@ describe("VAL-AUDITFIX-011 — the desk lead names the meal exception", () => {
 
   it("keeps the person-reads promise and names the signed low-risk meal in the same passage", () => {
     expect(lead).toMatch(/^A person reads every ask\b/);
+    expect(lead).toMatch(/the church has signed the low-risk meal policy/i);
     expect(lead).toMatch(
-      /a signed low-risk policy can let a meal publish itself first/i,
+      /a reheated meal can reach the board before a person sees it/i,
     );
-    expect(lead).toMatch(/every other kind of time waits for that person/i);
+    expect(lead).toMatch(/every other kind of time waits for a person/i);
   });
 
   it("no longer claims a person reads every ask before a neighbour sees a time", () => {
@@ -198,9 +199,9 @@ describe("VAL-AUDITFIX-011 — the desk lead names the meal exception", () => {
     }
   });
 
-  it("keeps safety and personal-care asks pinned in their own groups", () => {
+  it("keeps safety and personal-care asks in their own groups ahead of the ordinary queue", () => {
     expect(lead).toMatch(
-      /Safety and personal-care asks stay pinned in their own groups\./,
+      /safety and personal-care asks sit in their own groups, ahead of the ordinary queue\./i,
     );
   });
 });

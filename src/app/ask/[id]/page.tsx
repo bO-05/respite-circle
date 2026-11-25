@@ -43,6 +43,9 @@ export const dynamic = "force-dynamic";
  * model metadata, the policy version, and the digest. There is no model prose
  * anywhere on this page, no edit control for the words, and no control that
  * accepts or declines a time — the "What happens next" list says so in words.
+ * The words section names the human path for a change or a withdrawal: the
+ * church office or the coordinator, the same people /enter names for a lost
+ * link. No control is offered, because the app has no way to change the words.
  */
 
 const TONE_CLASS: Record<ReceiptStatusCopy["tone"], string> = {
@@ -219,6 +222,13 @@ export default async function AskReceiptPage({
             kept exactly as you sent them. Nobody can edit them.
           </p>
         )}
+        <p
+          data-testid="ask-change-path"
+          className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted"
+        >
+          If you need to change or take back what you sent, ask at the church
+          office or tell {reader}; this page cannot change your words.
+        </p>
         <blockquote
           data-testid="caregiver-verbatim"
           className="mt-4 max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-accent-soft px-5 py-4 text-xl leading-relaxed text-ink"
