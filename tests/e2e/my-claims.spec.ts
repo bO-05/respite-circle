@@ -8,6 +8,7 @@ import {
   type Page,
 } from "@playwright/test";
 import { seedAccessTokens, seedIds } from "../../src/db/seed-data";
+import { resolveNow } from "../../src/lib/clock";
 import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
 
 /**
@@ -156,7 +157,11 @@ test.describe.serial("VAL-CLAIM-005, VAL-CLAIM-006, VAL-ACCESS-004 and VAL-CROSS
     await ruth.context.close();
 
     // Grace confirms the home claim through the real desk action, then the
-    // fixture moves its window into the past so the done action is due.
+    // fixture moves its window into the past so the done action is due. It is
+    // anchored behind the earlier of the two clocks this page reads — the
+    // wall clock (the done panel) and `resolveNow` (the done route handler) —
+    // so the time has passed for both on any run date, including a simulated
+    // `RC_FAKE_NOW`.
     const graceHome = await signIn(browser, seedAccessTokens.grace);
     await graceHome.page.goto(`/desk/slot/${homeId}`);
     await expect(graceHome.page.getByTestId("claim-review")).toHaveAttribute(
@@ -171,15 +176,29 @@ test.describe.serial("VAL-CLAIM-005, VAL-CLAIM-006, VAL-ACCESS-004 and VAL-CROSS
     );
     await graceHome.context.close();
 
+    const homeWindowEnd = new Date(
+      Math.min(Date.now(), resolveNow().getTime()) - 2 * 24 * 60 * 60 * 1_000,
+    );
+    const homeWindowStart = new Date(homeWindowEnd.getTime() - 2 * 60 * 60 * 1_000);
+
     await db.client`
       UPDATE slot
-         SET window_start = ${"2026-11-14T15:00:00.000Z"}::timestamptz,
-             window_end = ${"2026-11-14T17:00:00.000Z"}::timestamptz
+         SET window_start = ${homeWindowStart.toISOString()}::timestamptz,
+             window_end = ${homeWindowEnd.toISOString()}::timestamptz
        WHERE id = ${homeId}
     `;
 
     // Another volunteer's own claim, so "only your claims" has a real
-    // counterexample.
+    // counterexample. It stands for a claim on an upcoming time, so its window
+    // is derived from the same clock the app reads (`RC_FAKE_NOW` or the wall
+    // clock) instead of being pinned to one date that will pass: however the
+    // calendar advances, the row stays a future claim rather than ageing into
+    // a past one under the window rules.
+    const saraWindowStart = new Date(
+      resolveNow().getTime() + 3 * 24 * 60 * 60 * 1_000,
+    );
+    const saraWindowEnd = new Date(saraWindowStart.getTime() + 60 * 60 * 1_000);
+
     saraSlotId = crypto.randomUUID();
     await db.client`
       INSERT INTO slot (
@@ -195,8 +214,8 @@ test.describe.serial("VAL-CLAIM-005, VAL-CLAIM-006, VAL-ACCESS-004 and VAL-CROSS
         'doorstep',
         'A meal for a neighbour',
         false,
-        ${"2026-11-28T17:00:00.000Z"}::timestamptz,
-        ${"2026-11-28T18:00:00.000Z"}::timestamptz,
+        ${saraWindowStart.toISOString()}::timestamptz,
+        ${saraWindowEnd.toISOString()}::timestamptz,
         'claimed',
         ${seedIds.people.grace},
         ${"2026-11-17T15:00:00.000Z"}::timestamptz,

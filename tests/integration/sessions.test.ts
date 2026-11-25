@@ -1,8 +1,13 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { truncateAll } from "../../src/db/reset";
 import { seedDatabase } from "../../src/db/seed";
-import { SEED_REFERENCE_DATE, seedIds } from "../../src/db/seed-data";
+import {
+  buildSeedSessions,
+  CHURCH_TIMEZONE,
+  SEED_REFERENCE_DATE,
+  seedIds,
+} from "../../src/db/seed-data";
 import {
   ask,
   askRevision,
@@ -24,6 +29,10 @@ import {
   materialiseSessionsForChurch,
   restoreSessionForCoordinator,
 } from "../../src/server/repositories/sessions";
+import {
+  formatSessionClock,
+  formatSessionDate,
+} from "../../src/server/domain/session-calendar";
 import { constructDraftSlots } from "../../src/server/services/slot-construction";
 import { sha256Hex } from "../../src/server/services/decision-contract";
 import { openTestDatabase, type TestDatabase } from "./helpers/db";
@@ -39,6 +48,17 @@ import { openTestDatabase, type TestDatabase } from "./helpers/db";
  */
 
 const NOW = SEED_REFERENCE_DATE; // Tuesday 17 November 2026, 10:00 in New York
+
+/**
+ * The four mornings the seed writes when it runs at `NOW`, in order.
+ *
+ * The seed computes them with `buildSeedSessions(now)` from the same weekly
+ * template the guard plans with. Deriving the expectations from that builder at
+ * the fixture clock — instead of writing the dates out by hand — keeps the
+ * assertions tied to what the seed actually writes: change the fixture instant
+ * or the seed's planning and these expectations move with it.
+ */
+const SEEDED_SESSIONS = buildSeedSessions(NOW);
 
 const GRACE: Actor = {
   personId: seedIds.people.grace,
@@ -228,9 +248,48 @@ describe("Respite Morning calendar and cancellation", () => {
       "scheduled",
       "scheduled",
     ]);
-    expect(calendar.planned[0]?.startsAt.toISOString()).toBe(
-      "2026-11-24T15:00:00.000Z",
+
+    // The four planned dates are the four mornings the seed wrote, which are
+    // the builder's four Tuesdays at the fixture clock — not one hardcoded
+    // calendar. The database rows are the independent side of the comparison.
+    const plannedStarts = calendar.planned.map((entry) =>
+      entry.startsAt.toISOString(),
     );
+    expect(plannedStarts).toEqual(
+      SEEDED_SESSIONS.map((entry) => entry.startsAt.toISOString()),
+    );
+    expect(
+      calendar.planned.map((entry) => entry.endsAt.toISOString()),
+    ).toEqual(SEEDED_SESSIONS.map((entry) => entry.endsAt.toISOString()));
+
+    const seededRows = await t.db
+      .select({
+        id: session.id,
+        startsAt: session.startsAt,
+        endsAt: session.endsAt,
+      })
+      .from(session)
+      .orderBy(asc(session.startsAt));
+    expect(seededRows.map((row) => row.id)).toEqual([...seedIds.sessions]);
+    expect(seededRows.map((row) => row.startsAt.toISOString())).toEqual(
+      plannedStarts,
+    );
+
+    // Four consecutive Tuesdays, 10:00–14:00 in the church's own zone.
+    for (const [index, entry] of calendar.planned.entries()) {
+      expect(formatSessionDate(entry.startsAt, CHURCH_TIMEZONE)).toMatch(
+        /^Tuesday \d{1,2} \w+ \d{4}$/,
+      );
+      expect(formatSessionClock(entry.startsAt, CHURCH_TIMEZONE)).toBe("10:00");
+      expect(formatSessionClock(entry.endsAt, CHURCH_TIMEZONE)).toBe("14:00");
+      if (index > 0) {
+        const previous = calendar.planned[index - 1]!;
+        expect(entry.startsAt.getTime() - previous.startsAt.getTime()).toBe(
+          7 * 24 * 60 * 60 * 1_000,
+        );
+      }
+    }
+
     expect(calendar.planned[0]?.remainingCompanionPlaces).toBe(12);
     expect(overview.incomplete).toBe(false);
     expect(overview.scheduledCount).toBe(4);
@@ -355,12 +414,29 @@ describe("Respite Morning calendar and cancellation", () => {
   });
 
   it("shows a banner for a missing week and refuses a proposal for it", async () => {
+    // The week the guard must name is the date of the seeded row this test
+    // removes, read back from the database and formatted by the app. The
+    // expectation therefore follows the seeded calendar instead of pinning one.
+    const [missingWeek] = await t.db
+      .select({ startsAt: session.startsAt })
+      .from(session)
+      .where(eq(session.id, seedIds.sessions[1]))
+      .limit(1);
+    expect(missingWeek?.startsAt.toISOString()).toBe(
+      SEEDED_SESSIONS[1]?.startsAt.toISOString(),
+    );
+    const missingWeekLabel = formatSessionDate(
+      missingWeek!.startsAt,
+      CHURCH_TIMEZONE,
+    );
+    expect(missingWeekLabel).toMatch(/^Tuesday /);
+
     await t.db.delete(session).where(eq(session.id, seedIds.sessions[1]));
 
     const overview = await getDeskSessionOverview(GRACE, t.db, NOW);
     expect(overview.incomplete).toBe(true);
     expect(overview.missingCount).toBe(1);
-    expect(overview.guard.message).toContain("Tuesday 1 December 2026");
+    expect(overview.guard.message).toContain(missingWeekLabel);
     expect(overview.guard.message).toMatch(/fill the calendar/i);
 
     const probeAsk = await insertAskWithAnswers(t);
@@ -380,7 +456,7 @@ describe("Respite Morning calendar and cancellation", () => {
     const editor = await getDraftEditorContext(GRACE, probeAsk, t.db);
     const readBack = editor?.skipped.find((entry) => entry.kind === "companion");
     expect(readBack?.reason).toBe("calendar_incomplete");
-    expect(readBack?.message).toContain("Tuesday 1 December 2026");
+    expect(readBack?.message).toContain(missingWeekLabel);
     expect(readBack?.message).toMatch(/fill the calendar/i);
 
     const [companionCount] = await t.client<{ count: number }[]>`
@@ -399,7 +475,7 @@ describe("Respite Morning calendar and cancellation", () => {
     );
     expect(manual.ok).toBe(false);
     if (!manual.ok) {
-      expect(manual.message).toContain("Tuesday 1 December 2026");
+      expect(manual.message).toContain(missingWeekLabel);
     }
 
     const filled = await materialiseSessionsForChurch({
