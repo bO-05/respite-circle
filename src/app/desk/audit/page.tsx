@@ -10,6 +10,7 @@ import {
   groupAuditRows,
   parseAuditFilters,
 } from "@/server/domain/audit";
+import { AUTO_PUBLISH_RULES_COPY } from "@/server/domain/auto-publish";
 import {
   listAuditEvents,
   listAuditFilterOptions,
@@ -24,6 +25,12 @@ export const dynamic = "force-dynamic";
  * their actions apart and states the same five facts for each in the order a
  * coordinator asks about them: when, who, what, about what, and the safe
  * detail. Ids and digests sit at the end of the row, in the detail block.
+ *
+ * It also states the whole decision rule in its two halves: a person approves
+ * what the rules flag, and a signed low-risk policy may let a reheatable meal
+ * publish itself first. The log line for that automatic publication is named
+ * on the page (`slot_auto_published`), so the exception is never hidden behind
+ * the ordinary approval sentence.
  *
  * It is a read-only view by construction. There is no edit or delete control,
  * no server action, and no API route for an audit row; the database's
@@ -58,7 +65,7 @@ export default async function DeskAuditPage({
       person={person}
       role={session.role}
       title="Decision log"
-      lead="Who decided what, and when. The AI answers nine typed questions; a person decides everything else."
+      lead="Who decided what, and when. The AI answers nine typed questions. A person approves what the rules flag, with one signed exception: while the church's policy has the low-risk switch on, a reheatable meal may publish itself first, and this log records that automatic publication."
     >
       {nothingAtAll ? (
         <section
@@ -185,6 +192,40 @@ export default async function DeskAuditPage({
           ) : null}
         </>
       )}
+
+      <section
+        aria-labelledby="audit-who-decides"
+        data-testid="audit-who-decides"
+        className="rounded-lg border border-line bg-surface p-5"
+      >
+        <h2 id="audit-who-decides" className="font-serif text-2xl text-ink">
+          Who decides, and the one exception
+        </h2>
+        <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
+          The rule has two halves. A person approves what the rules flag: the
+          nine typed answers become draft times, and a person reads them,
+          changes the wording, and publishes or holds each one before a
+          neighbour sees it.
+        </p>
+        <p className="mt-3 max-w-prose text-base leading-relaxed text-ink">
+          The one exception is signed, and it covers one kind of time.{" "}
+          {AUTO_PUBLISH_RULES_COPY}
+        </p>
+        <p className="mt-3 max-w-prose text-base leading-relaxed text-ink">
+          In this log that publication reads &ldquo;Published a time
+          automatically&rdquo; and is stored as{" "}
+          <code className="text-base">slot_auto_published</code>. A
+          person&apos;s publication reads &ldquo;Published a time to the
+          board&rdquo;. The switch and the signature that turns it on live on{" "}
+          <Link
+            href="/desk/policy"
+            className="inline-flex min-h-11 items-center font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            the policy page
+          </Link>
+          .
+        </p>
+      </section>
 
       <section
         aria-labelledby="audit-append-only"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { demoFallbackSentence } from "@/server/domain/demo-fallback";
 
 type ResetEngine = {
   askId: string;
@@ -46,6 +47,9 @@ type Feedback =
  * A success also names the engine behind each demo ask, read back from the
  * stored answers: a live model run and the labelled rules fallback are both
  * possible, and the operator should know which one a judge is about to see.
+ * A fallback is explained in a sentence, never as the stored code, so a
+ * disagreement between the model and the church's policy is visible rather
+ * than something an operator has to decode.
  */
 function engineLine(engine: ResetEngine): string {
   const who =
@@ -58,10 +62,7 @@ function engineLine(engine: ResetEngine): string {
           : "no stored answers";
   const latency =
     engine.latencyMs === null ? "" : `, ${engine.latencyMs} ms`;
-  const fallback = engine.fallbackReason
-    ? ` — fell back: ${engine.fallbackReason.replaceAll("_", " ")}`
-    : "";
-  return `${who}${latency}${fallback}`;
+  return `${who}${latency}`;
 }
 export function DemoResetForm() {
   const [token, setToken] = useState("");
@@ -168,12 +169,30 @@ export function DemoResetForm() {
           {feedback.payload.engines?.length ? (
             <div data-testid="demo-reset-engines" className="mt-2">
               <p className="font-semibold">Who decided each ask:</p>
+              <p className="mt-1 text-ink-muted">
+                Read back from the stored answers. When the model did not
+                answer, or its answers disagreed with the church&apos;s
+                policy, this receipt names the reason in plain words.
+              </p>
               <ul className="mt-1 flex list-disc flex-col gap-1 pl-5">
-                {feedback.payload.engines.map((engine) => (
-                  <li key={engine.askId}>
-                    {engine.label}: {engineLine(engine)}
-                  </li>
-                ))}
+                {feedback.payload.engines.map((engine) => {
+                  const fallback = demoFallbackSentence(
+                    engine.fallbackReason,
+                  );
+                  return (
+                    <li key={engine.askId}>
+                      {engine.label}: {engineLine(engine)}
+                      {fallback ? (
+                        <p
+                          data-testid={`demo-reset-fallback-${engine.askId}`}
+                          className="mt-1 text-ink-muted"
+                        >
+                          {fallback}
+                        </p>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ) : null}

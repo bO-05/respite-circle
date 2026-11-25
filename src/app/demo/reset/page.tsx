@@ -33,6 +33,35 @@ export default function DemoResetPage() {
         <DemoResetForm />
 
         <section
+          aria-labelledby="demo-reset-receipt-heading"
+          data-testid="demo-reset-disclosure"
+          className="rounded-lg border border-line bg-surface p-5"
+        >
+          <h2
+            id="demo-reset-receipt-heading"
+            className="font-serif text-2xl text-ink"
+          >
+            How to read the receipt
+          </h2>
+          <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
+            The routing is the live model&apos;s: each of the four asks goes
+            through the same model path as a real ask. The calendar around it
+            is fixed, so the demonstration repeats. When the model does not
+            answer, or its answers disagree with the church&apos;s policy, that
+            ask falls back to the labelled rules engine, and the receipt names
+            the reason in plain words.
+          </p>
+          <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
+            <Link
+              href="/demo"
+              className="inline-flex min-h-11 items-center font-semibold text-ink underline decoration-accent underline-offset-4"
+            >
+              How this demo decides
+            </Link>
+          </p>
+        </section>
+
+        <section
           aria-labelledby="demo-reset-restores"
           className="rounded-lg border border-line bg-surface p-5"
         >

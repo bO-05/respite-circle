@@ -2,6 +2,7 @@ import { DEMO_IDS, DEMO_TEXT } from "@/db/demo-state";
 import { seedChurch, seedPolicy } from "@/db/seed-data";
 import type { AppDatabase } from "@/server/repositories/coordinator";
 import type { DecisionRouting } from "@/server/domain/decision-routing";
+import type { DemoFallbackReason } from "@/server/domain/demo-fallback";
 import { decide, type DecideResult } from "./decide";
 import { persistDecisionRun } from "./decision-persistence";
 import {
@@ -68,10 +69,8 @@ export const DEMO_DECISION_ASKS: readonly DemoDecisionAsk[] = [
   },
 ] as const;
 
-export type DemoFallbackReason =
-  | "provider_unconfigured"
-  | "provider_failed"
-  | "structure_mismatch";
+/** Re-exported so the service's existing type surface stays one import. */
+export type { DemoFallbackReason };
 
 /** One ask's engine, read back from its stored decision rows. */
 export type DemoAskEngine = {
