@@ -132,6 +132,49 @@ describe("decision trail screen", () => {
     expect(trail).not.toHaveTextContent("Marta");
   });
 
+  it("does not credit the model for a rule-settled safety row (VAL-R2SAFE-007)", () => {
+    const rows = buildTrailRows([
+      {
+        ...trailInputs()[4],
+        answer: true,
+        confidence: 0.9,
+        /* Q5 was settled by the app's fixed screen, not the model. */
+        signalSource: "rule",
+      },
+    ]);
+    renderTrail({ rows });
+
+    const row = screen.getByTestId("decision-Q5");
+    expect(row).toHaveTextContent("Yes");
+    expect(row).toHaveTextContent(
+      "The app's fixed safety rules found this in your words, not the model.",
+    );
+    expect(row).toHaveTextContent("How sure the app's rules were");
+    expect(row).not.toHaveTextContent("How sure the AI was");
+    expect(row).toHaveTextContent("90%");
+
+    // The paragraph above the rows names the rule's own confidence, so the
+    // model is never credited with an answer it did not give.
+    expect(screen.getByTestId("decision-trail")).toHaveTextContent(
+      "the rule's own confidence",
+    );
+  });
+
+  it("still shows the model's confidence for a model-settled row", () => {
+    const rows = buildTrailRows([
+      { ...trailInputs()[4], answer: true, confidence: 0.91, signalSource: "model" },
+    ]);
+    renderTrail({ rows });
+
+    const row = screen.getByTestId("decision-Q5");
+    expect(row).toHaveTextContent("How sure the AI was");
+    expect(row).not.toHaveTextContent("How sure the app's rules were");
+    expect(screen.queryByTestId("decision-rule-source")).not.toBeInTheDocument();
+    expect(screen.getByTestId("decision-trail")).not.toHaveTextContent(
+      "the rule's own confidence",
+    );
+  });
+
   it("names the revision these answers belong to", () => {
     renderTrail({ revisionNumber: 2, revisionCount: 2 });
     expect(screen.getByTestId("trail-revision")).toHaveTextContent(

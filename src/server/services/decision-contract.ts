@@ -116,7 +116,22 @@ export type DecisionOutcome = {
   confidence: number;
   abstained: boolean;
   samples: number;
+  /**
+   * Which source settled a Q5/Q9 answer: the model, or the app's fixed screen
+   * over the ask's own words. Null/absent for the other seven questions and
+   * for a provider that was never consulted. The receipt must not credit the
+   * model with an answer a rule produced.
+   */
+  signalSource?: HoldSource | null;
 };
+
+/**
+ * The two sources a safety or personal-care hold can come from. The rule
+ * screen runs beside the model answer and may only add a hold, never remove
+ * one; a model hold keeps its own label.
+ */
+export const HOLD_SOURCES = ["model", "rule"] as const;
+export type HoldSource = (typeof HOLD_SOURCES)[number];
 
 export type ValidatedResponse =
   | { ok: true; answers: ModelAnswer[] }
@@ -340,6 +355,8 @@ export type DecisionDigestFields = {
   model: string;
   latencyMs: number;
   inputDigest: string;
+  /** Provenance of a Q5/Q9 answer; bound into the digest when present. */
+  signalSource?: HoldSource | null;
 };
 
 /** The per-row digest a coordinator or an auditor can recompute. */
@@ -359,6 +376,9 @@ export function computeDecisionDigest(fields: DecisionDigestFields): string {
       model: fields.model,
       latencyMs: fields.latencyMs,
       inputDigest: fields.inputDigest,
+      // Always present, so a reader can recompute from the stored row: a null
+      // source is the seven other questions or an unlabelled row.
+      signalSource: fields.signalSource ?? null,
     }),
   );
 }

@@ -2,11 +2,12 @@ import Link from "next/link";
 import {
   ABSTENTION_SENTENCE,
   AI_CHIP,
-  CONFIDENCE_EXPLAINER,
   CONFIDENCE_LABEL,
+  RULE_CONFIDENCE_LABEL,
   RULES_SENTENCE,
   RULES_BANNER,
   bilingualTrailNotice,
+  confidenceExplainerFor,
   formatLatency,
   publicationSentence,
   revisionTrailSentence,
@@ -85,7 +86,7 @@ export function DecisionTrail({
         {revisionTrailSentence(revisionNumber, revisionCount)}
       </p>
       <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-        {CONFIDENCE_EXPLAINER}
+        {confidenceExplainerFor(rows)}
       </p>
 
       {run?.provider === "deterministic" ? (
@@ -148,9 +149,20 @@ export function DecisionTrail({
                 </p>
               )}
 
+              {row.holdSource === "rule" && row.ruleNote ? (
+                <p
+                  data-testid="decision-rule-source"
+                  className="mt-2 max-w-prose rounded-md border border-line bg-accent-soft px-3 py-2 text-base leading-relaxed text-ink"
+                >
+                  {row.ruleNote}
+                </p>
+              ) : null}
+
               <p className="mt-1 text-base text-ink-muted">
-                {CONFIDENCE_LABEL}:{" "}
-                <strong>{row.confidencePercent}</strong>
+                {row.holdSource === "rule"
+                  ? RULE_CONFIDENCE_LABEL
+                  : CONFIDENCE_LABEL}
+                : <strong>{row.confidencePercent}</strong>
               </p>
             </li>
           ))}

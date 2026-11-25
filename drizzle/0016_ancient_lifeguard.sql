@@ -1,0 +1,1 @@
+ALTER TABLE "decision" ADD COLUMN "signal_source" text;

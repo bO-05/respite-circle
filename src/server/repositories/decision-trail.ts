@@ -30,6 +30,12 @@ export type DecisionTrailRow = {
   model: string;
   latencyMs: number | null;
   digest: string;
+  /**
+   * `rule` when the app's fixed Q5/Q9 screen produced this answer rather than
+   * the model. The receipt must say so and must not show it as model
+   * confidence.
+   */
+  signalSource: "model" | "rule" | null;
 };
 
 export type DecisionRunMetadata = {
@@ -96,6 +102,7 @@ export async function getDecisionTrailForRevision(
         model: decision.model,
         latencyMs: decision.latencyMs,
         digest: decision.digest,
+        signalSource: decision.signalSource,
         policyVersion: policy.version,
       })
       .from(decision)
@@ -148,6 +155,10 @@ export async function getDecisionTrailForRevision(
       model: row.model,
       latencyMs: row.latencyMs,
       digest: row.digest,
+      signalSource:
+        row.signalSource === "rule" || row.signalSource === "model"
+          ? row.signalSource
+          : null,
     })),
     run: first
       ? {

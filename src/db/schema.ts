@@ -494,6 +494,13 @@ export const decision = pgTable(
     samples: integer("samples"),
     model: text("model").notNull(),
     provider: text("provider").notNull(),
+    /**
+     * Which source settled a Q5/Q9 answer: `model`, or `rule` when the app's
+     * fixed safety/personal-care screen over the ask's own words produced the
+     * hold. Null for the seven other questions and for a provider never asked,
+     * so a receipt cannot credit the model with a rule's answer.
+     */
+    signalSource: text("signal_source"),
     latencyMs: integer("latency_ms"),
     digest: text("digest").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })

@@ -3,6 +3,7 @@ import {
   pickOptionsForQuestion,
   type PickAnswer,
 } from "@/server/services/decision-contract";
+import { ruleHoldSentence } from "./deterministic-screen";
 import { languageDisplayName } from "./language";
 import { publishedNotBookedSentence } from "./published-time";
 
@@ -18,6 +19,9 @@ import { publishedNotBookedSentence } from "./published-time";
 
 export const CONFIDENCE_LABEL = "How sure the AI was";
 
+/** The same label for a row the app's fixed rules settled, not the model. */
+export const RULE_CONFIDENCE_LABEL = "How sure the app's rules were";
+
 /**
  * The paragraph above the rows. It has to do the one job the per-row label no
  * longer does: say what the percentage is, in the model's own terms, without
@@ -25,6 +29,23 @@ export const CONFIDENCE_LABEL = "How sure the AI was";
  */
 export const CONFIDENCE_EXPLAINER =
   "The model answered nine fixed questions with a yes, a no, or a choice. It did not write a sentence about anyone. The percentage below is the model's stated confidence, not a probability that the answer is right.";
+
+/**
+ * Added when at least one row came from the app's fixed screen. The model did
+ * not answer that question, so its percentage may not be shown as the model's
+ * own confidence.
+ */
+export const RULE_CONFIDENCE_EXPLAINER =
+  "One row says the app's own fixed rules answered it, not the model. For that row, the percentage is the rule's own confidence, kept so the whole record stays checkable.";
+
+/** The explainer a given set of rows needs above the table. */
+export function confidenceExplainerFor(
+  rows: readonly Pick<TrailRowView, "holdSource">[],
+): string {
+  return rows.some((row) => row.holdSource === "rule")
+    ? `${CONFIDENCE_EXPLAINER} ${RULE_CONFIDENCE_EXPLAINER}`
+    : CONFIDENCE_EXPLAINER;
+}
 
 export const ABSTENTION_SENTENCE =
   "This isn't mine to answer — a person will decide.";
@@ -75,6 +96,8 @@ export type TrailAnswerInput = {
   confidence: number;
   abstained: boolean;
   samples: number | null;
+  /** `rule` when the app's fixed screen produced this answer, not the model. */
+  signalSource?: "model" | "rule" | null;
 };
 
 export type TrailRowView = {
@@ -87,6 +110,9 @@ export type TrailRowView = {
   handoff: string | null;
   confidencePercent: string;
   samples: number | null;
+  holdSource: "model" | "rule" | null;
+  /** Present only for a rule-settled row; it replaces the model credit. */
+  ruleNote: string | null;
 };
 
 /** Whole-percent display. Stored `real` reads back as 0.930000007. */
@@ -135,6 +161,10 @@ export function buildTrailRows(
       ? null
       : formatAnswer(input.questionId, input.answerType, input.answer);
     const abstained = input.abstained || answerLabel === null;
+    const holdSource =
+      input.signalSource === "rule" || input.signalSource === "model"
+        ? input.signalSource
+        : null;
 
     return {
       questionId: input.questionId,
@@ -144,6 +174,8 @@ export function buildTrailRows(
       handoff: abstained ? handoff : null,
       confidencePercent: formatConfidencePercent(input.confidence),
       samples: input.samples,
+      holdSource,
+      ruleNote: holdSource === "rule" ? ruleHoldSentence(input.questionId) : null,
     };
   });
 }

@@ -59,6 +59,11 @@ export function renderCalibrationMarkdown(
   lines.push(
     `**Cases:** ${report.caseCount} total · ${report.slottableCaseCount} slottable · ${report.safetyCaseCount} safety · ${report.personalCareCaseCount} personal-care`,
   );
+  if (report.holdScreen) {
+    lines.push(
+      `**Safety and personal care:** measured with the app's fixed screen over each ask's own words beside the provider (\`${report.holdScreen}\`). A rule hold is counted even when the model misses it, because that is what production does.`,
+    );
+  }
   if (report.source === "deterministic-baseline") {
     lines.push(
       "**Model calls:** none — the deterministic baseline runs the labelled rules engine over every case.",

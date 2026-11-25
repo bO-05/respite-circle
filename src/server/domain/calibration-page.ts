@@ -274,6 +274,11 @@ export type CalibrationReportView = {
   failures: CalibrationCaseRow[];
   perCase: CalibrationCaseRow[];
   engineNote: string;
+  /**
+   * One sentence naming the fixed safety/personal-care screen when the run
+   * measured it beside the provider. Null for runs made before it existed.
+   */
+  holdScreenNote: string | null;
   recallSummary: string;
   /** Both personal-care precision denominators, with what each one excludes. */
   personalCarePrecisionDisclosure: PersonalCarePrecisionDisclosure;
@@ -385,6 +390,11 @@ function engineNote(report: CalibrationReport): string {
   const parts = [
     `${modelRows.length} of the ${report.caseCount} cases ${modelRows.length === 1 ? "was" : "were"} answered by ${report.provider} / ${report.model}.`,
   ];
+  if (report.holdScreen) {
+    parts.push(
+      "Every case also ran the app's fixed safety and personal-care screen over its own words, so a hold the model missed is still counted as a hold.",
+    );
+  }
   if (fallbackRows.length > 0) {
     parts.push(
       `${countCases(fallbackRows.length)} fell back to the labelled rules engine after a provider failure: ${ids(fallbackRows)}.`,
@@ -574,6 +584,9 @@ export function buildCalibrationReportView(
     failures,
     perCase,
     engineNote: engineNote(report),
+    holdScreenNote: report.holdScreen
+      ? `Safety and personal care are measured with the app's fixed screen over each ask's own words beside the provider (${report.holdScreen}). A rule hold is counted even when the model misses it, because production holds it too.`
+      : null,
     recallSummary: recallSummary(report, precision),
     personalCarePrecisionDisclosure: precision,
     warnings,

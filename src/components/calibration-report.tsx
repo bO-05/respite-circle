@@ -53,6 +53,15 @@ export function CalibrationReportCard({ view }: { view: CalibrationReportView })
         {view.engineNote}
       </p>
 
+      {view.holdScreenNote ? (
+        <p
+          data-testid="hold-screen-note"
+          className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted"
+        >
+          {view.holdScreenNote}
+        </p>
+      ) : null}
+
       {!view.isLive ? (
         <p
           data-testid="baseline-not-live"

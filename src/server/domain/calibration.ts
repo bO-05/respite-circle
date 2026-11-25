@@ -250,6 +250,12 @@ export type CalibrationRunMeta = {
   promptVersion: string;
   gitCommit: string;
   command: string;
+  /**
+   * The deterministic safety/personal-care screen applied beside the provider
+   * on every case. Present on runs made after the screen landed; older records
+   * measured the model alone and do not carry it.
+   */
+  holdScreen?: string;
 };
 
 export type CalibrationCaseResult = {

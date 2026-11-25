@@ -117,20 +117,32 @@ describe("decide()", () => {
     expect(result.engine).toBe("live");
     expect(result.degraded).toBe(false);
     expect(result.digest).toMatch(/^[0-9a-f]{64}$/);
+    // The only field the screen may add is the closed provenance label on a
+    // Q5/Q9 answer. Nothing else, and no key can carry prose.
+    const allowedKeys = new Set([
+      "abstained",
+      "answer",
+      "answerType",
+      "confidence",
+      "key",
+      "questionId",
+      "questionText",
+      "samples",
+      "signalSource",
+    ]);
     for (const decision of result.decisions) {
-      expect(Object.keys(decision).sort()).toEqual(
-        [
-          "abstained",
-          "answer",
-          "answerType",
-          "confidence",
-          "key",
-          "questionId",
-          "questionText",
-          "samples",
-        ].sort(),
+      expect(
+        Object.keys(decision).every((key) => allowedKeys.has(key)),
+      ).toBe(true);
+      expect(["model", "rule", null, undefined]).toContain(
+        decision.signalSource,
       );
     }
+    expect(
+      result.decisions
+        .filter((decision) => decision.signalSource !== undefined)
+        .map((decision) => decision.questionId),
+    ).toEqual(["Q5", "Q9"]);
   });
 
   it("marks answers below 0.60 as abstained and keeps the typed safe answer", async () => {

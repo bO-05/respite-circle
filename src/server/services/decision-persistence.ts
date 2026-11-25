@@ -68,6 +68,8 @@ export async function persistDecisionRun(
         samples: outcome.samples,
         model: run.model,
         provider: run.provider,
+        // Which source settled a Q5/Q9 answer. Null for the other questions.
+        signalSource: outcome.signalSource ?? null,
         latencyMs: run.latencyMs,
         digest: computeDecisionDigest({
           askId: input.askId,
@@ -83,6 +85,7 @@ export async function persistDecisionRun(
           model: run.model,
           latencyMs: run.latencyMs,
           inputDigest: run.digest,
+          signalSource: outcome.signalSource ?? null,
         }),
       }));
 
@@ -117,6 +120,11 @@ export async function persistDecisionRun(
             routingStatus: run.routing.status,
             bilingualNeeded: run.routing.bilingualNeeded,
             slotConstructionAllowed: run.routing.slotConstructionAllowed,
+            // Which source produced each Q5/Q9 hold: `model` or `rule`. The
+            // audit names it so no reader credits the model with a rule's
+            // answer, and a rule-settled answer is never counted as model
+            // agreement in a later review.
+            holdSources: run.routing.holdSources,
             language: run.language.code,
             attempts: run.attempts,
             samplesIncomplete: run.samplesIncomplete,

@@ -377,6 +377,47 @@ export function mentionsPersonalCare(text: string): boolean {
   return matches(positiveTextForPersonalCare(text), PERSONAL_CARE_POSITIVE);
 }
 
+export type HoldScreenSignal = {
+  /** The rule's own yes/no reading, before the confidence threshold. */
+  answer: boolean;
+  confidence: number;
+};
+
+/** The confidence floor a signal must clear to count as a settled answer. */
+export const HOLD_SCREEN_MIN_CONFIDENCE = 0.6;
+
+export type HoldScreenOutcome = {
+  safety: HoldScreenSignal;
+  personalCare: HoldScreenSignal;
+};
+
+/**
+ * The deterministic safety and personal-care screen, over the ask's own words.
+ *
+ * It runs exactly the Q5 and Q9 rules the labelled rules engine uses, through
+ * the same `answerFor` function, so the screen and the baseline can never
+ * drift apart. `decide()` applies it beside the model's answer and lets it add
+ * a hold the model missed; it can never remove one, and it never touches the
+ * other seven questions.
+ *
+ * A signal holds when the rule answered YES, or when it could not settle
+ * (a signal and a denial in the same ask makes the rule abstain below the
+ * threshold). A settled NO holds nothing.
+ */
+export function screenHoldSignals(askText: string): HoldScreenOutcome {
+  const text = (typeof askText === "string" ? askText : "").normalize("NFC");
+  const safety = answerFor("Q5", text);
+  const personalCare = answerFor("Q9", text);
+
+  return {
+    safety: { answer: safety.answer === true, confidence: safety.confidence },
+    personalCare: {
+      answer: personalCare.answer === true,
+      confidence: personalCare.confidence,
+    },
+  };
+}
+
 function resolveWindow(text: string): PickOutcome {
   if (matches(text, /\bsaturdays?\b/i)) {
     return { answer: "saturday", confidence: POSITIVE_CONFIDENCE };

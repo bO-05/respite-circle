@@ -87,6 +87,12 @@ export const PublishedCalibrationSchema = z
     promptVersion: z.string().min(1),
     gitCommit: z.string().regex(/^[0-9a-f]{40}$/, "full git commit"),
     command: z.string().min(1),
+    /**
+     * The fixed safety/personal-care screen measured beside the provider.
+     * Optional because runs published before the screen existed measured the
+     * model alone and must keep parsing as the history they are.
+     */
+    holdScreen: z.string().min(1).optional(),
     engine: z.enum(CALIBRATION_SOURCES),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "calendar date"),
     caseCount: z.number().int().min(1),

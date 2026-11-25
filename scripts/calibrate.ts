@@ -35,6 +35,7 @@ import {
   formatMetricRatio,
 } from "../src/server/domain/calibration-page";
 import { PROMPT_VERSION } from "../src/server/services/decision-contract";
+import { HOLD_SCREEN_VERSION } from "../src/server/domain/deterministic-screen";
 import { decide } from "../src/server/services/decide";
 import {
   resolveProviderName,
@@ -437,6 +438,11 @@ async function main(): Promise<void> {
     promptVersion: PROMPT_VERSION,
     gitCommit,
     command: commandLabel(forcedBaseline),
+    // Every case runs through `decide()`, which applies the app's fixed
+    // safety and personal-care screen beside the model. The record names the
+    // screen so a reader knows these numbers are the combined behaviour, not
+    // the model answering alone.
+    holdScreen: HOLD_SCREEN_VERSION,
   });
 
   const files = writeReport(report);

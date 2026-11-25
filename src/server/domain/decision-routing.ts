@@ -1,4 +1,5 @@
 import type { DecisionOutcome, QuestionId } from "@/server/services/decision-contract";
+import type { HoldSources } from "./deterministic-screen";
 import type { LanguageDetection } from "./language";
 
 /**
@@ -12,7 +13,9 @@ import type { LanguageDetection } from "./language";
  * - a held ask never constructs a slot.
  *
  * Safety and personal care are checked before any slot branch exists, and no
- * branch here can turn them into one.
+ * branch here can turn them into one. Each hold carries the source that
+ * produced it — the model, or the app's fixed screen over the ask's own words
+ * — so no reader can credit the model with a rule's answer.
  */
 
 export type RoutingStatus =
@@ -41,12 +44,15 @@ export type DecisionRouting = {
   personalCareReview: boolean;
   abstentions: QuestionId[];
   reasons: RoutingReason[];
+  /** Which source settled each held question: `model` or `rule`. */
+  holdSources: HoldSources;
 };
 
 export function resolveDecisionRouting(input: {
   decisions: readonly DecisionOutcome[];
   language: LanguageDetection;
   emptyInput?: boolean;
+  holdSources?: HoldSources;
 }): DecisionRouting {
   const byId = new Map(
     input.decisions.map((decision) => [decision.questionId, decision]),
@@ -88,7 +94,9 @@ export function resolveDecisionRouting(input: {
       code: "safety_flag",
       questionId: "Q5",
       detail:
-        "A safety question was answered yes or left uncertain. A person calls today; no slots are proposed.",
+        input.holdSources?.Q5 === "rule"
+          ? "The app's fixed safety rules found a disclosure in the ask's own words. A person calls today; no slots are proposed."
+          : "A safety question was answered yes or left uncertain. A person calls today; no slots are proposed.",
     });
   }
   if (personalCareReview) {
@@ -96,7 +104,9 @@ export function resolveDecisionRouting(input: {
       code: "personal_care_flag",
       questionId: "Q9",
       detail:
-        "The ask mentions personal care. A person connects the family with professional help; no slots are proposed.",
+        input.holdSources?.Q9 === "rule"
+          ? "The app's fixed personal-care rules found care words in the ask's own words. A person connects the family with professional help; no slots are proposed."
+          : "The ask mentions personal care. A person connects the family with professional help; no slots are proposed.",
     });
   }
   for (const questionId of abstentions) {
@@ -126,5 +136,6 @@ export function resolveDecisionRouting(input: {
     personalCareReview,
     abstentions,
     reasons,
+    holdSources: input.holdSources ?? {},
   };
 }

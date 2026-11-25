@@ -266,7 +266,7 @@ export const NEVER_COMMITMENTS: readonly NeverCommitment[] = [
     title: "No AI sentences about a person",
     body: "The model answers nine typed questions and stops. Every sentence a family receives was written by a person: a fixed template a person wrote, or the coordinator's own note. No model-written prose is stored, shown, or sent.",
     where:
-      "Your ask receipt shows nine answers with the model's name and its stated confidence, and no paragraph.",
+      "Your ask receipt shows nine answers with the model's name and its stated confidence, and no paragraph. Where the app's own fixed safety rules settled an answer the model missed, the receipt says that, and does not credit the model.",
   },
   {
     id: "no-scoring",

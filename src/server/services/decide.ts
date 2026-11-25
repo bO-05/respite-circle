@@ -9,6 +9,10 @@ import {
   type DecisionRouting,
 } from "@/server/domain/decision-routing";
 import {
+  applyDeterministicHoldScreen,
+  type HoldSources,
+} from "@/server/domain/deterministic-screen";
+import {
   DECISION_MIN_CONFIDENCE,
   QUESTION_IDS,
   answerTypeForQuestion,
@@ -71,6 +75,8 @@ export type DecideResult = {
   contractError: boolean;
   /** True when a Q5/Q9 sample call failed and the answer abstained. */
   samplesIncomplete: boolean;
+  /** Which source produced each safety/personal-care hold. */
+  holdSources: HoldSources;
 };
 
 const DEFAULT_TIMEOUT_MS = 8_000;
@@ -478,6 +484,7 @@ function guardResult(
     emptyInput: reason.emptyInput,
     contractError: reason.contractError,
     samplesIncomplete: false,
+    holdSources: {},
   };
 }
 
@@ -538,10 +545,19 @@ async function decideInternal(options: DecideOptions): Promise<DecideResult> {
     }
   }
 
-  const routing = resolveDecisionRouting({
+  // The app's own safety and personal-care screen reads the ask's own words
+  // beside the model's answer. It can add a hold the model missed, and it can
+  // never remove one. It touches Q5 and Q9 only.
+  const screened = applyDeterministicHoldScreen({
+    askText,
     decisions: resolution.decisions,
+  });
+
+  const routing = resolveDecisionRouting({
+    decisions: screened.decisions,
     language,
     emptyInput,
+    holdSources: screened.holdSources,
   });
 
   const degraded = resolution.provider === "deterministic";
@@ -553,13 +569,14 @@ async function decideInternal(options: DecideOptions): Promise<DecideResult> {
     latencyMs: Math.max(0, Date.now() - startedAt),
     digest,
     degraded,
-    decisions: resolution.decisions,
+    decisions: screened.decisions,
     routing,
     language,
     attempts: primaryAttempts,
     emptyInput,
     contractError: false,
     samplesIncomplete: resolution.samplesIncomplete,
+    holdSources: routing.holdSources,
   };
 }
 

@@ -146,6 +146,10 @@ describe("decision persistence and audit", () => {
           model: row.model,
           latencyMs: row.latencyMs ?? 0,
           inputDigest: run.digest,
+          signalSource:
+            row.signalSource === "rule" || row.signalSource === "model"
+              ? row.signalSource
+              : null,
         }),
       ).toBe(row.digest);
     }
