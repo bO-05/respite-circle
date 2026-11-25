@@ -16,6 +16,7 @@ import {
   type SessionOption,
   type TypedAnswer,
 } from "@/server/domain/slots";
+import { AUDITED_DRAFT_PERSONAL_CARE_STRINGS } from "../fixtures/personal-care-strings";
 
 /**
  * Plain-code slot construction.
@@ -567,6 +568,107 @@ describe("editing rules", () => {
     expect(alreadyOpen.ok).toBe(false);
     if (alreadyOpen.ok) return;
     expect(alreadyOpen.reason).toBe("not_draft");
+  });
+});
+
+/**
+ * VAL-R2CARE-003 — the round-2 audit's eleven plain personal-care strings at
+ * the one screen every coordinator-written label and note passes.
+ *
+ * Before the audit, eight of the eleven were accepted, which meant the screen
+ * that guards the last step before a volunteer-facing card let them through.
+ * The refusal must be the same plain sentence the Q9 hold shows, scoped to the
+ * field the coordinator typed in, so the two entry points cannot tell two
+ * different stories. The second half is the other direction: the four notes
+ * plain code writes itself still pass, or every construction would refuse.
+ */
+describe("VAL-R2CARE-003 — the draft screen refuses every audited personal-care string", () => {
+  const legitimate = {
+    kind: "home" as const,
+    label: "Saturday visit at home",
+    windowStart: new Date("2026-11-21T15:00:00.000Z"),
+    windowEnd: new Date("2026-11-21T17:00:00.000Z"),
+    gated: true,
+    orientationNote: null as string | null,
+  };
+  const careMessage = constructionBlockedForStatus("care_hold")?.message;
+
+  for (const phrase of AUDITED_DRAFT_PERSONAL_CARE_STRINGS) {
+    it(`refuses "${phrase}" as a slot label`, () => {
+      const result = validateDraftSlotInput({ ...legitimate, label: phrase });
+      expect(result.ok, phrase).toBe(false);
+      if (result.ok) return;
+      expect(result.field).toBe("label");
+      expect(result.message).toBe(careMessage);
+    });
+
+    it(`refuses "${phrase}" as an orientation note`, () => {
+      const result = validateDraftSlotInput({
+        ...legitimate,
+        orientationNote: phrase,
+      });
+      expect(result.ok, phrase).toBe(false);
+      if (result.ok) return;
+      expect(result.field).toBe("orientationNote");
+      expect(result.message).toBe(careMessage);
+    });
+  }
+
+  it("still accepts the four code-generated orientation notes", () => {
+    const allNeeds: TypedAnswer[] = [
+      answer("Q1", true),
+      answer("Q2", true),
+      answer("Q3", true),
+      answer("Q4", "saturday"),
+      answer("Q5", false),
+      answer("Q6", true),
+      answer("Q7", "reheats"),
+      answer("Q8", false),
+      answer("Q9", false),
+    ];
+
+    // Q6 yes gives all four kinds and the familiar-face companion note; Q6 no
+    // gives the other companion note, so both forms of it are covered.
+    const generatedKinds: string[] = [];
+    for (const familiar of [true, false]) {
+      const plan = buildDraftSlots(
+        input({
+          answers: allNeeds.map((entry) =>
+            entry.questionId === "Q6" ? answer("Q6", familiar) : entry,
+          ),
+          policy: { transportEnabled: true },
+        }),
+      );
+      expect(plan.blocked).toBeNull();
+
+      for (const proposal of plan.proposals) {
+        const result = validateDraftSlotInput({
+          kind: proposal.kind,
+          label: proposal.label,
+          windowStart: proposal.windowStart,
+          windowEnd: proposal.windowEnd,
+          gated: proposal.gated,
+          orientationNote: proposal.orientationNote,
+        });
+        expect(
+          result.ok,
+          `${proposal.kind}: ${proposal.orientationNote}`,
+        ).toBe(true);
+      }
+
+      for (const proposal of plan.proposals) {
+        if (!generatedKinds.includes(proposal.kind)) {
+          generatedKinds.push(proposal.kind);
+        }
+      }
+    }
+
+    expect(generatedKinds.sort()).toEqual([
+      "companion",
+      "drive",
+      "home",
+      "meal",
+    ]);
   });
 });
 

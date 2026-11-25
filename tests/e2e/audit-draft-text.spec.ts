@@ -27,7 +27,10 @@ const HERO_ASK =
   "I haven't had a Saturday morning to myself since March. Mum is fine with people she knows, she just can't be alone.\n\nShe loves hymns and tea, and she naps after lunch.";
 
 const REFUSED_NOTE = "Could a volunteer change her pads in the morning?";
-const REFUSED_LABEL = "Change her pads";
+// One of the eleven exact strings from the round-2 audit (VAL-R2CARE-003):
+// "change his nappies". The plain word a family uses must be refused in the
+// label field the coordinator types into.
+const REFUSED_LABEL = "Change his nappies";
 const LEGIT_NOTE = "Two people for the first visit.";
 const LEGIT_LABEL = "Home visit — Saturday";
 
@@ -243,6 +246,7 @@ test.describe("VAL-AUDITFIX-003 — the draft editor refuses personal-care text"
         FROM slot
        WHERE church_id = ${seedIds.church}
          AND (label ILIKE '%pads%' OR orientation_note ILIKE '%pads%'
+              OR label ILIKE '%nappies%' OR orientation_note ILIKE '%nappies%'
               OR label ILIKE '%wash and get dressed%'
               OR orientation_note ILIKE '%wash and get dressed%')
     `;
@@ -259,7 +263,7 @@ test.describe("VAL-AUDITFIX-003 — the draft editor refuses personal-care text"
     await expect(published).toBeVisible();
 
     const body = await ruth.page.locator("body").innerText();
-    expect(body).not.toMatch(/pads/i);
+    expect(body).not.toMatch(/pads|nappies/i);
     expect(body).not.toContain(CARE_MESSAGE);
     expect(body).not.toContain(REFUSED_NOTE);
 
@@ -267,7 +271,7 @@ test.describe("VAL-AUDITFIX-003 — the draft editor refuses personal-care text"
     const boardResponse = await ruth.context.request.get("/circle");
     expect(boardResponse.status()).toBe(200);
     const html = await boardResponse.text();
-    expect(html).not.toMatch(/pads/i);
+    expect(html).not.toMatch(/pads|nappies/i);
     expect(html).not.toContain(REFUSED_NOTE);
 
     await shot(ruth.page, "board-with-legitimate-label");

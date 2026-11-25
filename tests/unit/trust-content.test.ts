@@ -310,6 +310,40 @@ describe("trust page content", () => {
     }
   });
 
+  /**
+   * VAL-R2CARE-004 — `/never` is a commitment, not marketing. The sentence a
+   * family reads must be literally true for the plainest words the round-2
+   * audit used, so it names going to the toilet, dressing, and brushing teeth
+   * rather than leaving them to an inference. It stays exactly as strong as
+   * before: the ask stops, no times are proposed, and no override applies.
+   */
+  it("keeps the /never personal-care commitment true for the audited words", () => {
+    const commitment = NEVER_COMMITMENTS.find(
+      (entry) => entry.id === "no-personal-care",
+    );
+    expect(commitment).toBeTruthy();
+    const body = commitment?.body ?? "";
+
+    expect(body).toContain(
+      "If your words raise them, the ask stops, no times are proposed",
+    );
+    for (const category of [
+      "Medication",
+      "bathing",
+      "dressing",
+      "brushing teeth",
+      "going to the toilet",
+      "lifting",
+      "transfers",
+    ]) {
+      expect(body, category).toContain(category);
+    }
+    expect(body).toContain(
+      "Even an override for a safety flag cannot turn personal care into a time.",
+    );
+    expect(commitment?.where ?? "").toContain("no times at all");
+  });
+
   it("keeps every trust-page sentence free of a banned claim", () => {
     expect(TRUST_COPY_STRINGS.length).toBeGreaterThan(30);
     for (const line of TRUST_COPY_STRINGS) {

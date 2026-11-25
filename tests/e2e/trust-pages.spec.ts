@@ -195,6 +195,21 @@ test("VAL-TRUST-004 and VAL-TRUST-006 — never lists all eight commitments with
     ).toBeVisible();
   }
 
+  // VAL-R2CARE-004 — the personal-care sentence is the one the audit quotes,
+  // and it names the plainest words a family uses, so a reader can check it
+  // against "change his nappies", "brush his teeth", and "help him undress"
+  // instead of trusting an inference.
+  const careCommitment = page
+    .getByTestId("commitment")
+    .filter({ hasText: "No personal care as a slot" });
+  await expect(careCommitment).toContainText(
+    "If your words raise them, the ask stops, no times are proposed",
+  );
+  await expect(careCommitment).toContainText("going to the toilet");
+  await expect(careCommitment).toContainText("brushing teeth");
+  await expect(careCommitment).toContainText("dressing");
+  await expect(careCommitment).toContainText("no times at all");
+
   await expect(page.getByText(STAMP, { exact: true })).toBeVisible();
   expect(bannedHits(await page.locator("body").innerText())).toEqual([]);
   expect(bannedHits(await page.content())).toEqual([]);
@@ -257,6 +272,14 @@ test("VAL-TRUST-006 and VAL-POLICY-002 — promises stays signed, linked, and fr
     page.getByRole("heading", { level: 1, name: /what we promise/i }),
   ).toBeVisible();
   await expect(page.getByTestId("policy-signoff")).toContainText("Signed by");
+
+  // VAL-R2CARE-004 — the signed promise the audit cites. The screen refuses
+  // the eleven audited strings and Q9 holds all fourteen, so "ever" is true.
+  const personalCarePromise = page.getByText(/^No personal care, ever\./);
+  await expect(personalCarePromise).toBeVisible();
+  await expect(personalCarePromise).toContainText("Area Agency on Aging");
+  await expect(personalCarePromise).toContainText("ARCH Respite Locator");
+
   const main = page.locator("#main");
   await expect(
     main.getByRole("link", { name: /how it works/i }),

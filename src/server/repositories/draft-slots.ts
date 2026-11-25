@@ -25,6 +25,7 @@ import {
   constructionBlockedForStatus,
   isSlotKind,
   skippedMessage,
+  validateDraftSlotInput,
   validateHoldReason,
   type SessionOption,
   type SkipReason,
@@ -376,6 +377,21 @@ export async function updateDraftSlot(
   database: AppDatabase = appDb,
 ): Promise<DraftWriteResult> {
   requireRoleSession(actor, DESK_ROLES);
+
+  // The screen runs again at the write boundary. The desk action already
+  // validates, but a type is not an enforcement: this is the last function
+  // that writes a label or a note, so a future caller that skips the action
+  // still cannot put personal-care words on a row a neighbour might read. It
+  // is the same rule and the same sentence, never a warning or an override.
+  const screened = validateDraftSlotInput({
+    kind: input.kind,
+    label: input.label,
+    windowStart: input.windowStart,
+    windowEnd: input.windowEnd,
+    gated: input.gated,
+    orientationNote: input.orientationNote,
+  });
+  if (!screened.ok) return { ok: false, message: screened.message };
 
   if (
     input.kind === "drive" &&

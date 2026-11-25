@@ -32,6 +32,10 @@ import {
   removeDraftSlot,
   updateDraftSlot,
 } from "../../src/server/repositories/draft-slots";
+import { approveAsk } from "../../src/server/repositories/ask-review";
+import { getBoard } from "../../src/server/repositories/board";
+import { mentionsPersonalCare } from "../../src/server/domain/keyword-engine";
+import { AUDITED_DRAFT_PERSONAL_CARE_STRINGS } from "../fixtures/personal-care-strings";
 import { constructDraftSlots } from "../../src/server/services/slot-construction";
 import { sha256Hex } from "../../src/server/services/decision-contract";
 import { openTestDatabase, type TestDatabase } from "./helpers/db";
@@ -756,6 +760,136 @@ describe("draft slot construction", () => {
     expect(edited.orientationNote).toBe("Two people for the first visit.");
     expect(edited.label).toBe(home.label);
     expect(await auditCount(t, "draft_slot_edited", home.id)).toBe(1);
+  });
+
+  /**
+   * VAL-R2CARE-003 — the eleven audited strings at the screen, at the write
+   * boundary, in the rows, and on the congregation board.
+   *
+   * The screen is the first proof and the repository is the last writer of a
+   * label or a note, so a caller that skips the screen is refused there too.
+   * The ask is then approved through the real publish path and the board is
+   * read with the real query: the two paths agree that none of the eleven
+   * strings can reach a neighbour.
+   */
+  it("VAL-R2CARE-003 — no slot row or board card carries a personal-care label or note", async () => {
+    const { askId } = await insertAskWithAnswers(t);
+    await constructDraftSlots({
+      askId,
+      churchId: seedIds.church,
+      database: t.db,
+      now: NOW,
+    });
+    const home = (await readSlots(t, askId)).find((row) => row.kind === "home");
+    if (!home) throw new Error("expected a home draft");
+
+    const careMessage = constructionBlockedForStatus("care_hold")?.message;
+    const base = {
+      kind: "home" as const,
+      label: home.label,
+      windowStart: home.windowStart,
+      windowEnd: home.windowEnd,
+      gated: home.gated,
+      orientationNote: home.orientationNote,
+    };
+
+    for (const phrase of AUDITED_DRAFT_PERSONAL_CARE_STRINGS) {
+      const asLabel = validateDraftSlotInput({ ...base, label: phrase });
+      expect(asLabel.ok, phrase).toBe(false);
+      if (!asLabel.ok) {
+        expect(asLabel.field, phrase).toBe("label");
+        expect(asLabel.message, phrase).toBe(careMessage);
+      }
+
+      const asNote = validateDraftSlotInput({
+        ...base,
+        orientationNote: phrase,
+      });
+      expect(asNote.ok, phrase).toBe(false);
+      if (!asNote.ok) {
+        expect(asNote.field, phrase).toBe("orientationNote");
+        expect(asNote.message, phrase).toBe(careMessage);
+      }
+    }
+
+    // A caller that hands the repository a value the action would have
+    // refused gets the same refusal: the type is not the enforcement.
+    const forged = await updateDraftSlot(
+      GRACE,
+      {
+        slotId: home.id,
+        kind: "home",
+        tier: "in_home",
+        label: "Change his nappies",
+        windowStart: home.windowStart,
+        windowEnd: home.windowEnd,
+        gated: true,
+        orientationNote: null,
+      },
+      t.db,
+    );
+    expect(forged.ok).toBe(false);
+    if (!forged.ok) expect(forged.message).toBe(careMessage);
+
+    const [unchanged] = await t.db
+      .select()
+      .from(slot)
+      .where(eq(slot.id, home.id));
+    expect(unchanged.label).toBe(home.label);
+    expect(unchanged.orientationNote).toBe(home.orientationNote);
+    expect(unchanged.status).toBe("draft");
+    expect(await auditCount(t, "draft_slot_edited", home.id)).toBe(0);
+
+    // No row anywhere in the church carries any audited phrase.
+    for (const phrase of AUDITED_DRAFT_PERSONAL_CARE_STRINGS) {
+      const [carrying] = await t.client<{ count: number }[]>`
+        SELECT COUNT(*)::int AS count
+          FROM slot
+         WHERE church_id = ${seedIds.church}
+           AND (label ILIKE ${`%${phrase}%`}
+                OR orientation_note ILIKE ${`%${phrase}%`})
+      `;
+      expect(carrying.count, phrase).toBe(0);
+    }
+
+    // Publish through the real approval path and read the real board query.
+    const approved = await approveAsk(GRACE, askId, t.db, NOW);
+    expect(approved).toMatchObject({ ok: true, publishedCount: 2 });
+    if (!approved.ok) return;
+
+    const [published] = await t.client<{ count: number }[]>`
+      SELECT COUNT(*)::int AS count
+        FROM slot
+       WHERE ask_id = ${askId}
+         AND status IN ('open', 'claimed', 'covered')
+    `;
+    expect(published.count).toBe(2);
+
+    const board = await getBoard(RUTH, t.db, NOW);
+    expect(board).not.toBeNull();
+    const cards = board?.slots ?? [];
+    expect(cards).toHaveLength(2);
+    for (const card of cards) {
+      expect(mentionsPersonalCare(card.label), card.label).toBe(false);
+      expect(card).not.toHaveProperty("orientationNote");
+    }
+
+    const payload = JSON.stringify(board).toLowerCase();
+    for (const phrase of AUDITED_DRAFT_PERSONAL_CARE_STRINGS) {
+      expect(payload, phrase).not.toContain(phrase.toLowerCase());
+    }
+
+    // The same scan after publication, so a published row is covered too.
+    for (const phrase of AUDITED_DRAFT_PERSONAL_CARE_STRINGS) {
+      const [carrying] = await t.client<{ count: number }[]>`
+        SELECT COUNT(*)::int AS count
+          FROM slot
+         WHERE church_id = ${seedIds.church}
+           AND (label ILIKE ${`%${phrase}%`}
+                OR orientation_note ILIKE ${`%${phrase}%`})
+      `;
+      expect(carrying.count, phrase).toBe(0);
+    }
   });
 
   it("refuses to turn a draft into a drive without the signed driver policy", async () => {

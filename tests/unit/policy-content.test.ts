@@ -243,6 +243,26 @@ describe("who may see crisis and referral content", () => {
     ).toBeNull();
     expect(toPublicPolicyView({ ...seededPolicy, signedOffBy: "   " })).toBeNull();
   });
+
+  /**
+   * VAL-R2CARE-004 — the promise a family reads on /promises. It is signed
+   * policy content, not marketing: the screen refuses the eleven audited
+   * strings and Q9 holds all fourteen, so the unqualified "ever" is true.
+   * Asserting the sentence by reference keeps the page and the proof together.
+   */
+  it("keeps the signed /promises personal-care sentence absolute", () => {
+    const promise = seedSafeguardingPromises.find((line) =>
+      /^No personal care, ever\./.test(line),
+    );
+    expect(promise).toBeTruthy();
+    expect(promise).toContain("No medication, no bathing, no toileting");
+    expect(promise).toContain("no lifting or transfers");
+    expect(promise).toContain("Area Agency on Aging");
+    expect(promise).toContain("ARCH Respite Locator");
+
+    const published = toPublicPolicyView(seededPolicy);
+    expect(published?.safeguardingPromises).toContain(promise);
+  });
 });
 
 describe("policy version bookkeeping", () => {

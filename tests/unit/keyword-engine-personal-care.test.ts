@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PolicyQuestion } from "@/db/schema";
-import { seedQuestionSet } from "@/db/seed-data";
+import { seedQuestionSet, seedSafeguardingPromises } from "@/db/seed-data";
+import { NEVER_COMMITMENTS } from "@/lib/trust-content";
 import {
   mentionsPersonalCare,
   runKeywordEngine,
@@ -8,6 +9,7 @@ import {
 import { buildDraftSlots, type TypedAnswer } from "@/server/domain/slots";
 import { decide } from "@/server/services/decide";
 import { createDeterministicProvider } from "@/server/services/providers";
+import { AUDITED_ASK_PERSONAL_CARE_PHRASES } from "../fixtures/personal-care-strings";
 
 /**
  * VAL-AUDITFIX-009 — the offline personal-care lexicon.
@@ -286,22 +288,7 @@ async function expectCareHold(askText: string) {
 }
 
 /** VAL-R2CARE-001 — the fourteen phrasings from the round-2 audit. */
-const AUDITED_CARE_PHRASES = [
-  "nappies",
-  "diapers",
-  "he needs an injection",
-  "eye drops",
-  "inhaler",
-  "brush his teeth",
-  "get changed for bed",
-  "help him undress",
-  "he has accidents",
-  "clean him up after accidents",
-  "loo",
-  "help her to the loo",
-  "change his nappies",
-  "insulin injection",
-] as const;
+const AUDITED_CARE_PHRASES = AUDITED_ASK_PERSONAL_CARE_PHRASES;
 
 /** VAL-R2CARE-001 — a care need wrapped in a request for a visit or a sit. */
 const AUDITED_CARE_COMPOSITES = [
@@ -441,6 +428,67 @@ describe("VAL-R2CARE-002 — a care need is never read as a refusal", () => {
       expect(result.routing.status, phrase).toBe("waiting_coordinator");
       expect(result.routing.slotConstructionAllowed, phrase).toBe(true);
       expect(plan.blocked, phrase).toBeNull();
+    });
+  }
+});
+
+/**
+ * VAL-R2CARE-004 — the two public promises are true for every audited phrase.
+ *
+ * `/never` says the ask stops and no times are proposed when a family's words
+ * raise personal care. `/promises` carries the church's signed "No personal
+ * care, ever." Both pages are rendered from the strings asserted here, and the
+ * loop below runs all fourteen audited phrasings through the same pipeline the
+ * ask route uses: a care hold, slot construction refused, and an empty plan.
+ */
+describe("VAL-R2CARE-004 — the public promises match the fourteen audited phrases", () => {
+  it("quotes the /never commitment without weakening it", () => {
+    const commitment = NEVER_COMMITMENTS.find(
+      (entry) => entry.id === "no-personal-care",
+    );
+    expect(commitment).toBeTruthy();
+    const body = commitment?.body ?? "";
+
+    // The two sentences the round-2 audit cites, kept verbatim.
+    expect(body).toContain(
+      "If your words raise them, the ask stops, no times are proposed",
+    );
+    expect(body).toContain(
+      "Even an override for a safety flag cannot turn personal care into a time.",
+    );
+
+    // Every category the fourteen phrases fall into is named, so a reader can
+    // check the sentence against "change his nappies" (going to the toilet),
+    // "brush his teeth" (brushing teeth), "help him undress" (dressing), and
+    // "he needs an injection" (medication) without inferring anything.
+    for (const category of [
+      "Medication",
+      "bathing",
+      "dressing",
+      "brushing teeth",
+      "going to the toilet",
+      "lifting",
+      "transfers",
+    ]) {
+      expect(body, category).toContain(category);
+    }
+
+    expect(commitment?.where ?? "").toContain("no times at all");
+  });
+
+  it("quotes the /promises sentence the church signs", () => {
+    const promise = seedSafeguardingPromises.find((line) =>
+      /^No personal care, ever\./.test(line),
+    );
+    expect(promise).toBeTruthy();
+    expect(promise).toContain("No medication, no bathing, no toileting");
+    expect(promise).toContain("Area Agency on Aging");
+    expect(promise).toContain("ARCH Respite Locator");
+  });
+
+  for (const phrase of AUDITED_ASK_PERSONAL_CARE_PHRASES) {
+    it(`proposes no time and creates no slot for "${phrase}"`, async () => {
+      await expectCareHold(phrase);
     });
   }
 });

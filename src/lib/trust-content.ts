@@ -292,7 +292,13 @@ export const NEVER_COMMITMENTS: readonly NeverCommitment[] = [
   {
     id: "no-personal-care",
     title: "No personal care as a slot",
-    body: "Medication, bathing, toileting, lifting, and transfers are never offered as a time. If your words raise them, the ask stops, no times are proposed, and the coordinator calls with professional referrals, starting with the ARCH Respite Locator and the Area Agency on Aging. Even an override for a safety flag cannot turn personal care into a time.",
+    // The list names every way a family describes personal care, so the next
+    // sentence is literally true for the audit's plainest words: nappies and
+    // pads are going to the toilet, an injection is medication, "help him
+    // undress" is dressing, and "brush his teeth" is brushing teeth. It was
+    // shorter before the round-2 audit and left a reader to infer that teeth
+    // and dressing counted; naming them is no weaker and no less plain.
+    body: "Medication, bathing, dressing, brushing teeth, going to the toilet, lifting, and transfers are never offered as a time. If your words raise them, the ask stops, no times are proposed, and the coordinator calls with professional referrals, starting with the ARCH Respite Locator and the Area Agency on Aging. Even an override for a safety flag cannot turn personal care into a time.",
     where: "A personal-care ask shows no times at all, only a person and the referrals.",
   },
   {
