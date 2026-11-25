@@ -6,6 +6,7 @@ import {
   MAX_ASK_LENGTH,
   receiptDecisionSentences,
   receiptSentence,
+  receiptStatusCopy,
   sentBackReceiptSentence,
   validateAskSubmission,
 } from "@/server/domain/ask-intake";
@@ -248,6 +249,87 @@ describe("ask copy", () => {
       "Line one.\nLine two.",
     );
     expect(appendSpokenText("A", "  B  ")).toBe("A B");
+  });
+});
+
+describe("waiting pill read state (VAL-R2PROM-005)", () => {
+  const READ_AT = new Date("2026-11-25T14:00:00.000Z");
+
+  function waiting(
+    deskReadAt: Date | null,
+    coordinatorFirstName: string | null = "Grace",
+  ) {
+    return receiptStatusCopy({
+      status: "waiting_coordinator",
+      coordinatorFirstName,
+      sentBackByFirstName: null,
+      deskReadAt,
+    });
+  }
+
+  it("says 'not read yet' only while no desk read is recorded", () => {
+    expect(waiting(null)).toEqual({
+      label: "With Grace — not read yet",
+      tone: "amber",
+    });
+  });
+
+  it("stops claiming 'not read yet' once the desk has read it, and says what happens next", () => {
+    const copy = waiting(READ_AT);
+
+    expect(copy.label).not.toMatch(/not read yet/i);
+    expect(copy.label).toBe("Read by Grace — she may call you");
+    // Still the waiting state, so the pill keeps its amber tone.
+    expect(copy.tone).toBe("amber");
+  });
+
+  it("never names a person the church does not have", () => {
+    expect(waiting(null, null)).toEqual({
+      label: "With Your coordinator — not read yet",
+      tone: "amber",
+    });
+    const unnamedRead = waiting(READ_AT, null);
+    expect(unnamedRead.label).toBe("Read by Your coordinator — they may call you");
+    expect(unnamedRead.label).not.toContain("null");
+  });
+
+  it("trims a coordinator's name rather than printing stray spaces", () => {
+    expect(waiting(READ_AT, "  Grace  ").label).toBe(
+      "Read by Grace — she may call you",
+    );
+  });
+
+  it("leaves every other status exactly as it was", () => {
+    const cases = [
+      ["safety_hold", "Grace will call you today", "amber"],
+      ["care_hold", "Grace will call you about this", "amber"],
+      ["approved", "Approved by Grace", "green"],
+      ["sent_back", "Read — Grace will be in touch", "amber"],
+      ["closed", "Closed", "ink"],
+      ["withdrawn", "Withdrawn", "ink"],
+    ] as const;
+
+    for (const [status, label, tone] of cases) {
+      expect(
+        receiptStatusCopy({
+          status,
+          coordinatorFirstName: "Grace",
+          sentBackByFirstName: null,
+          deskReadAt: READ_AT,
+        }),
+      ).toEqual({ label, tone });
+    }
+  });
+
+  it("names the person who sent it back, not the lead coordinator", () => {
+    expect(
+      receiptStatusCopy({
+        status: "sent_back",
+        coordinatorFirstName: "Grace",
+        sentBackByFirstName: "Daniel",
+        deskReadAt: null,
+      }).label,
+    ).toBe("Read — Daniel will be in touch");
   });
 });
 

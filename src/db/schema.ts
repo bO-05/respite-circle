@@ -366,6 +366,21 @@ export const ask = pgTable(
       mode: "date",
     }),
     /**
+     * The instant a coordinator first rendered this ask on the desk. NULL
+     * means no desk read has been recorded, and only then may the caregiver's
+     * waiting pill say "not read yet".
+     *
+     * Set by one conditional UPDATE (`desk_read_at IS NULL`), never rewritten:
+     * the timestamp belongs to the ask, not to the viewer, so a second
+     * coordinator looking at it changes nothing. It is mutable state on the
+     * ask row, not a version of the caregiver's words, which is why it is a
+     * column here and not an `ask_revision` row.
+     */
+    deskReadAt: timestamp("desk_read_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
+    /**
      * Who approved the ask and when. The same actor is copied onto every slot
      * that approval published, so the congregation board can show a visible
      * "Approved — Grace, time" line without ever reading the caregiver's story.

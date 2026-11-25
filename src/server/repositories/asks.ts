@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db as appDb } from "@/db/client";
 import {
@@ -11,6 +11,7 @@ import {
   person,
   policy,
 } from "@/db/schema";
+import { resolveNow } from "@/lib/clock";
 import {
   CAREGIVER_ROLES,
   DESK_ROLES,
@@ -93,6 +94,13 @@ export type CaregiverAskView = {
   closeNote: string | null;
   closedAt: Date | null;
   closedByFirstName: string | null;
+  /**
+   * The instant a coordinator first rendered this ask on the desk, or null if
+   * nobody has. The waiting pill may only claim "not read yet" while this is
+   * null; the timestamp is the ask's own, so it does not vary by which
+   * coordinator looked.
+   */
+  deskReadAt: Date | null;
 };
 
 export type DeskAskWords = {
@@ -408,6 +416,7 @@ export async function getCaregiverAsk(
       closeNote: ask.closeNote,
       closedAt: ask.closedAt,
       closedByFirstName: closedBy.firstName,
+      deskReadAt: ask.deskReadAt,
     })
     .from(ask)
     .innerJoin(careRecipient, eq(careRecipient.id, ask.careRecipientId))
@@ -451,6 +460,7 @@ export async function getCaregiverAsk(
     closeNote: row.closeNote,
     closedAt: row.closedAt,
     closedByFirstName: row.closedByFirstName,
+    deskReadAt: row.deskReadAt,
   };
 }
 
@@ -509,4 +519,40 @@ export async function getCoordinatorAskWords(
     safetyOverrideByName: row.safetyOverrideByName,
     safetyOverrideReason: row.safetyOverrideReason,
   };
+}
+
+/**
+ * Record the first desk read of an ask — the moment a coordinator rendered it.
+ *
+ * One conditional UPDATE is the whole guard, so the instant is set once for
+ * the ask rather than once per viewer: `desk_read_at IS NULL` makes every
+ * later render match no row, leaving the first value exactly as it was. A
+ * missing ask, another church's ask, and an ask somebody has already read all
+ * take that same path and return null, so the caller needs no branch for them
+ * and a repeated render is the ordinary case rather than an error.
+ *
+ * It never touches `verbatim_text` — the column trigger would reject that —
+ * and a read is not a version of the caregiver's words, so no `ask_revision`
+ * row is written.
+ */
+export async function markAskReadByDesk(
+  actor: Actor,
+  askId: string,
+  database: AppDatabase = appDb,
+): Promise<Date | null> {
+  requireRoleSession(actor, DESK_ROLES);
+
+  const rows = await database
+    .update(ask)
+    .set({ deskReadAt: resolveNow() })
+    .where(
+      and(
+        eq(ask.id, askId),
+        eq(ask.churchId, actor.churchId),
+        isNull(ask.deskReadAt),
+      ),
+    )
+    .returning({ deskReadAt: ask.deskReadAt });
+
+  return rows[0]?.deskReadAt ?? null;
 }

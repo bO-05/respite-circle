@@ -196,6 +196,83 @@ export function receiptDecisionSentences(coordinatorFirstName: string | null): {
   };
 }
 
+/**
+ * The caregiver's status pill, as one pure rule the page cannot drift from.
+ *
+ * The waiting state may only claim the words are unread while nothing has
+ * recorded a first desk read. `deskReadAt` is the ask's own timestamp, set the
+ * first time a coordinator rendered it on the desk, so once it is present the
+ * pill states what happens next — the call, the same step the receipt's "What
+ * happens next" list opens with — instead of repeating a claim the code can no
+ * longer keep. A pill that can never clear is a lie with a friendly face.
+ */
+export type ReceiptStatus =
+  | "draft"
+  | "waiting_coordinator"
+  | "safety_hold"
+  | "care_hold"
+  | "approved"
+  | "sent_back"
+  | "closed"
+  | "withdrawn";
+
+export type ReceiptStatusCopy = {
+  label: string;
+  tone: "amber" | "green" | "ink";
+};
+
+/** The waiting pill: with her, unread — or read, and the call is next. */
+export function waitingPillLabel(
+  coordinatorFirstName: string | null,
+  deskReadAt: Date | null,
+): string {
+  const name = coordinatorFirstName?.trim() || "Your coordinator";
+
+  if (deskReadAt) {
+    const pronoun = coordinatorFirstName?.trim() ? "she" : "they";
+    return `Read by ${name} — ${pronoun} may call you`;
+  }
+
+  return `With ${name} — not read yet`;
+}
+
+export function receiptStatusCopy(input: {
+  status: ReceiptStatus;
+  coordinatorFirstName: string | null;
+  sentBackByFirstName: string | null;
+  /** The ask's first desk read, or null while no coordinator has looked. */
+  deskReadAt: Date | null;
+}): ReceiptStatusCopy {
+  const name = input.coordinatorFirstName?.trim() || "Your coordinator";
+
+  switch (input.status) {
+    case "waiting_coordinator":
+      return {
+        label: waitingPillLabel(input.coordinatorFirstName, input.deskReadAt),
+        tone: "amber",
+      };
+    case "safety_hold":
+      return { label: `${name} will call you today`, tone: "amber" };
+    case "care_hold":
+      return { label: `${name} will call you about this`, tone: "amber" };
+    case "approved":
+      return { label: `Approved by ${name}`, tone: "green" };
+    case "sent_back":
+      return {
+        label: `Read — ${
+          input.sentBackByFirstName?.trim() || name
+        } will be in touch`,
+        tone: "amber",
+      };
+    case "closed":
+      return { label: "Closed", tone: "ink" };
+    case "withdrawn":
+      return { label: "Withdrawn", tone: "ink" };
+    default:
+      return { label: `With ${name}`, tone: "ink" };
+  }
+}
+
 /** A quiet character count, with the limit stated only once it is exceeded. */
 export function characterCountLabel(
   length: number,

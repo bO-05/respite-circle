@@ -465,7 +465,10 @@ Next.js 16 App Router — server components, server actions, route handlers
   excludes, approves, or sends back. Only a signed low-risk policy can let a
   meal publish itself, and that decision is audited. Board queries use an
   explicit column allow-list and never join caregiver identity, verbatim text,
-  or the orientation note.
+  or the orientation note. The ask records the instant a coordinator first
+  opened the words (`ask.desk_read_at`, one conditional UPDATE on the ask row),
+  so the family's "not read yet" line clears exactly when a person has read
+  them, stays cleared, and never varies by which coordinator looked.
 - **The claim.** One conditional
   `UPDATE … WHERE status = 'open' AND claimed_by IS NULL RETURNING *` in a
   single transaction arbitrates; the loser gets a human sentence, not a 500.

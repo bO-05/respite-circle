@@ -8,7 +8,10 @@ import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { holdReasonFor, bilingualSummarySentence } from "@/server/domain/desk-queue";
 import { formatWindowLabel } from "@/server/domain/slots";
-import { getCoordinatorAskWords } from "@/server/repositories/asks";
+import {
+  getCoordinatorAskWords,
+  markAskReadByDesk,
+} from "@/server/repositories/asks";
 import { getAskPublication } from "@/server/repositories/ask-review";
 import { getDraftEditorContext } from "@/server/repositories/draft-slots";
 import { getExclusionPanel } from "@/server/repositories/exclusions";
@@ -35,6 +38,14 @@ const STATUS_LABEL: Record<string, string> = {
  * that up: an UPDATE to `ask.verbatim_text` is rejected, and every later edit
  * is a separate append-only revision. The lock note names that guarantee so a
  * coordinator never goes looking for an edit control that does not exist.
+ *
+ * Rendering this page *is* the desk read. `markAskReadByDesk` records the
+ * first one on the ask row with a single conditional UPDATE, so the caregiver's
+ * waiting pill stops saying "not read yet" from that moment and the instant
+ * never varies by which coordinator looked. It sits in the same parallel batch
+ * as the reads: it is church-scoped and ask-scoped, so an ask this page would
+ * refuse matches no row, and a second render — including React rendering the
+ * component twice — leaves the first instant exactly as it was.
  */
 export default async function DeskAskPage({
   params,
@@ -44,10 +55,10 @@ export default async function DeskAskPage({
   const { person, session } = await requirePage(DESK_ROLES);
   const { id } = await params;
 
-  // Five independent scoped reads in parallel: the words, the drafts, the
+  // Six round trips in parallel: five scoped reads (the words, the drafts, the
   // exclusion explanations, the approval/send-back record, and the held ask's
-  // human route. The Neon round trip is ~325 ms, so the page must not
-  // serialise them.
+  // human route) plus the first desk read. The Neon round trip is ~325 ms, so
+  // the page must not serialise them.
   const [review, draftContext, exclusionContext, publication, heldCard] =
     await Promise.all([
       getCoordinatorAskWords(session, id),
@@ -55,6 +66,7 @@ export default async function DeskAskPage({
       getExclusionPanel(session, id),
       getAskPublication(session, id),
       getHeldAskCard(session, id),
+      markAskReadByDesk(session, id),
     ]);
 
   if (!review || !draftContext || !exclusionContext || !publication) {

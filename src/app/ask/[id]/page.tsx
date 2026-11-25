@@ -17,7 +17,11 @@ import {
   bilingualHandoffSentence,
   buildTrailRows,
 } from "@/server/domain/decision-trail";
-import { getCaregiverAsk, type AskStatus } from "@/server/repositories/asks";
+import {
+  receiptStatusCopy,
+  type ReceiptStatusCopy,
+} from "@/server/domain/ask-intake";
+import { getCaregiverAsk } from "@/server/repositories/asks";
 import { getDecisionTrailForRevision } from "@/server/repositories/decision-trail";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +31,12 @@ export const dynamic = "force-dynamic";
  *
  * The receipt the caregiver already knows stays first: the status pill, the
  * exact words, and the sentence naming the person who reads them. While the
- * ask waits for a person, the pill says the words are with her and not read
- * yet: it never uses the desk's word for that state, and it never claims a
- * reading that has not happened. The sentence qualifies itself only while the
+ * ask waits for a person and nobody has opened it, the pill says the words are
+ * with her and not read yet: it never uses the desk's word for that state, and
+ * it never claims a reading that has not happened. The desk records the first
+ * read on the ask itself, so from that moment the pill stops saying "not read
+ * yet" and states what happens next instead — the same call the "What happens
+ * next" list opens with. The sentence below qualifies itself only while the
  * ask's signed policy has the low-risk switch on, because a meal time can then
  * reach the congregation board before a person approves it. Below them the
  * page shows the nine typed answers for the *latest* revision only, plus the
@@ -38,45 +45,7 @@ export const dynamic = "force-dynamic";
  * accepts or declines a time — the "What happens next" list says so in words.
  */
 
-type StatusCopy = { label: string; tone: "amber" | "green" | "ink" };
-
-function statusCopy(
-  status: AskStatus,
-  coordinatorFirstName: string | null,
-  sentBackByFirstName: string | null,
-): StatusCopy {
-  const name = coordinatorFirstName ?? "Your coordinator";
-
-  switch (status) {
-    case "waiting_coordinator":
-      // The caregiver's own state, in her language. The pill says where the
-      // words are and that a person has not read them yet; it never carries
-      // the desk's noun for the state and never claims a reading that has not
-      // happened. With the low-risk switch on a meal time can be on the board
-      // before the coordinator reads the ask, so "reads this first" would be a
-      // promise the code no longer keeps — "not read yet" is true either way.
-      return { label: `With ${name} — not read yet`, tone: "amber" };
-    case "safety_hold":
-      return { label: `${name} will call you today`, tone: "amber" };
-    case "care_hold":
-      return { label: `${name} will call you about this`, tone: "amber" };
-    case "approved":
-      return { label: `Approved by ${name}`, tone: "green" };
-    case "sent_back":
-      return {
-        label: `Read — ${sentBackByFirstName ?? name} will be in touch`,
-        tone: "amber",
-      };
-    case "closed":
-      return { label: "Closed", tone: "ink" };
-    case "withdrawn":
-      return { label: "Withdrawn", tone: "ink" };
-    default:
-      return { label: `With ${name}`, tone: "ink" };
-  }
-}
-
-const TONE_CLASS: Record<StatusCopy["tone"], string> = {
+const TONE_CLASS: Record<ReceiptStatusCopy["tone"], string> = {
   amber: "border-amber bg-amber-soft text-ink",
   green: "border-green bg-green-soft text-ink",
   ink: "border-line bg-surface text-ink",
@@ -116,11 +85,12 @@ export default async function AskReceiptPage({
     : [];
 
   const name = receipt.coordinatorFirstName;
-  const status = statusCopy(
-    receipt.status,
-    name,
-    receipt.sentBackByFirstName,
-  );
+  const status = receiptStatusCopy({
+    status: receipt.status,
+    coordinatorFirstName: name,
+    sentBackByFirstName: receipt.sentBackByFirstName,
+    deskReadAt: receipt.deskReadAt,
+  });
   const reader = name ?? "your coordinator";
   const sender = receipt.sentBackByFirstName ?? name ?? "Your coordinator";
   // The family has no in-app control to accept or decline a time, so the

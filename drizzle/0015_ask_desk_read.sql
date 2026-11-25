@@ -1,0 +1,1 @@
+ALTER TABLE "ask" ADD COLUMN "desk_read_at" timestamp with time zone;
