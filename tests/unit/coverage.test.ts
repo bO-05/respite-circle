@@ -452,32 +452,65 @@ describe("the call line on the failure card", () => {
 });
 
 describe("the caregiver's human line", () => {
-  it("names a person and a day, never a board concept", () => {
-    const one = caregiverWorkingSentence(["Saturday"]);
-    expect(one).toBe("Your coordinator is working on Saturday.");
-
-    const two = caregiverWorkingSentence(["Saturday", "Tuesday"]);
-    expect(two).toBe(
-      "Your coordinator is working on Saturday and Tuesday.",
+  it("names the coordinator, the day and the kind of time, never a board concept", () => {
+    const one = caregiverWorkingSentence("Grace", [
+      { weekday: "Saturday", kind: "companion" },
+    ]);
+    expect(one).toBe(
+      "Grace is looking for someone for your Saturday companion place. No one has said yes yet.",
     );
 
-    const three = caregiverWorkingSentence([
-      "Saturday",
-      "Sunday",
-      "Tuesday",
+    const two = caregiverWorkingSentence("Grace", [
+      { weekday: "Saturday", kind: "companion" },
+      { weekday: "Tuesday", kind: "meal" },
+    ]);
+    expect(two).toBe(
+      "Grace is looking for someone for your Saturday companion place and your Tuesday meal. No one has said yes yet.",
+    );
+
+    const three = caregiverWorkingSentence("Grace", [
+      { weekday: "Saturday", kind: "home" },
+      { weekday: "Sunday", kind: "drive" },
+      { weekday: "Tuesday", kind: "meal" },
     ]);
     expect(three).toBe(
-      "Your coordinator is working on Saturday, Sunday, and Tuesday.",
+      "Grace is looking for someone for your Saturday home visit, your Sunday drive, and your Tuesday meal. No one has said yes yet.",
     );
 
-    expect(caregiverWorkingSentence([])).toBeNull();
-    expect(caregiverWorkingSentence(["Saturday", "Saturday"])).toBe(
-      "Your coordinator is working on Saturday.",
+    expect(caregiverWorkingSentence("Grace", [])).toBeNull();
+    expect(
+      caregiverWorkingSentence("Grace", [
+        { weekday: "Saturday", kind: "companion" },
+        { weekday: "Saturday", kind: "companion" },
+      ]),
+    ).toBe(
+      "Grace is looking for someone for your Saturday companion place. No one has said yes yet.",
     );
 
+    // The old sentence read as a promised call on Wednesday. This one says
+    // what is actually happening, and it never names a day without a time.
     for (const sentence of [one, two, three]) {
       expect(sentence?.toLowerCase()).not.toMatch(GARBAGE_WORDS);
       expect(sentence?.toLowerCase()).not.toContain("count");
+      expect(sentence).not.toContain("working on");
     }
+  });
+
+  it("never hardcodes a coordinator name (VAL-R2UI-006)", () => {
+    const slot = { weekday: "Saturday", kind: "companion" as const };
+
+    // A named coordinator renders that name.
+    expect(caregiverWorkingSentence("Grace", [slot])).toContain("Grace");
+
+    // A differently named church renders the resolved name, never "Grace".
+    const nora = caregiverWorkingSentence("Nora", [slot]);
+    expect(nora).toContain("Nora");
+    expect(nora).not.toContain("Grace");
+
+    // No name resolves: "your coordinator", still no hardcoded name.
+    const unnamed = caregiverWorkingSentence(null, [slot]);
+    expect(unnamed).toContain("Your coordinator is looking for someone");
+    expect(unnamed).not.toContain("Grace");
+    expect(unnamed).not.toContain("null");
   });
 });

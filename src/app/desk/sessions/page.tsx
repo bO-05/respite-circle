@@ -13,6 +13,7 @@ import {
   capacityLine,
   formatSessionClock,
   formatSessionDate,
+  sessionCalendarCountSentence,
   type PlannedSession,
 } from "@/server/domain/session-calendar";
 import {
@@ -169,9 +170,12 @@ export default async function DeskSessionsPage() {
             The next four Tuesdays
           </h2>
           <p className="mt-1 max-w-prose text-base leading-relaxed text-ink-muted">
-            {overview.scheduledCount} of {overview.targetCount} future Tuesdays
-            are scheduled. Remaining places count every companion place that
-            still holds the room: drafts, open, claimed, covered, and done.
+            {sessionCalendarCountSentence(
+              overview.scheduledCount,
+              overview.targetCount,
+            )}{" "}
+            Remaining places count every companion place that still holds the
+            room: drafts, open, claimed, covered, and done.
           </p>
         </div>
 

@@ -484,32 +484,74 @@ export function coverageExpiryRefusalCopy(status: string): string {
 // ---------------------------------------------------------------------------
 
 /**
+ * The kind of time, in a family's words. The board's internal kind tokens never
+ * reach this sentence.
+ */
+const WORKING_KIND_NOUN: Record<string, string> = {
+  companion: "companion place",
+  home: "home visit",
+  drive: "drive",
+  meal: "meal",
+  errand: "errand",
+};
+
+export type CaregiverWorkingSlot = {
+  /** The weekday the time falls on, in the church's own time zone. */
+  weekday: string;
+  /** The slot kind, e.g. `meal`. */
+  kind: string;
+};
+
+/**
  * While a coordinator is working on a time that is not covered yet, the family
- * sees one human sentence naming a day. Never a count, a wait, a decline, or
- * the word "unclaimed". If several days are being worked on, they are named in
- * one sentence.
+ * sees one human sentence naming the person and the day. Never a count, a
+ * wait, a decline, or the word "unclaimed". If several times are being worked
+ * on, they are named in one sentence.
+ *
+ * The old line named a weekday without saying what was happening, so it read as
+ * a promised phone call on that day. This sentence says what is actually
+ * happening — she is looking for someone for a named time and nobody has said
+ * yes yet — and it names the church's own coordinator, falling back to "your
+ * coordinator" when none resolves.
  */
 export function caregiverWorkingSentence(
-  weekdays: readonly string[],
+  coordinatorFirstName: string | null,
+  slots: readonly CaregiverWorkingSlot[],
 ): string | null {
-  const unique: string[] = [];
-  for (const day of weekdays) {
-    const clean = day.trim();
-    if (clean.length > 0 && !unique.includes(clean)) unique.push(clean);
+  const unique: { weekday: string; kind: string }[] = [];
+  for (const slot of slots) {
+    const weekday = slot.weekday.trim();
+    const kind = slot.kind.trim();
+    if (weekday.length === 0 || kind.length === 0) continue;
+    if (
+      unique.some(
+        (entry) => entry.weekday === weekday && entry.kind === kind,
+      )
+    ) {
+      continue;
+    }
+    unique.push({ weekday, kind });
   }
 
   if (unique.length === 0) return null;
 
+  const name = coordinatorFirstName?.trim() || "Your coordinator";
+  const describe = (entry: { weekday: string; kind: string }) =>
+    `your ${entry.weekday} ${WORKING_KIND_NOUN[entry.kind] ?? "time"}`;
+
   if (unique.length === 1) {
-    return `Your coordinator is working on ${unique[0]}.`;
+    return `${name} is looking for someone for ${describe(unique[0])}. No one has said yes yet.`;
   }
 
   if (unique.length === 2) {
-    return `Your coordinator is working on ${unique[0]} and ${unique[1]}.`;
+    return `${name} is looking for someone for ${describe(unique[0])} and ${describe(unique[1])}. No one has said yes yet.`;
   }
 
-  const head = unique.slice(0, -1).join(", ");
-  return `Your coordinator is working on ${head}, and ${unique[unique.length - 1]}.`;
+  const head = unique
+    .slice(0, -1)
+    .map(describe)
+    .join(", ");
+  return `${name} is looking for someone for ${head}, and ${describe(unique[unique.length - 1])}. No one has said yes yet.`;
 }
 
 // ---------------------------------------------------------------------------

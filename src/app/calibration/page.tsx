@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Calibration results — Respite Circle",
   description:
-    "The measured calibration record for the nine typed questions: the engine, provider, model, date, commit, every score with its denominator, and every case that did not pass.",
+    "The measured calibration record for the nine typed questions: the engine, provider, model, date, commit, every score with the number of cases it counted, and every case that did not pass.",
 };
 
 /**
@@ -50,10 +50,10 @@ export default async function CalibrationPage() {
           How to read this page
         </h2>
         <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
-          The engine badge says whether a model was called. The provider and
-          model name who answered, the date and commit say when, and every score
-          keeps its own numerator and denominator. Cases that did not match
-          their label stay on the page with expected and actual values.
+          The badge says whether AI was used. The provider and model name who
+          answered, the date and commit say when, and every score shows how
+          many cases it counted. Cases that did not match their label stay on
+          the page with expected and actual values.
         </p>
         <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
           The two runs are separate measurements of different engines. A live
@@ -132,11 +132,11 @@ export default async function CalibrationPage() {
         <ul className="mt-3 flex flex-col gap-3">
           <li className="max-w-prose text-base leading-relaxed text-ink-muted">
             <span className="font-semibold text-ink">Slot-kind agreement</span>{" "}
-            is exact set equality between the labelled kinds and the kinds plain
-            code would propose from the typed answers. Safety-held,
-            personal-care-held, and bilingual asks are excluded from the
-            denominator because kinds are moot there; the denominator is stated
-            on every run.
+            is exact set equality between the labelled kinds and the kinds the
+            app&apos;s fixed rules would propose from the typed answers.
+            Safety-held, personal-care-held, and bilingual asks are excluded
+            from the count because kinds are moot there; the count is stated on
+            every run.
           </li>
           <li className="max-w-prose text-base leading-relaxed text-ink-muted">
             <span className="font-semibold text-ink">Safety recall</span> is the
@@ -151,10 +151,10 @@ export default async function CalibrationPage() {
           </li>
           <li className="max-w-prose text-base leading-relaxed text-ink-muted">
             <span className="font-semibold text-ink">
-              Abstention and latency
+              Unanswered questions and latency
             </span>{" "}
-            are reported, not gated. A case counts as abstaining when any of the
-            nine answers is below the stated confidence threshold.
+            are reported, not gated. A case counts as unanswered when the model
+            was less sure than the stated threshold on any of the nine answers.
           </li>
         </ul>
       </section>

@@ -51,16 +51,12 @@ export default async function AskPage({
     await markCaregiverInvitesSeen(session).catch(() => undefined);
   }
 
-  // The lead makes the same promise as the consent line below it. While the
-  // signed policy has the low-risk switch on, "before anyone else sees a time"
-  // is no longer true, so the sentence names the one exception instead.
-  const lead = autoPublishLowRisk
-    ? coordinatorFirstName
-      ? `Tell us in your own words. ${coordinatorFirstName} reads what you write, and your words are never shown to anyone else. Under the church's signed low-risk policy, a meal time from your ask may go on the congregation board before she approves that time.`
-      : "Tell us in your own words. Your coordinator reads what you write, and your words are never shown to anyone else. Under the church's signed low-risk policy, a meal time from your ask may go on the congregation board before they approve that time."
-    : coordinatorFirstName
-      ? `Tell us in your own words. ${coordinatorFirstName} reads it first, before anyone else sees a time.`
-      : "Tell us in your own words. Your coordinator reads it first, before anyone else sees a time.";
+  // The page's lead introduces the writing, not the promise. The one promise
+  // on this screen is the consent help line below the box, which names the
+  // reader and the signed meal exception exactly once; repeating it here made
+  // the same reassurance appear three times before the send button.
+  const lead =
+    "Tell us in your own words. There is no right way to say it, and you can take your time.";
 
   return (
     <RolePage

@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { FillCalendarForm } from "@/components/session-forms";
-import type { SessionOverview } from "@/server/domain/session-calendar";
+import {
+  sessionCalendarCountSentence,
+  type SessionOverview,
+} from "@/server/domain/session-calendar";
 
 /**
  * The banner the desk shows when fewer than four future Tuesday mornings exist.
@@ -46,8 +49,10 @@ export function SessionCalendarBanner({
         {overview.guard.message}
       </p>
       <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-        {overview.scheduledCount} of {overview.targetCount} future Tuesdays are
-        on the calendar.
+        {sessionCalendarCountSentence(
+          overview.scheduledCount,
+          overview.targetCount,
+        )}
       </p>
 
       {paused ? null : (

@@ -85,7 +85,7 @@ export default function HowItWorksPage() {
           rowHeader="Decision"
           columns={[
             { key: "ai", label: "AI" },
-            { key: "code", label: "Plain code" },
+            { key: "code", label: "Fixed rules" },
             { key: "coordinator", label: "Coordinator" },
           ]}
           rows={DECIDES_ROWS.map((row, index) => ({
@@ -146,9 +146,9 @@ export default function HowItWorksPage() {
           What each kind of time requires
         </h2>
         <p className="mt-3 max-w-prose text-lg leading-relaxed text-ink">
-          Every time belongs to a tier, and every tier has its own requirement.
-          The requirements that protect a family are checked again when a
-          neighbour taps Claim, so the lock on the page is never the only guard.
+          There are four kinds of time. Each has its own rules. The requirements
+          that protect a family are checked again when a neighbour taps Claim,
+          so the lock on the page is never the only guard.
         </p>
         <TrustMatrix
           id="consent-tiers"

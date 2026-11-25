@@ -977,7 +977,11 @@ describe("the coverage watch and the failure-path proof", () => {
 
     const line = await listCaregiverWorkingLines(MARTA, t.db);
     expect(line).not.toBeNull();
-    expect(line?.sentence).toMatch(/Your coordinator is working on/);
+    expect(line?.sentence).toMatch(
+      /is looking for someone for your Saturday/,
+    );
+    expect(line?.sentence).toContain("No one has said yes yet.");
+    expect(line?.sentence).not.toContain("working on");
     expect(line?.weekdays).toContain("Saturday");
     expect(line?.sentence.toLowerCase()).not.toMatch(
       /unclaimed|waiting|decline|count|views?|places? left|remaining/,

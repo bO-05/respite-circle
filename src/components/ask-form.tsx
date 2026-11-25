@@ -393,8 +393,7 @@ export function AskForm({
         </label>
         <p id={TEXT_HELP_ID} className="max-w-prose text-base leading-relaxed text-ink-muted">
           Type it in your own words, or dictate. There is no right way to say
-          it, and you can change it later — the church keeps your original words
-          as you first wrote them.
+          it. Check it before you send — the church keeps these exact words.
         </p>
         <textarea
           ref={textareaRef}
@@ -485,10 +484,17 @@ export function AskForm({
               <button
                 type="button"
                 onClick={() => applySample(sample.body)}
+                data-refusal-example={sample.supported ? undefined : "true"}
                 className="inline-flex min-h-11 w-full items-center rounded-md border border-line bg-surface px-4 py-3 text-left text-base font-semibold text-ink hover:bg-accent-soft"
               >
                 Use the example: {sample.title}
               </button>
+              {sample.supported ? null : (
+                <p className="mt-1 max-w-prose text-base leading-relaxed text-ink-muted">
+                  This one is here to show the stop: sending it raises a hold,
+                  and a person calls instead of offering a time.
+                </p>
+              )}
             </li>
           ))}
         </ul>
@@ -513,8 +519,13 @@ export function AskForm({
             }
             className="mt-1 h-11 w-11 shrink-0 rounded border-line accent-accent"
           />
-          <span>{consentSentence(coordinatorFirstName, autoPublishLowRisk)}</span>
+          <span>{consentSentence(coordinatorFirstName)}</span>
         </label>
+        {/*
+          The one reassurance on this screen. It names the person who reads,
+          the deputy who covers for her, and the signed meal exception that
+          qualifies "nothing is shown" — and it appears once, not twice.
+        */}
         <p id={CONSENT_HELP_ID} className="text-base leading-relaxed text-ink-muted">
           {receiptSentence(coordinatorFirstName, autoPublishLowRisk)}
         </p>
@@ -550,11 +561,6 @@ export function AskForm({
         >
           {pending ? "Sending your words…" : "Send this to " + (coordinatorFirstName ?? "my coordinator")}
         </button>
-        <p className="max-w-prose text-base leading-relaxed text-ink-muted">
-          {autoPublishLowRisk
-            ? "Your words are never shown to a neighbour. Under the church's signed low-risk policy, a meal time from this ask may go on the congregation board before a person approves it."
-            : "Nothing is sent to a neighbour. The next thing that happens is a person reading your words."}
-        </p>
       </div>
     </form>
   );

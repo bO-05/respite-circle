@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   ABSTENTION_SENTENCE,
+  CONFIDENCE_EXPLAINER,
   CONFIDENCE_LABEL,
-  PLAIN_CODE_SENTENCE,
+  RULES_SENTENCE,
   RULES_BANNER,
   bilingualHandoffSentence,
   bilingualTrailNotice,
@@ -39,9 +40,11 @@ function input(overrides: Partial<TrailAnswerInput> = {}): TrailAnswerInput {
 }
 
 describe("decision trail formatting", () => {
-  it("labels confidence as the model's stated confidence, never a probability", () => {
-    expect(CONFIDENCE_LABEL).toBe("the model's stated confidence");
+  it("labels confidence as how sure the AI was, never a probability", () => {
+    expect(CONFIDENCE_LABEL).toBe("How sure the AI was");
     expect(CONFIDENCE_LABEL.toLowerCase()).not.toContain("probability");
+    // The explainer keeps the honest claim: it is the model's own confidence.
+    expect(CONFIDENCE_EXPLAINER).toContain("the model's stated confidence");
     expect(formatConfidencePercent(0.930000007)).toBe("93%");
   });
 
@@ -115,7 +118,7 @@ describe("decision trail formatting", () => {
   });
 
   it("summarises draft proposals by kind without printing their labels", () => {
-    const summary = summariseDraftKinds(["companion", "home", "home"]);
+    const summary = summariseDraftKinds(["companion", "home", "home"], "Grace");
 
     expect(summary).toContain("3 possible times");
     expect(summary).toContain("a companion place");
@@ -148,17 +151,65 @@ describe("decision trail formatting", () => {
     expect(bilingualTrailNotice(null)).toContain("another language");
   });
 
-  it("says plainly that nothing has been published yet", () => {
-    expect(publicationSentence(0)).toBe(
-      "Nothing has been published yet. No time is shown to anyone until Grace approves it.",
+  it("says plainly that nothing has been published yet, with the meal exception", () => {
+    expect(publicationSentence(0, "Grace")).toBe(
+      "Nothing has been published yet. No time is shown to a neighbour until Grace approves it, except a meal under the church's signed low-risk policy.",
     );
-    expect(publicationSentence(2)).toContain("2 times");
+    expect(publicationSentence(2, "Grace")).toContain("2 times");
+    // Zero is the honest default, and no approval is written as an absolute.
+    expect(publicationSentence(0, "Grace")).not.toMatch(
+      /until Grace approves it\.$/,
+    );
   });
 
-  it("states that plain code, not the model, builds proposals", () => {
-    expect(PLAIN_CODE_SENTENCE).toContain("Plain code");
-    expect(PLAIN_CODE_SENTENCE).toContain("not the model");
-    expect(PLAIN_CODE_SENTENCE).toContain("proposed time");
+  it("never hardcodes a coordinator name (VAL-R2UI-006)", () => {
+    // A named coordinator renders that name.
+    expect(publicationSentence(0, "Grace")).toContain("Grace");
+    expect(summariseDraftKinds(["companion"], "Grace")).toContain("Grace");
+    expect(publicationSentence(2, "Grace")).toContain("Grace");
+
+    // A differently named church renders the resolved name, never "Grace".
+    for (const sentence of [
+      publicationSentence(0, "Nora"),
+      publicationSentence(2, "Nora"),
+      summariseDraftKinds(["companion"], "Nora"),
+    ]) {
+      expect(sentence).toContain("Nora");
+      expect(sentence).not.toContain("Grace");
+    }
+
+    // With no name, the sentence falls back to "your coordinator".
+    expect(publicationSentence(0, null)).toContain("your coordinator");
+    expect(publicationSentence(2, null)).toContain("Your coordinator");
+    expect(summariseDraftKinds(["companion"], null)).toContain(
+      "your coordinator",
+    );
+    for (const sentence of [
+      publicationSentence(0, null),
+      publicationSentence(2, null),
+      summariseDraftKinds(["companion"], null),
+    ]) {
+      expect(sentence).not.toContain("Grace");
+      expect(sentence).not.toContain("null");
+    }
+  });
+
+  it("describes the confidence in a family's words and keeps the old claim nearby", () => {
+    expect(CONFIDENCE_LABEL).toBe("How sure the AI was");
+    // VAL-DECIDE-003's label survives, one line above the rows: the percentage
+    // is still named as the model's stated confidence, not a probability.
+    expect(CONFIDENCE_EXPLAINER).toContain(
+      "the model's stated confidence",
+    );
+    expect(CONFIDENCE_EXPLAINER).toContain("not a probability");
+    expect(CONFIDENCE_EXPLAINER).not.toMatch(/samples?/i);
+  });
+
+  it("states the app's fixed rules, not the model, build proposals", () => {
+    expect(RULES_SENTENCE).not.toMatch(/plain code/i);
+    expect(RULES_SENTENCE).toContain("fixed rules");
+    expect(RULES_SENTENCE).toContain("not the model");
+    expect(RULES_SENTENCE).toContain("proposed time");
   });
 
   it("keeps the design-system wording for a rules-based run", () => {

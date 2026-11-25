@@ -91,7 +91,7 @@ export default async function PromisesPage() {
           >
             How it works
           </Link>
-          , and the eight refusals are on{" "}
+          , and the nine refusals are on{" "}
           <Link
             href="/never"
             className="font-semibold text-ink underline decoration-accent underline-offset-4"

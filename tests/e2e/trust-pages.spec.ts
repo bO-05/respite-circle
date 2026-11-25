@@ -65,7 +65,7 @@ test("VAL-TRUST-001 — how it works carries the AI table and the who-decides ta
     name: /who decides what/i,
   });
   await expect(decideTable).toBeVisible();
-  for (const header of ["AI", "Plain code", "Coordinator"]) {
+  for (const header of ["AI", "Fixed rules", "Coordinator"]) {
     await expect(
       decideTable.getByRole("columnheader", { name: header, exact: true }),
     ).toBeVisible();
@@ -166,7 +166,7 @@ test("VAL-TRUST-003 — consent tiers list group, drive, meal, and in-home with 
   });
 });
 
-test("VAL-TRUST-004 and VAL-TRUST-006 — never lists all eight commitments with no banned claim", async ({
+test("VAL-TRUST-004 and VAL-TRUST-006 — never lists all nine commitments with no banned claim", async ({
   page,
 }) => {
   const response = await page.goto("/never");
@@ -177,8 +177,11 @@ test("VAL-TRUST-004 and VAL-TRUST-006 — never lists all eight commitments with
     page.getByRole("heading", { level: 1, name: /what we never do/i }),
   ).toBeVisible();
 
-  const commitments = page.getByTestId("commitment");
-  await expect(commitments).toHaveCount(8);
+  // Eight named commitments plus the signed meal exception: the page says nine
+  // and renders nine sections, so no count disagrees with what is on screen.
+  await expect(page.getByTestId("commitment")).toHaveCount(8);
+  await expect(page.getByTestId("never-auto-publish")).toHaveCount(1);
+  await expect(page.locator("main")).toContainText("Nine commitments");
 
   for (const title of [
     "No AI sentences about a person",
@@ -189,11 +192,16 @@ test("VAL-TRUST-004 and VAL-TRUST-006 — never lists all eight commitments with
     "No personal care as a slot",
     "No screening families",
     "No editing words",
+    "No automatic time beyond a meal",
   ]) {
     await expect(
       page.getByRole("heading", { level: 2, name: title, exact: true }),
     ).toBeVisible();
   }
+  // Nine sections, and a count that matches them.
+  await expect(
+    page.locator('[data-testid="commitment"], [data-testid="never-auto-publish"]'),
+  ).toHaveCount(9);
 
   // VAL-R2CARE-004 — the personal-care sentence is the one the audit quotes,
   // and it names the plainest words a family uses, so a reader can check it
@@ -218,6 +226,10 @@ test("VAL-TRUST-004 and VAL-TRUST-006 — never lists all eight commitments with
     path: "test-results/evidence/never.png",
     fullPage: true,
   });
+
+  // /promises points at the same count, so the two pages never disagree.
+  await page.goto("/promises");
+  await expect(page.locator("main")).toContainText("the nine refusals");
 });
 
 test("VAL-A11Y-001 — the trust page reads at 360px without horizontal scrolling", async ({

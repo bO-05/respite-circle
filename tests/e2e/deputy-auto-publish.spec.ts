@@ -353,23 +353,22 @@ test("VAL-ACCESS-006 and VAL-POLICY-006 — a deputy carries the desk, the switc
     const caregiver = await signIn(browser, CAREGIVER_TOKEN);
     await caregiver.page.goto("/ask");
     const consentLabel = caregiver.page.locator("label[for='ask-consent']");
-    await expect(consentLabel).toContainText(/Ada reads this\./);
+    // The consent line names the reader and the deputy, and makes no promise
+    // of its own: the one reassurance sits below it.
     await expect(consentLabel).toContainText(
-      /my words are never shown to anyone/i,
+      /Ada, or the deputy who covers when she is away, may read them\./,
     );
-    await expect(consentLabel).toContainText(
-      /meal time from this ask may go on the congregation board/i,
-    );
-    await expect(consentLabel).toContainText(/before she approves that time/i);
+    await expect(consentLabel).not.toContainText(/never shown/i);
     const consentHelp = caregiver.page.locator("#ask-consent-help");
     await expect(consentHelp).toContainText(/Ada reads every ask\./);
     await expect(consentHelp).toContainText(
-      /your words are never shown to anyone/i,
+      /your words are never shown to a neighbour/i,
     );
     await expect(consentHelp).toContainText(/congregation board/i);
+    // One reassurance, not two.
     await expect(
-      caregiver.page.getByText(/Ada reads what you write/i).first(),
-    ).toBeVisible();
+      caregiver.page.getByText(/Ada reads every ask\./),
+    ).toHaveCount(1);
     await shot(caregiver.page, "02b-caregiver-qualified-consent");
 
     // 3. A meal ask arrives while the switch is on.
@@ -385,7 +384,7 @@ test("VAL-ACCESS-006 and VAL-POLICY-006 — a deputy carries the desk, the switc
       caregiver.page.getByText(/Ada reads every ask\./).first(),
     ).toBeVisible();
     await expect(
-      caregiver.page.getByText(/your words are never shown to anyone/i).first(),
+      caregiver.page.getByText(/your words are never shown to a neighbour/i).first(),
     ).toBeVisible();
     await expect(
       caregiver.page.getByText(/may go on the congregation board/i).first(),

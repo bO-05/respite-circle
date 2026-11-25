@@ -250,7 +250,7 @@ describe("AskForm submission", () => {
     );
     expect(fetchMock).not.toHaveBeenCalled();
 
-    const consent = screen.getByLabelText(/i understand that Grace/i);
+    const consent = screen.getByLabelText(/i agree that the church may keep these words/i);
     expect(consent).toHaveFocus();
     expect(consent).toHaveAttribute("aria-invalid", "true");
   });
@@ -263,7 +263,7 @@ describe("AskForm submission", () => {
       screen.getByLabelText(/tell us what a hard week looks like/i),
       { target: { value: HERO_ASK } },
     );
-    fireEvent.click(screen.getByLabelText(/i understand that Grace/i));
+    fireEvent.click(screen.getByLabelText(/i agree that the church may keep these words/i));
     fireEvent.click(screen.getByRole("button", { name: /send this to/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -295,7 +295,7 @@ describe("AskForm submission", () => {
       screen.getByLabelText(/tell us what a hard week looks like/i),
       { target: { value: HERO_ASK } },
     );
-    fireEvent.click(screen.getByLabelText(/i understand that Grace/i));
+    fireEvent.click(screen.getByLabelText(/i agree that the church may keep these words/i));
     fireEvent.click(screen.getByRole("button", { name: /send this to/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(

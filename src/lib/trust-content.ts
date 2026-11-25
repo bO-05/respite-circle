@@ -82,7 +82,7 @@ export type DecideRow = {
   readonly coordinator: string;
 };
 
-/** Who decides what: the model, plain code, the coordinator. */
+/** Who decides what: the model, the app's fixed rules, the coordinator. */
 export const DECIDES_ROWS: readonly DecideRow[] = [
   {
     decision: "Reads the words and answers the nine questions",
@@ -92,7 +92,7 @@ export const DECIDES_ROWS: readonly DecideRow[] = [
   },
   {
     decision: "Says when it is unsure",
-    ai: "Yes — below a confidence of 0.60 it abstains and says a person will decide",
+    ai: "Yes — when it is less than 60% sure, it says a person will decide",
     code: "No",
     coordinator: "Sees every abstention before deciding anything",
   },
@@ -130,7 +130,7 @@ export const DECIDES_ROWS: readonly DecideRow[] = [
   {
     decision: "Writes a message to your family",
     ai: "No — it cannot write a sentence",
-    code: "Fills a sentence a person wrote with two first names",
+    code: "Adds the two first names a person chose",
     coordinator: "Approves the claim that sends it",
   },
   {
@@ -200,7 +200,7 @@ export const PRIVACY_ROWS: readonly PrivacyRow[] = [
   {
     field: "The time",
     caregiver:
-      "One message when it is covered. While it is open, one line naming the day the coordinator is working on.",
+      "One message when it is covered. While it is open, one line naming the coordinator and the day they are looking for someone.",
     coordinator: "Every time, including drafts nobody else can see",
     claimer: "The published times on the board, and the one they took",
     congregation: "Published times only — kind, label, and window",
@@ -255,7 +255,11 @@ export type NeverCommitment = {
   readonly where: string;
 };
 
-/** The eight commitments, in the contract's order. */
+/**
+ * The eight named refusals, in the contract's order. `/never` renders them plus
+ * a ninth section, the signed meal exception (`AUTO_PUBLISH_TRUST_NOTE`), so
+ * every count of the page says nine.
+ */
 export const NEVER_COMMITMENTS: readonly NeverCommitment[] = [
   {
     id: "no-ai-sentences",
@@ -332,10 +336,10 @@ export const AUTO_PUBLISH_TRUST_NOTE =
  * quietly keep the old claim that only a person ever offers a time.
  */
 export const HOW_IT_WORKS_LEAD =
-  "A computer reads your words into nine typed answers. Plain code turns those answers into a few possible times. A named person decides what is offered, except that a signed policy may publish a meal by itself. A person calls when a time goes unclaimed. Errands are not available yet.";
+  "A computer reads your words into nine typed answers. The app's fixed rules turn those answers into a few possible times. A named person decides what is offered, except that a signed policy may publish a meal by itself. A person calls when a time goes unclaimed. Errands are not available yet.";
 
 export const DECIDES_INTRO =
-  "Three things happen in order. The model answers. Plain code follows fixed rules. A person decides what reaches the board, with one signed exception for a meal.";
+  "Three things happen in order. The model answers. The app follows its fixed rules. A person decides what reaches the board, with one signed exception for a meal.";
 
 /** Every sentence the two pages render, for the banned-claim scan. */
 export const TRUST_COPY_STRINGS: readonly string[] = [
@@ -365,7 +369,7 @@ export const TRUST_COPY_STRINGS: readonly string[] = [
     row.congregation,
   ]),
   "What each kind of time requires",
-  "Every time belongs to a tier, and every tier has its own requirement. The requirements that protect a family are checked again when a neighbour taps Claim, so the lock on the page is never the only guard.",
+  "There are four kinds of time. Each has its own rules. The requirements that protect a family are checked again when a neighbour taps Claim, so the lock on the page is never the only guard.",
   ...CONSENT_TIERS.flatMap((tier) => [
     tier.tier,
     tier.what,
@@ -374,11 +378,16 @@ export const TRUST_COPY_STRINGS: readonly string[] = [
   ]),
   "Companionship is not medical care. Every orientation note says so, and no tier offers medication, bathing, toileting, lifting, or transfers.",
   "What we never do",
-  "Eight commitments. Each one is a choice in the code, not a slogan, and each one names where you can see it in the app.",
+  "Nine commitments. Each one is a choice in the code, not a slogan, and each one names where you can see it in the app.",
   ...NEVER_COMMITMENTS.flatMap((commitment) => [
     commitment.title,
     commitment.body,
     commitment.where,
   ]),
+  // The ninth section is the signed meal exception. It is a commitment too, so
+  // the count and the scan include it.
+  "No automatic time beyond a meal",
+  AUTO_PUBLISH_TRUST_NOTE,
+  "The low-risk switch on the church policy names its own limit, an automatically published time says so on the board, and every one of them is in the decision log.",
   "If any of this stops being true, it is a defect rather than a change of policy. Hold us to the page.",
 ];

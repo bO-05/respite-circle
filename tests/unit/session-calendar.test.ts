@@ -8,6 +8,7 @@ import {
   formatTimeRange,
   nextOccurrences,
   planSessionCalendar,
+  sessionCalendarCountSentence,
   type CalendarSessionRow,
   type TemplateSchedule,
 } from "@/server/domain/session-calendar";
@@ -221,6 +222,34 @@ describe("human date and time copy", () => {
   it("prints the template hours without seconds", () => {
     expect(formatTimeRange({ startTime: "10:00:00", endTime: "14:00:00" })).toBe(
       "10:00–14:00",
+    );
+  });
+});
+
+describe("the calendar count sentence", () => {
+  it("names the window that is planned, never every future Tuesday", () => {
+    expect(sessionCalendarCountSentence(4, 4)).toBe(
+      "The next four Tuesdays are on the calendar.",
+    );
+    // The retired line read "4 of 4 future Tuesdays are scheduled." — a claim
+    // about all time, not the four-week window.
+    expect(sessionCalendarCountSentence(4, 4)).not.toMatch(/future/i);
+    expect(sessionCalendarCountSentence(4, 4)).not.toMatch(/4 of 4/);
+  });
+
+  it("counts a partial window in the same words", () => {
+    expect(sessionCalendarCountSentence(2, 4)).toBe(
+      "2 of the next four Tuesdays are on the calendar.",
+    );
+    expect(sessionCalendarCountSentence(0, 4)).toBe(
+      "0 of the next four Tuesdays are on the calendar.",
+    );
+    expect(sessionCalendarCountSentence(4, 4)).not.toMatch(/scheduled/);
+  });
+
+  it("says nothing is planned when there is no window at all", () => {
+    expect(sessionCalendarCountSentence(0, 0)).toBe(
+      "No Tuesday is on the calendar yet.",
     );
   });
 });

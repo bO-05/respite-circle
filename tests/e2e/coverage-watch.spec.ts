@@ -828,8 +828,9 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
     const working = marta.page.getByTestId("care-coordinator-working");
     await expect(working).toBeVisible();
     await expect(working).toContainText(
-      /Your coordinator is working on [A-Z][a-z]+/,
+      /is looking for someone for your [A-Z][a-z]+/,
     );
+    await expect(working).toContainText("No one has said yes yet.");
 
     const careText = await marta.page.locator("body").innerText();
     expectNoDeskConcepts(careText, "/care");

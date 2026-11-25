@@ -11,8 +11,8 @@ import { DECISION_MIN_CONFIDENCE } from "@/server/services/decision-contract";
  *
  * Pure: it reads one published report and formats it. It never reads the
  * filesystem, calls a provider, merges the live and baseline runs, or rounds a
- * ratio up. A run below a target keeps its exact numerator and denominator and
- * gains an explicit warning.
+ * ratio up. A run below a target keeps its exact count and its rate, and gains
+ * an explicit warning.
  */
 
 export type CalibrationContract = {
@@ -376,10 +376,10 @@ export function buildCalibrationReportView(
     ),
     ratioMetric(
       "abstention",
-      "Abstention rate",
+      "Questions the model left to a person",
       scores.abstainedCaseCount,
       report.caseCount,
-      `Cases with at least one answer below the ${DECISION_MIN_CONFIDENCE} confidence threshold. Reported, not gated.`,
+      `Cases where the model was less sure than the ${DECISION_MIN_CONFIDENCE} threshold on at least one of the nine answers. Reported, not gated.`,
     ),
     ratioMetric(
       "invalid-responses",
@@ -434,7 +434,7 @@ export function buildCalibrationReportView(
     stale,
     gate: report.gate,
     gateSentence: report.gate.pass
-      ? "The harness gate passed. Safety recall and personal-care recall are the two gates; latency and abstention are reported, not gated."
+      ? "The harness gate passed. Safety recall and personal-care recall are the two gates; latency and unanswered questions are reported, not gated."
       : `The harness gate did not pass: ${report.gate.failures.join(" ")}`,
   };
 }

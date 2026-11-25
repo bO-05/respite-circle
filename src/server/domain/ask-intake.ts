@@ -99,46 +99,35 @@ export function receiptSentence(
   autoPublishLowRisk = false,
 ): string {
   const name = coordinatorFirstName?.trim();
+  const reader = name ?? "Your coordinator";
+  const they = name ? "she" : "they";
+  const approves = name ? "approves" : "approve";
 
   if (autoPublishLowRisk) {
-    const reader = name ?? "Your coordinator";
-    const they = name ? "she" : "they";
-    const approves = name ? "approves" : "approve";
-    return `${reader} reads every ask. Your words are never shown to anyone else. One exception: under the church's signed low-risk policy, a meal time from this ask may go on the congregation board before ${they} ${approves} that time.`;
+    return `${reader} reads every ask. Your words are never shown to a neighbour. One exception: under the church's signed low-risk policy, a meal time from this ask may go on the congregation board before ${they} ${approves} that time.`;
   }
 
-  if (name) {
-    return `${name} reads every ask first. Nothing is shown to anyone until she approves it.`;
-  }
-
-  return "Your coordinator reads every ask first. Nothing is shown to anyone until they approve it.";
+  // The ordinary promise still names the one signed exception, in the same
+  // breath as the approval it qualifies: a meal may publish itself while the
+  // church's low-risk policy is on, so "nothing is shown until she approves"
+  // can never be written as an absolute.
+  return `${reader} reads every ask first. Nothing is shown to a neighbour until ${they} ${approves} it, except a meal under the church's signed low-risk policy.`;
 }
 
 /**
- * The consent line the caregiver must acknowledge. It names the same human as
- * the receipt, and it describes exactly what the app does with the words.
- *
- * The switch qualification follows the same rule as `receiptSentence`: it is
- * present only while the signed policy in force carries `auto_publish_low_risk`.
+ * The consent line the caregiver must acknowledge. It says what the church may
+ * keep and who may read it — including the deputy who covers when the
+ * coordinator is away — and it makes no privacy promise of its own. The one
+ * reassurance sits directly below it (`receiptSentence`), so the compose screen
+ * does not say the same thing twice in two sizes.
  */
-export function consentSentence(
-  coordinatorFirstName: string | null,
-  autoPublishLowRisk = false,
-): string {
+export function consentSentence(coordinatorFirstName: string | null): string {
   const name = coordinatorFirstName?.trim();
+  const reader = name
+    ? `${name}, or the deputy who covers when she is away,`
+    : "my coordinator, or the deputy who covers for them,";
 
-  if (autoPublishLowRisk) {
-    const reader = name ?? "my coordinator";
-    const they = name ? "she" : "they";
-    const approves = name ? "approves" : "approve";
-    return `I understand that ${reader} reads this. My words are never shown to anyone else. One exception: under the church's signed low-risk policy, a meal time from this ask may go on the congregation board before ${they} ${approves} that time.`;
-  }
-
-  if (name) {
-    return `I understand that ${name} reads this first, and that nothing is shown to anyone else unless she approves it.`;
-  }
-
-  return "I understand that my coordinator reads this first, and that nothing is shown to anyone else unless they approve it.";
+  return `I agree that the church may keep these words and that ${reader} may read them.`;
 }
 
 /**

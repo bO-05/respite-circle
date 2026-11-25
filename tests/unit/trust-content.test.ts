@@ -407,7 +407,7 @@ describe("trust page content", () => {
     }
   });
 
-  it("lists all eight commitments", () => {
+  it("lists eight named commitments plus the signed meal exception: nine in all", () => {
     expect(NEVER_COMMITMENTS.map((commitment) => commitment.title)).toEqual([
       "No AI sentences about a person",
       "No scoring",
@@ -422,6 +422,12 @@ describe("trust page content", () => {
       expect(commitment.body.trim().length).toBeGreaterThan(80);
       expect(commitment.where.trim().length).toBeGreaterThan(10);
     }
+    // The page renders the eight above and AUTO_PUBLISH_TRUST_NOTE below, and
+    // every printed count (the lead and the /promises link) says nine.
+    expect(TRUST_COPY_STRINGS).toContain(AUTO_PUBLISH_TRUST_NOTE);
+    expect(
+      TRUST_COPY_STRINGS.filter((line) => /^Nine commitments\./.test(line)),
+    ).toHaveLength(1);
   });
 
   /**
@@ -462,6 +468,19 @@ describe("trust page content", () => {
     expect(TRUST_COPY_STRINGS.length).toBeGreaterThan(30);
     for (const line of TRUST_COPY_STRINGS) {
       expect(scanCopy(line), line).toEqual([]);
+    }
+  });
+
+  it("keeps developer shorthand off the trust pages (VAL-R2UI-003)", () => {
+    // The round-2 visual audit found these words on the trust pages. They are
+    // our words, not a family's, so they stay out of every printed sentence.
+    // "Tier" survives only where it names the consent table's own rows.
+    for (const line of TRUST_COPY_STRINGS) {
+      expect(line, line).not.toMatch(/plain code/i);
+      expect(line, line).not.toMatch(/numerators?|denominators?/i);
+      expect(line, line).not.toMatch(/\babstain(s|ed|ing)?\b/i);
+      expect(line, line).not.toMatch(/fills? a sentence/i);
+      expect(line, line).not.toMatch(/every time belongs to a tier/i);
     }
   });
 

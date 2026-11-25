@@ -206,7 +206,7 @@ test.describe("VAL-CROSS-001 — invite, ask, edit, approve, claim, confirm, don
       .getByLabel(/tell us what a hard week looks like/i)
       .fill(ASK);
     await marta.page
-      .getByLabel(/i understand that Grace reads this first/i)
+      .getByLabel(/i agree that the church may keep these words/i)
       .check();
     await marta.page.getByRole("button", { name: /send this to/i }).click();
     await marta.page.waitForURL(

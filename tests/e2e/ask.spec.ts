@@ -42,7 +42,7 @@ async function fillAsk(
   const textarea = page.getByLabel(/tell us what a hard week looks like/i);
   await textarea.fill(text);
   if (options.consent !== false) {
-    await page.getByLabel(/i understand that Grace reads this first/i).check();
+    await page.getByLabel(/i agree that the church may keep these words/i).check();
   }
 }
 
@@ -111,19 +111,44 @@ test.describe("VAL-ASK-001…007 — caregiver ask intake", () => {
 
     await expect(
       page.getByLabel(
-        "I understand that Grace reads this first, and that nothing is shown to anyone else unless she approves it.",
+        "I agree that the church may keep these words and that Grace, or the deputy who covers when she is away, may read them.",
       ),
     ).toBeVisible();
-    // The seeded policy's low-risk switch is off, so neither the consent line
-    // nor its help sentence carries the auto-publish exception.
-    await expect(page.getByText(/signed low-risk policy/i)).toHaveCount(0);
+    // The one reassurance on this screen names the signed meal exception even
+    // while the switch is off: the approval is never written as an absolute.
+    const consentHelp = page.locator("#ask-consent-help");
+    await expect(consentHelp).toContainText(
+      "Grace reads every ask first. Nothing is shown to a neighbour until she approves it, except a meal under the church's signed low-risk policy.",
+    );
+    await expect(page.getByText(/signed low-risk policy/i)).toHaveCount(1);
     await expect(page.getByText(/congregation board/i)).toHaveCount(0);
+    // The old duplicated reassurance is gone: the consent label no longer
+    // repeats the helper's sentence.
+    await expect(page.getByText(/nothing is shown to anyone else/i)).toHaveCount(
+      0,
+    );
     await expect(
       page.getByText(/these examples are fictional/i),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /use the example/i }),
     ).toHaveCount(5);
+    // The two refusal examples name the stop in their own labels.
+    await expect(
+      page.getByRole("button", {
+        name: /use the example: personal care — the ask stops, and a person calls/i,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", {
+        name: /use the example: safety — the ask stops, and a person calls today/i,
+      }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator('section[aria-labelledby="ask-samples"]')
+        .getByText(/raises a hold/i),
+    ).toHaveCount(2);
     await expect(page.getByRole("button", { name: /dictat/i })).toBeVisible();
 
     // No password, no account: the one access link is the whole sign-in.
@@ -170,7 +195,7 @@ test.describe("VAL-ASK-001…007 — caregiver ask intake", () => {
 
     await expect(page.getByTestId("ask-error")).toContainText(/tick the box/i);
     await expect(
-      page.getByLabel(/i understand that Grace reads this first/i),
+      page.getByLabel(/i agree that the church may keep these words/i),
     ).toBeFocused();
     expect(await countMartaAsks(db)).toBe(before);
 
@@ -192,18 +217,28 @@ test.describe("VAL-ASK-001…007 — caregiver ask intake", () => {
     await expect(page.getByTestId("ask-status")).toContainText(
       /with Grace — not read yet/i,
     );
-    // The switch is off for the seeded church, so the receipt is exactly the
-    // sentence that shipped before the switch existed.
+    // The switch is off for the seeded church, and the receipt still names the
+    // one signed exception: an approval is never written as an absolute.
     await expect(
       page
         .getByText(
-          "Grace reads every ask first. Nothing is shown to anyone until she approves it.",
+          "Grace reads every ask first. Nothing is shown to a neighbour until she approves it, except a meal under the church's signed low-risk policy.",
           { exact: true },
         )
         .first(),
     ).toBeVisible();
-    await expect(page.getByText(/signed low-risk policy/i)).toHaveCount(0);
-    await expect(page.getByText(/congregation board/i)).toHaveCount(0);
+    // The lead and the "what happens next" step both keep the exception beside
+    // the approval, so neither reads as an absolute on its own.
+    expect(
+      await page.getByText(/signed low-risk policy/i).count(),
+    ).toBeGreaterThanOrEqual(1);
+    // The words themselves are still never on the congregation board, even
+    // though a meal time from the ask may be.
+    await expect(
+      page.getByText(
+        /Your words are not shown to a neighbour or on the congregation board/i,
+      ),
+    ).toBeVisible();
 
     const shown = await page.getByTestId("caregiver-verbatim").textContent();
     expect(shown).toBe(HERO_ASK);

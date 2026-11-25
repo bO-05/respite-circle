@@ -161,7 +161,7 @@ export function HoldCardSection({ held }: { held: HeldAskCard }) {
       {safety ? (
         <div className="border-t border-line pt-5">
           <h3 className="font-serif text-xl text-ink">
-            Converting this hold is a separate, recorded decision
+            Deciding this is not a safety concern is recorded separately
           </h3>
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
             If you have called the family and there is no immediate danger, you

@@ -12,6 +12,7 @@ import {
   isCareThanksFlashCode,
 } from "@/server/domain/closure";
 import { formatWindowLabel } from "@/server/domain/slots";
+import { publishedNotBookedSentence } from "@/server/domain/published-time";
 import { listCaregiverNotes } from "@/server/repositories/ask-review";
 import { listCaregiverAsks } from "@/server/repositories/asks";
 import { listCaregiverConfirmations } from "@/server/repositories/claim-review";
@@ -73,12 +74,36 @@ export default async function CarePage({
       <CaregiverInviteList invites={invites} />
 
       {working ? (
-        <p
+        <section
           data-testid="care-coordinator-working"
-          className="max-w-prose whitespace-pre-wrap rounded-lg border border-line bg-surface px-5 py-4 text-xl leading-relaxed text-ink"
+          className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-5 py-4"
         >
-          {working.sentence}
-        </p>
+          <p className="max-w-prose whitespace-pre-wrap text-xl leading-relaxed text-ink">
+            {working.sentence}
+          </p>
+          {/*
+            Published and booked are different states, and this is the one
+            place the family meets the difference. The sentence is the same one
+            the receipt renders; the single next action opens the ask it is
+            about, so a reader can check what was published without guessing.
+          */}
+          <p
+            data-testid="care-published-not-booked"
+            className="max-w-prose text-base leading-relaxed text-ink-muted"
+          >
+            {publishedNotBookedSentence(
+              working.coordinatorFirstName,
+              "here",
+            )}
+          </p>
+          <Link
+            href={`/ask/${working.askId}`}
+            data-testid="care-working-next-action"
+            className="inline-flex min-h-11 w-fit items-center font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            Read your words and the nine answers
+          </Link>
+        </section>
       ) : null}
 
       {thanksCode ? (

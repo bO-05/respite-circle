@@ -1,8 +1,10 @@
+import Link from "next/link";
 import {
   ABSTENTION_SENTENCE,
   AI_CHIP,
+  CONFIDENCE_EXPLAINER,
   CONFIDENCE_LABEL,
-  PLAIN_CODE_SENTENCE,
+  RULES_SENTENCE,
   RULES_BANNER,
   bilingualTrailNotice,
   formatLatency,
@@ -36,6 +38,7 @@ export function DecisionTrail({
   revisionCount,
   draftKinds,
   publishedCount,
+  coordinatorFirstName,
   bilingualNeeded = false,
   language = null,
 }: {
@@ -47,11 +50,18 @@ export function DecisionTrail({
   revisionCount: number;
   draftKinds: readonly string[];
   publishedCount: number;
+  /**
+   * The church's own coordinator. Every sentence that names the person who
+   * reads, reviews, or publishes renders this value, and falls back to "your
+   * coordinator" — no sentence may hardcode a name.
+   */
+  coordinatorFirstName: string | null;
   bilingualNeeded?: boolean;
   language?: string | null;
 }) {
-  const draftSummary = summariseDraftKinds(draftKinds);
+  const draftSummary = summariseDraftKinds(draftKinds, coordinatorFirstName);
   const incomplete = rows.length > 0 && rows.length < 9;
+  const reader = coordinatorFirstName?.trim() || "Your coordinator";
 
   return (
     <section
@@ -75,10 +85,7 @@ export function DecisionTrail({
         {revisionTrailSentence(revisionNumber, revisionCount)}
       </p>
       <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-        The model answered nine fixed questions with a yes, a no, or a choice.
-        It did not write a sentence about anyone. The percentage below is the
-        model&apos;s own stated confidence, not a probability that the answer is
-        right.
+        {CONFIDENCE_EXPLAINER}
       </p>
 
       {run?.provider === "deterministic" ? (
@@ -106,8 +113,8 @@ export function DecisionTrail({
           data-testid="trail-empty"
           className="mt-4 max-w-prose text-base leading-relaxed text-ink"
         >
-          The answers for your newest words are being prepared. Grace will read
-          them; a person will decide.
+          The answers for your newest words are being prepared. {reader} will
+          read them; a person will decide.
         </p>
       ) : (
         <ol
@@ -142,10 +149,8 @@ export function DecisionTrail({
               )}
 
               <p className="mt-1 text-base text-ink-muted">
-                {CONFIDENCE_LABEL}: <strong>{row.confidencePercent}</strong>
-                {row.samples !== null && row.samples > 1 ? (
-                  <span> · {row.samples} samples</span>
-                ) : null}
+                {CONFIDENCE_LABEL}:{" "}
+                <strong>{row.confidencePercent}</strong>
               </p>
             </li>
           ))}
@@ -179,13 +184,17 @@ export function DecisionTrail({
       ) : null}
 
       {digest ? (
-        <p
+        <details
           data-testid="trail-digest"
-          className="mt-1 max-w-prose break-words text-base leading-relaxed text-ink-muted"
+          className="mt-1 max-w-prose text-base leading-relaxed text-ink-muted"
         >
-          Digest of these words (SHA-256):{" "}
-          <code className="break-all">{digest}</code>
-        </p>
+          <summary className="w-fit cursor-pointer">
+            A fingerprint of your words, kept so they cannot be changed.
+          </summary>
+          <p className="mt-1 break-words">
+            <code className="break-all">{digest}</code>
+          </p>
+        </details>
       ) : null}
 
       <div
@@ -196,7 +205,7 @@ export function DecisionTrail({
           How a time gets proposed
         </h3>
         <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
-          {PLAIN_CODE_SENTENCE}
+          {RULES_SENTENCE}
         </p>
         {draftSummary ? (
           <p
@@ -208,12 +217,21 @@ export function DecisionTrail({
         ) : null}
       </div>
 
-      <p
+      <div
         data-testid="publication-state"
         className="mt-4 max-w-prose text-base leading-relaxed text-ink-muted"
       >
-        {publicationSentence(publishedCount)}
-      </p>
+        <p>{publicationSentence(publishedCount, coordinatorFirstName)}</p>
+        {publishedCount > 0 ? (
+          <Link
+            href="/care"
+            data-testid="publication-next-action"
+            className="mt-2 inline-flex min-h-11 items-center font-semibold text-ink underline decoration-accent underline-offset-4"
+          >
+            See what is covered for my family
+          </Link>
+        ) : null}
+      </div>
     </section>
   );
 }

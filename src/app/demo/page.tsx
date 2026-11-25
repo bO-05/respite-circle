@@ -68,9 +68,9 @@ export default async function DemoPage() {
             The calendar around it is fixed, so the demonstration repeats:
             four Respite Mornings on the next four Tuesdays, the same church,
             the same cast, and the same four asks. The model does not build the
-            board. It answers the nine questions; plain code turns those
-            answers into draft times, and each time on the demo board was
-            approved by a person.
+            board. It answers the nine questions; the app&apos;s fixed rules
+            turn those answers into draft times, and each time on the demo board
+            was approved by a person.
           </p>
           <p className="mt-3 max-w-prose text-base leading-relaxed text-ink">
             When the model&apos;s answers disagree with the church&apos;s

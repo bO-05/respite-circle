@@ -135,7 +135,7 @@ test.describe("VAL-R2PROM-003 — the receipt names the real decision point", ()
     );
     expect(copy).toContain("there is no button here to say whether it helps");
     expect(copy).toContain(
-      "Nothing is shown to a neighbour until Grace approves it",
+      "Nothing is shown to a neighbour until Grace approves it, except a meal under the church's signed low-risk policy.",
     );
 
     // 3. The rest of the receipt is unchanged: the exact words, the status,

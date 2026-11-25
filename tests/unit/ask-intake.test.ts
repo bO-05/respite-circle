@@ -101,57 +101,49 @@ describe("ask submission validation", () => {
 });
 
 describe("ask copy", () => {
-  it("keeps today's receipt sentence exactly while the switch is off", () => {
+  it("names the signed meal exception in the same breath as the approval", () => {
     expect(receiptSentence("Grace")).toBe(
-      "Grace reads every ask first. Nothing is shown to anyone until she approves it.",
+      "Grace reads every ask first. Nothing is shown to a neighbour until she approves it, except a meal under the church's signed low-risk policy.",
     );
     expect(receiptSentence("Grace", false)).toBe(receiptSentence("Grace"));
+    // The old absolute ignored the signed low-risk meal exception.
+    expect(receiptSentence("Grace")).not.toMatch(
+      /nothing is shown to anyone until she approves it\.$/i,
+    );
   });
 
   it("never pretends a named person exists when the church has none", () => {
     const sentence = receiptSentence(null);
 
     expect(sentence).toBe(
-      "Your coordinator reads every ask first. Nothing is shown to anyone until they approve it.",
+      "Your coordinator reads every ask first. Nothing is shown to a neighbour until they approve it, except a meal under the church's signed low-risk policy.",
     );
     expect(sentence).not.toContain("null");
   });
 
-  it("keeps today's consent line exactly while the switch is off", () => {
+  it("says who may read the words, including the deputy, without repeating the promise", () => {
     expect(consentSentence("Grace")).toBe(
-      "I understand that Grace reads this first, and that nothing is shown to anyone else unless she approves it.",
+      "I agree that the church may keep these words and that Grace, or the deputy who covers when she is away, may read them.",
     );
     expect(consentSentence(null)).toBe(
-      "I understand that my coordinator reads this first, and that nothing is shown to anyone else unless they approve it.",
+      "I agree that the church may keep these words and that my coordinator, or the deputy who covers for them, may read them.",
     );
-    expect(consentSentence("Grace", false)).toBe(consentSentence("Grace"));
+    // The consent is not a privacy promise, so it cannot make one the trust
+    // page contradicts: the deputy reads the same desk.
+    expect(consentSentence("Grace")).toMatch(/deputy/);
+    expect(consentSentence("Grace")).not.toMatch(/nothing is shown/i);
+    expect(consentSentence("Grace")).not.toMatch(/never shown/i);
   });
 
-  it("qualifies the consent line only while the signed policy switch is on", () => {
-    const sentence = consentSentence("Grace", true);
+  it("qualifies the receipt sentence while the signed policy switch is on", () => {
+    const sentence = receiptSentence("Grace", true);
 
-    expect(sentence).toMatch(/Grace reads this\./);
-    // The words are still never shown; the exception is a meal time, named.
-    expect(sentence).toMatch(/my words are never shown to anyone/i);
+    expect(sentence).toMatch(/Grace reads every ask\./);
+    expect(sentence).toMatch(/your words are never shown to a neighbour/i);
     expect(sentence).toMatch(/signed low-risk policy/i);
     expect(sentence).toMatch(/meal time from this ask may go on the congregation board/i);
     expect(sentence).toMatch(/before she approves that time/i);
     // The pre-switch promise that she reads it "first" is no longer true.
-    expect(sentence).not.toMatch(/reads this first/i);
-
-    const unnamed = consentSentence(null, true);
-    expect(unnamed).toMatch(/my coordinator reads this\./);
-    expect(unnamed).toMatch(/before they approve that time/i);
-  });
-
-  it("qualifies the receipt sentence only while the signed policy switch is on", () => {
-    const sentence = receiptSentence("Grace", true);
-
-    expect(sentence).toMatch(/Grace reads every ask\./);
-    expect(sentence).toMatch(/your words are never shown to anyone/i);
-    expect(sentence).toMatch(/signed low-risk policy/i);
-    expect(sentence).toMatch(/meal time from this ask may go on the congregation board/i);
-    expect(sentence).toMatch(/before she approves that time/i);
     expect(sentence).not.toMatch(/reads every ask first/i);
 
     const unnamed = receiptSentence(null, true);

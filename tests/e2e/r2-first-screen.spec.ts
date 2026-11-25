@@ -227,6 +227,10 @@ test("VAL-R2UI-002 — the sign-in page tells a person without a link what to do
   await expect(page.locator("body")).not.toContainText(
     "signs you in as you, and only you",
   );
+  // Instead it says the link is the whole sign-in, and to keep it private.
+  await expect(page.locator("body")).toContainText(
+    "Anyone who has the link can sign in with it, so keep it to yourself.",
+  );
 
   expect(
     await horizontalOverflow(page),

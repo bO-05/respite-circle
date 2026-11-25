@@ -346,6 +346,43 @@ export function capacityLine(entry: {
   return `${entry.remainingCompanionPlaces} of ${capacity} places left`;
 }
 
+const COUNT_WORDS = [
+  "zero",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+] as const;
+
+function countWord(count: number): string {
+  return COUNT_WORDS[count] ?? String(count);
+}
+
+/**
+ * How much of the rolling window is planned, without claiming the calendar is
+ * complete forever. The old count line read as if every future Tuesday were
+ * planned; the window is exactly the next four.
+ */
+export function sessionCalendarCountSentence(
+  scheduledCount: number,
+  targetCount: number,
+): string {
+  const scheduled = Math.max(scheduledCount, 0);
+  const target = Math.max(targetCount, 0);
+
+  if (target === 0) return "No Tuesday is on the calendar yet.";
+  if (scheduled >= target) {
+    return `The next ${countWord(target)} Tuesdays are on the calendar.`;
+  }
+  return `${scheduled} of the next ${countWord(target)} Tuesdays are on the calendar.`;
+}
+
 /** `Tuesday 8 December 2026`, in the church's own time zone. */
 export function formatSessionDate(date: Date, timeZone: string): string {
   const parts = partsInZone(date, timeZone);

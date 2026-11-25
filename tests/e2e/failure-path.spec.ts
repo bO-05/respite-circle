@@ -125,7 +125,7 @@ test.describe("the failure path", () => {
     await expect(david.page.getByTestId("care-confirmations")).toHaveCount(0);
     await expect(david.page.getByTestId("care-reminders")).toHaveCount(0);
     await expect(david.page.getByTestId("care-coordinator-working")).toContainText(
-      /Your coordinator is working on/,
+      /is looking for someone for your [A-Z][a-z]+/,
     );
     const careText = await david.page.locator("body").innerText();
     expectNoDeskConcepts(careText, "/care");

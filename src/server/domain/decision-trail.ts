@@ -4,6 +4,7 @@ import {
   type PickAnswer,
 } from "@/server/services/decision-contract";
 import { languageDisplayName } from "./language";
+import { publishedNotBookedSentence } from "./published-time";
 
 /**
  * The render guard for the decision trail.
@@ -15,7 +16,15 @@ import { languageDisplayName } from "./language";
  * sentence about a person — it becomes the human handoff instead.
  */
 
-export const CONFIDENCE_LABEL = "the model's stated confidence";
+export const CONFIDENCE_LABEL = "How sure the AI was";
+
+/**
+ * The paragraph above the rows. It has to do the one job the per-row label no
+ * longer does: say what the percentage is, in the model's own terms, without
+ * pretending it is a probability that the answer is right.
+ */
+export const CONFIDENCE_EXPLAINER =
+  "The model answered nine fixed questions with a yes, a no, or a choice. It did not write a sentence about anyone. The percentage below is the model's stated confidence, not a probability that the answer is right.";
 
 export const ABSTENTION_SENTENCE =
   "This isn't mine to answer — a person will decide.";
@@ -49,11 +58,12 @@ export function bilingualTrailNotice(
 export const RULES_BANNER =
   "Auto-filled by rules, not AI — please verify.";
 
-export const PLAIN_CODE_SENTENCE =
-  "Plain code — not the model — builds every proposed time from these nine answers. The model never writes a proposal, a message, or a sentence.";
-
-export const NOTHING_PUBLISHED_SENTENCE =
-  "Nothing has been published yet. No time is shown to anyone until Grace approves it.";
+/**
+ * The rule that builds a proposal, in a family's words. "Plain code" was the
+ * app's internal name for it; nothing on a caregiver's screen needs that term.
+ */
+export const RULES_SENTENCE =
+  "The app's fixed rules — not the model — build every proposed time from these nine answers. The model never writes a proposal, a message, or a sentence.";
 
 export const AI_CHIP = "AI: sees fields, writes nothing";
 
@@ -172,12 +182,15 @@ const DRAFT_KIND_NOUN: Record<string, string> = {
 };
 
 /**
- * Summarise what plain code has proposed, by kind only. The coordinator's
- * editable label is deliberately not printed here, and nothing in this
- * summary is published to the congregation.
+ * Summarise what the app's rules have proposed, by kind only. The
+ * coordinator's editable label is deliberately not printed here, and nothing
+ * in this summary is published to the congregation. The person who reviews the
+ * proposals is the church's own coordinator, never a name baked into a
+ * sentence.
  */
 export function summariseDraftKinds(
   kinds: readonly string[],
+  coordinatorFirstName: string | null = null,
 ): string | null {
   if (kinds.length === 0) return null;
 
@@ -191,12 +204,27 @@ export function summariseDraftKinds(
       : `${nouns.slice(0, -1).join(", ")} and ${nouns.at(-1)}`;
 
   const times = kinds.length === 1 ? "time" : "times";
-  return `Plain code has proposed ${kinds.length} possible ${times} for Grace to review: ${list}. They are not published.`;
+  const reviewer = coordinatorFirstName?.trim() || "your coordinator";
+  return `The app has proposed ${kinds.length} possible ${times} for ${reviewer} to review: ${list}. They are not published.`;
 }
 
-/** The caregiver-facing publication state. Zero is the honest default. */
-export function publicationSentence(publishedCount: number): string {
-  if (publishedCount <= 0) return NOTHING_PUBLISHED_SENTENCE;
+/**
+ * The caregiver-facing publication state. Zero is the honest default, and a
+ * published time is never described as a booked one: the care page is where a
+ * covered time appears, and only a person can put it there.
+ */
+export function publicationSentence(
+  publishedCount: number,
+  coordinatorFirstName: string | null = null,
+): string {
+  const name = coordinatorFirstName?.trim();
+  const reviewer = name ?? "your coordinator";
+  const Reviewer = name ?? "Your coordinator";
+
+  if (publishedCount <= 0) {
+    return `Nothing has been published yet. No time is shown to a neighbour until ${reviewer} approves it, except a meal under the church's signed low-risk policy.`;
+  }
+
   const times = publishedCount === 1 ? "time" : "times";
-  return `Grace has published ${publishedCount} ${times}. You can see what is covered on your care page.`;
+  return `${Reviewer} has published ${publishedCount} ${times}. ${publishedNotBookedSentence(name ?? null, "on your care page")}`;
 }

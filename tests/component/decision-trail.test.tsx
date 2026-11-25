@@ -59,27 +59,34 @@ function renderTrail(overrides: Partial<Parameters<typeof DecisionTrail>[0]> = {
       revisionCount={1}
       draftKinds={[]}
       publishedCount={0}
+      coordinatorFirstName="Grace"
       {...overrides}
     />,
   );
 }
 
 describe("decision trail screen", () => {
-  it("renders Q1–Q9 with answers and the model's stated confidence", () => {
+  it("renders Q1–Q9 with answers and a plain confidence label", () => {
     renderTrail();
 
     const rows = screen.getAllByTestId(/^decision-Q\d$/);
     expect(rows).toHaveLength(9);
 
     for (const row of rows) {
-      expect(row).toHaveTextContent("the model's stated confidence");
+      expect(row).toHaveTextContent("How sure the AI was");
       expect(row).toHaveTextContent(/%/);
+      expect(row).not.toHaveTextContent("samples");
     }
+
+    // VAL-DECIDE-003's label survives one line above the rows, where it
+    // explains what the percentage is.
+    expect(screen.getByTestId("decision-trail")).toHaveTextContent(
+      "the model's stated confidence",
+    );
 
     expect(within(screen.getByTestId("decision-Q1")).getByText("Yes")).toBeInTheDocument();
     expect(within(screen.getByTestId("decision-Q4")).getByText("Saturday")).toBeInTheDocument();
     expect(within(screen.getByTestId("decision-Q9")).getByText("No")).toBeInTheDocument();
-    expect(screen.getByTestId("decision-Q5")).toHaveTextContent("3 samples");
   });
 
   it("shows model, provider, latency, policy version, and the digest", () => {
@@ -132,10 +139,13 @@ describe("decision trail screen", () => {
     );
   });
 
-  it("says plain code, not the model, builds proposals and nothing is published", () => {
+  it("says the app's fixed rules, not the model, build proposals and nothing is published", () => {
     renderTrail();
     expect(screen.getByTestId("plain-code-note")).toHaveTextContent(
-      "Plain code — not the model — builds every proposed time",
+      "The app's fixed rules — not the model — build every proposed time",
+    );
+    expect(screen.getByTestId("plain-code-note")).not.toHaveTextContent(
+      "Plain code",
     );
     expect(screen.getByTestId("publication-state")).toHaveTextContent(
       "Nothing has been published yet.",
@@ -169,6 +179,52 @@ describe("decision trail screen", () => {
     expect(screen.getByTestId("trail-empty")).toHaveTextContent(
       "Grace will read them; a person will decide.",
     );
+  });
+
+  it("renders the resolved coordinator, never a hardcoded name (VAL-R2UI-006)", () => {
+    // A named church.
+    const named = renderTrail({ rows: [], digest: null, publishedCount: 0 });
+    expect(named.container).toHaveTextContent("Grace");
+    named.unmount();
+
+    // A differently named church: the seeded name must not appear anywhere.
+    const nora = renderTrail({
+      rows: [],
+      digest: null,
+      coordinatorFirstName: "Nora",
+      draftKinds: ["companion"],
+      publishedCount: 2,
+    });
+    expect(nora.container).toHaveTextContent("Nora");
+    expect(nora.container).not.toHaveTextContent("Grace");
+    nora.unmount();
+
+    // No coordinator resolves: the sentences fall back to "your coordinator".
+    const unnamed = renderTrail({
+      rows: [],
+      digest: null,
+      coordinatorFirstName: null,
+      draftKinds: ["companion"],
+      publishedCount: 0,
+    });
+    expect(unnamed.container).toHaveTextContent("Your coordinator");
+    expect(unnamed.container).not.toHaveTextContent("Grace");
+    expect(unnamed.container).not.toHaveTextContent("null");
+  });
+
+  it("explains that a published time is not a booking, with one next action", () => {
+    renderTrail({ publishedCount: 1 });
+
+    const publication = screen.getByTestId("publication-state");
+    expect(publication).toHaveTextContent(
+      "A published time is not booked yet: it appears on your care page only after Grace confirms a neighbour.",
+    );
+    expect(within(publication).getAllByRole("link")).toHaveLength(1);
+    expect(
+      within(publication).getByRole("link", {
+        name: /see what is covered for my family/i,
+      }),
+    ).toHaveAttribute("href", "/care");
   });
 });
 

@@ -1255,12 +1255,18 @@ export async function expireSlotUnclaimed(
 export type CaregiverWorkingLine = {
   weekdays: string[];
   sentence: string;
+  /** The ask whose open time the sentence is about; the page links to it. */
+  askId: string;
+  /** The church's coordinator, or null when none resolves. */
+  coordinatorFirstName: string | null;
 };
 
 /**
  * The caregiver's sentence while a coordinator is working on an unclaimed
- * time: "Your coordinator is working on Saturday." No count, no timer, no
- * status. Only the family's own approved asks are read.
+ * time: "Grace is looking for someone for your Wednesday meal. No one has said
+ * yes yet." No count, no timer, no status word. Only the family's own approved
+ * asks are read, and the coordinator's name comes from the church's own
+ * coordinator row, never from a sentence template.
  */
 export async function listCaregiverWorkingLines(
   actor: Actor,
@@ -1268,42 +1274,70 @@ export async function listCaregiverWorkingLines(
 ): Promise<CaregiverWorkingLine | null> {
   requireRoleSession(actor, CAREGIVER_ROLES);
 
-  const rows = await database
-    .select({
-      windowStart: slot.windowStart,
-      timeZone: church.timezone,
-    })
-    .from(ask)
-    .innerJoin(
-      slot,
-      and(
-        eq(slot.askId, ask.id),
-        eq(slot.churchId, ask.churchId),
-        eq(slot.status, "open"),
-      ),
-    )
-    .innerJoin(church, eq(church.id, ask.churchId))
-    .where(
-      and(
-        eq(ask.churchId, actor.churchId),
-        eq(ask.caregiverId, actor.personId),
-        eq(ask.status, "approved"),
-      ),
-    )
-    .orderBy(asc(slot.windowStart));
+  const [rows, coordinatorRows] = await Promise.all([
+    database
+      .select({
+        askId: ask.id,
+        kind: slot.kind,
+        windowStart: slot.windowStart,
+        timeZone: church.timezone,
+      })
+      .from(ask)
+      .innerJoin(
+        slot,
+        and(
+          eq(slot.askId, ask.id),
+          eq(slot.churchId, ask.churchId),
+          eq(slot.status, "open"),
+        ),
+      )
+      .innerJoin(church, eq(church.id, ask.churchId))
+      .where(
+        and(
+          eq(ask.churchId, actor.churchId),
+          eq(ask.caregiverId, actor.personId),
+          eq(ask.status, "approved"),
+        ),
+      )
+      .orderBy(asc(slot.windowStart)),
+    database
+      .select({ firstName: person.firstName })
+      .from(person)
+      .where(
+        and(
+          eq(person.churchId, actor.churchId),
+          eq(person.active, true),
+          sql`${person.roles} @> '["coordinator"]'::jsonb`,
+        ),
+      )
+      .orderBy(asc(person.createdAt), asc(person.id))
+      .limit(1),
+  ]);
 
   if (rows.length === 0) return null;
 
   const weekdays: string[] = [];
+  const slots: { weekday: string; kind: string }[] = [];
   for (const row of rows) {
     if (!row.windowStart) continue;
     const parts = partsInZone(row.windowStart, row.timeZone);
-    const weekday = WEEKDAY_NAMES[civilWeekday(parts.year, parts.month, parts.day)];
-    if (weekday && !weekdays.includes(weekday)) weekdays.push(weekday);
+    const weekday =
+      WEEKDAY_NAMES[civilWeekday(parts.year, parts.month, parts.day)];
+    if (!weekday) continue;
+    if (!weekdays.includes(weekday)) weekdays.push(weekday);
+    slots.push({ weekday, kind: row.kind });
   }
 
-  const sentence = caregiverWorkingSentence(weekdays);
+  const sentence = caregiverWorkingSentence(
+    coordinatorRows[0]?.firstName ?? null,
+    slots,
+  );
   if (!sentence) return null;
 
-  return { weekdays, sentence };
+  return {
+    weekdays,
+    sentence,
+    askId: rows[0].askId,
+    coordinatorFirstName: coordinatorRows[0]?.firstName ?? null,
+  };
 }

@@ -205,17 +205,18 @@ export default async function AskReceiptPage({
         </h2>
         {receipt.revisionCount > 1 ? (
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-            {reader} will read this, and nobody else sees it unless{" "}
-            {name ? "she approves" : "they approve"} a specific time. These are
-            your latest words, kept exactly as you sent them. Your first version
-            is still kept, word for word. Nobody can edit either.
+            {reader} will read this, and so will the deputy who covers when{" "}
+            {name ? "she is" : "they are"} away. Your words are not shown to a
+            neighbour or on the congregation board. These are your latest
+            words, kept exactly as you sent them. Your first version is still
+            kept, word for word. Nobody can edit either.
           </p>
         ) : (
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-            {reader} will read this, and nobody else sees it unless{" "}
-            {name ? "she approves" : "they approve"} a specific time. These are
-            your first words, kept exactly as you sent them. Nobody can edit
-            them.
+            {reader} will read this, and so will the deputy who covers when{" "}
+            {name ? "she is" : "they are"} away. Your words are not shown to a
+            neighbour or on the congregation board. These are your first words,
+            kept exactly as you sent them. Nobody can edit them.
           </p>
         )}
         <blockquote
@@ -246,7 +247,7 @@ export default async function AskReceiptPage({
             {decision.offer}{" "}
             {receipt.autoPublishLowRisk
               ? `Under the church's signed low-risk policy, a meal time may go on the congregation board before ${name ?? "your coordinator"} approves that time. Your words are never shown there.`
-              : `Nothing is shown to a neighbour until ${name ?? "your coordinator"} approves it.`}
+              : `Nothing is shown to a neighbour until ${name ?? "your coordinator"} approves it, except a meal under the church's signed low-risk policy.`}
           </li>
           <li>
             You can come back here at any time to read your words again.
@@ -263,6 +264,7 @@ export default async function AskReceiptPage({
         revisionCount={receipt.revisionCount}
         draftKinds={trail?.draftKinds ?? []}
         publishedCount={trail?.publishedCount ?? 0}
+        coordinatorFirstName={name}
         bilingualNeeded={trail?.bilingualNeeded ?? false}
         language={trail?.language ?? null}
       />

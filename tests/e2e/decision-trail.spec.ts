@@ -146,7 +146,7 @@ test.describe("VAL-DECIDE-001, VAL-DECIDE-003, VAL-DECIDE-004, VAL-DECIDE-006 an
     );
     await expect(
       page.getByText(
-        "Grace reads every ask first. Nothing is shown to anyone until she approves it.",
+        "Grace reads every ask first. Nothing is shown to a neighbour until she approves it, except a meal under the church's signed low-risk policy.",
       ),
     ).toBeVisible();
     await expect(
@@ -169,8 +169,12 @@ test.describe("VAL-DECIDE-001, VAL-DECIDE-003, VAL-DECIDE-004, VAL-DECIDE-006 an
       trail.locator('[data-testid="decision-answer"]'),
     ).toHaveCount(9);
     await expect(
-      trail.getByText("the model's stated confidence"),
+      trail.getByText("How sure the AI was"),
     ).toHaveCount(9);
+    await expect(trail.getByText("the model's stated confidence")).toHaveCount(
+      1,
+    );
+    await expect(trail.getByText(/\d+ samples?/)).toHaveCount(0);
 
     await expect(page.getByTestId("decision-Q1")).toContainText("Yes");
     await expect(page.getByTestId("decision-Q4")).toContainText("Saturday");
@@ -184,6 +188,9 @@ test.describe("VAL-DECIDE-001, VAL-DECIDE-003, VAL-DECIDE-004, VAL-DECIDE-006 an
     await expect(page.getByTestId("trail-digest")).toContainText(
       /[0-9a-f]{64}/,
     );
+    await expect(page.getByTestId("trail-digest")).toContainText(
+      "A fingerprint of your words, kept so they cannot be changed.",
+    );
     await expect(page.getByTestId("trail-policy")).toContainText(
       "policy version 1",
     );
@@ -192,10 +199,10 @@ test.describe("VAL-DECIDE-001, VAL-DECIDE-003, VAL-DECIDE-004, VAL-DECIDE-006 an
     );
 
     await expect(page.getByTestId("plain-code-note")).toContainText(
-      "Plain code — not the model — builds every proposed time",
+      "The app's fixed rules — not the model — build every proposed time",
     );
     await expect(page.getByTestId("publication-state")).toContainText(
-      "Nothing has been published yet.",
+      "Nothing has been published yet. No time is shown to a neighbour until Grace approves it, except a meal under the church's signed low-risk policy.",
     );
 
     // No generated sentence about either person, and no model text at all.
@@ -282,7 +289,7 @@ test.describe("VAL-DECIDE-001, VAL-DECIDE-003, VAL-DECIDE-004, VAL-DECIDE-006 an
       "This isn't mine to answer — a person will decide.",
     );
     await expect(q3.getByTestId("decision-answer")).toHaveCount(0);
-    await expect(q3).toContainText("the model's stated confidence: 45%");
+    await expect(q3).toContainText("How sure the AI was: 45%");
 
     // The other questions are still answered; only Q3 is handed off.
     await expect(

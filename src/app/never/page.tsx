@@ -6,7 +6,7 @@ import { AUTO_PUBLISH_TRUST_NOTE, NEVER_COMMITMENTS } from "@/lib/trust-content"
 export const metadata: Metadata = {
   title: "What we never do — Respite Circle",
   description:
-    "Eight commitments: no AI sentences about a person, no scoring, no chasing, no story to the congregation, no fake success, no personal care as a slot, no screening families, no editing words.",
+    "Nine commitments: no AI sentences about a person, no scoring, no chasing, no story to the congregation, no fake success, no personal care as a slot, no screening families, no editing words, and no automatic time beyond a meal.",
 };
 
 /**
@@ -19,7 +19,7 @@ export default function NeverPage() {
     <PublicPage
       eyebrow="What we never do"
       title="What we never do"
-      lead="Eight commitments. Each one is a choice in the code, not a slogan, and each one names where you can see it in the app."
+      lead="Nine commitments. Each one is a choice in the code, not a slogan, and each one names where you can see it in the app."
     >
       {NEVER_COMMITMENTS.map((commitment) => (
         <section

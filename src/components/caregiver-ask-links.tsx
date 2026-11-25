@@ -50,7 +50,7 @@ export function CaregiverAskLinks({
             className="rounded-md border border-line bg-paper p-4"
           >
             <p className="break-words text-base leading-relaxed text-ink-muted">
-              About {ask.careRecipientFirstName} ·{" "}
+              For {ask.careRecipientFirstName} · ask sent{" "}
               {formatSessionDate(ask.createdAt, ask.timeZone)}
             </p>
             <Link
