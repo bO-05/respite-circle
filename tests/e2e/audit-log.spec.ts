@@ -228,15 +228,16 @@ test.describe.serial("VAL-AUDIT-001…004 — the decision log", () => {
         "20 November 2026",
       );
 
-      // The five facts, in the same order, on every row.
+      // The five facts, in the same order, on every row: when, who, what,
+      // about what, and the safe detail. Ids stay in the detail block.
       for (const section of [aiSection, humanSection, systemSection]) {
         const first = section.getByTestId("audit-row").first();
         await expect(first.locator("dt")).toHaveText([
+          "When",
           "Decided by",
           "What happened",
           "About",
           "Detail",
-          "When",
         ]);
       }
 

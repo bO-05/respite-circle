@@ -17,9 +17,11 @@ import type {
 /**
  * The decision log's three lists and its filter form.
  *
- * Each row states the same five facts in the same order: who decided, what
- * happened, what it was about, the safe detail, and when. AI, human, and app
- * actions are separate lists, never one blended feed.
+ * Each row states the same five facts in the order a coordinator asks about
+ * them: when it happened, who decided, what happened, what it was about, and
+ * the safe detail. Ids and digests are the audit trail, so they stay in the
+ * detail block at the end where a reader who needs them can find them. AI,
+ * human, and app actions are separate lists, never one blended feed.
  *
  * The only control on this page is a GET form that narrows the list. There is
  * no edit, no delete, and no row action of any kind, because the table behind
@@ -119,8 +121,9 @@ export function AuditFilterForm({
 
 function DetailList({ row }: { row: AuditEventRow }) {
   const entries = summarizeAuditDetail(row.detail);
+  const entityId = shortEntityId(row.entityId);
 
-  if (entries.length === 0) {
+  if (entries.length === 0 && !entityId) {
     return <span className="text-ink-muted">No extra detail</span>;
   }
 
@@ -137,13 +140,27 @@ function DetailList({ row }: { row: AuditEventRow }) {
           </code>
         </li>
       ))}
+      {/*
+        The short id closes the block. A reader meets the time, the person,
+        the action, and the entity name before any opaque reference, so the
+        row reads as a decision rather than as a database record.
+      */}
+      {entityId ? (
+        <li data-testid="audit-record-id">
+          <span className="text-ink-muted">Record id: </span>
+          <code
+            className="font-mono text-base text-ink-muted"
+            title={row.entityId ?? undefined}
+          >
+            {entityId}
+          </code>
+        </li>
+      ) : null}
     </ul>
   );
 }
 
 function AuditRow({ row, timeZone }: { row: AuditEventRow; timeZone: string }) {
-  const entityId = shortEntityId(row.entityId);
-
   return (
     <li
       data-testid="audit-row"
@@ -153,6 +170,13 @@ function AuditRow({ row, timeZone }: { row: AuditEventRow; timeZone: string }) {
       className="rounded-lg border border-line bg-surface p-4"
     >
       <dl className="grid gap-x-6 gap-y-2 text-base leading-relaxed sm:grid-cols-[9rem_1fr]">
+        <dt className="font-semibold text-ink-muted">When</dt>
+        <dd data-testid="audit-time" className="text-ink">
+          <time dateTime={row.createdAt.toISOString()}>
+            {formatWindowLabel(row.createdAt, null, timeZone)}
+          </time>
+        </dd>
+
         <dt className="font-semibold text-ink-muted">Decided by</dt>
         <dd data-testid="audit-actor" className="font-semibold text-ink">
           {describeAuditActor(row)}
@@ -166,29 +190,11 @@ function AuditRow({ row, timeZone }: { row: AuditEventRow; timeZone: string }) {
         <dt className="font-semibold text-ink-muted">About</dt>
         <dd data-testid="audit-entity" className="text-ink">
           {auditEntityLabel(row.entity)}
-          {entityId ? (
-            <>
-              <span aria-hidden="true"> · </span>
-              <code
-                className="font-mono text-base text-ink-muted"
-                title={row.entityId ?? undefined}
-              >
-                {entityId}
-              </code>
-            </>
-          ) : null}
         </dd>
 
         <dt className="font-semibold text-ink-muted">Detail</dt>
         <dd data-testid="audit-detail">
           <DetailList row={row} />
-        </dd>
-
-        <dt className="font-semibold text-ink-muted">When</dt>
-        <dd data-testid="audit-time" className="text-ink">
-          <time dateTime={row.createdAt.toISOString()}>
-            {formatWindowLabel(row.createdAt, null, timeZone)}
-          </time>
         </dd>
       </dl>
     </li>
@@ -200,13 +206,19 @@ export function AuditLogSection({
   title,
   note,
   emptyLine,
+  defaultEmptyLine,
+  filtering,
   rows,
   timeZone,
 }: {
   kind: AuditSectionKind;
   title: string;
   note: string;
+  /** Said only when a filter is applied and this list is empty. */
   emptyLine: string;
+  /** Said when no filter is applied and nothing of this kind has happened. */
+  defaultEmptyLine: string;
+  filtering: boolean;
   rows: AuditEventRow[];
   timeZone: string;
 }) {
@@ -214,6 +226,7 @@ export function AuditLogSection({
     <section
       data-testid={`audit-section-${kind}`}
       aria-labelledby={`audit-heading-${kind}`}
+      data-filtered={filtering ? "true" : "false"}
       className="flex flex-col gap-3"
     >
       <div>
@@ -233,7 +246,7 @@ export function AuditLogSection({
           data-testid={`audit-empty-${kind}`}
           className="rounded-lg border border-line bg-surface p-4 text-base leading-relaxed text-ink"
         >
-          {emptyLine}
+          {filtering ? emptyLine : defaultEmptyLine}
         </p>
       ) : (
         <ul className="flex flex-col gap-3" aria-label={title}>

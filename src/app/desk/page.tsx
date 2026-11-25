@@ -1,88 +1,34 @@
 import Link from "next/link";
+import { DeskQueueSection } from "@/components/desk-queue-section";
 import { RolePage } from "@/components/role-page";
 import { SessionCalendarStrip } from "@/components/session-calendar-strip";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
-import {
-  QUEUE_CATEGORY_HEADING,
-  QUEUE_CATEGORY_NOTE,
-  QUEUE_CATEGORY_ORDER,
-  groupDeskQueue,
-  waitingLabel,
-} from "@/server/domain/desk-queue";
-import {
-  listDeskAsks,
-  type DeskQueueItem,
-} from "@/server/repositories/coordinator";
+import { groupDeskQueue } from "@/server/domain/desk-queue";
+import { listDeskAsks } from "@/server/repositories/coordinator";
 import { listPendingClaims } from "@/server/repositories/claim-review";
-import { coverageMessageCountLine } from "@/server/domain/coverage";
+import {
+  COVERAGE_SILENCE_PROMISE,
+  coverageMessageCountLine,
+} from "@/server/domain/coverage";
 import { formatWindowLabel } from "@/server/domain/slots";
 import { listCoverageWatch } from "@/server/repositories/coverage";
 import { getDeskSessionOverview } from "@/server/repositories/sessions";
 
 export const dynamic = "force-dynamic";
 
-function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
-  return (
-    <li
-      data-testid="desk-row"
-      data-ask-id={item.id}
-      data-status={item.status}
-      data-category={item.category}
-      data-bilingual={item.bilingualNeeded ? "true" : "false"}
-      data-created-at={item.createdAt.toISOString()}
-      className="rounded-lg border border-line bg-surface p-4"
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <a
-          href={`/desk/ask/${item.id}`}
-          className="inline-flex min-h-11 items-center text-lg font-semibold text-ink underline decoration-accent underline-offset-4"
-        >
-          {item.caregiverFirstName}
-          <span className="sr-only"> — read this ask</span>
-        </a>
-        {item.pinLabel ? (
-          <span
-            data-testid="desk-pin-label"
-            className="inline-flex min-h-7 items-center rounded-full border border-accent px-3 text-sm font-semibold text-accent"
-          >
-            {item.pinLabel}
-          </span>
-        ) : null}
-      </div>
-
-      <p className="mt-1 text-base text-ink-muted">
-        For {item.careRecipientFirstName}
-      </p>
-
-      <p
-        data-testid="desk-reason-summary"
-        className="mt-3 text-lg leading-relaxed text-ink"
-      >
-        {item.reasonSummary}
-      </p>
-
-      <p
-        data-testid="desk-waiting-time"
-        className="mt-2 text-base text-ink-muted"
-      >
-        <time dateTime={item.createdAt.toISOString()}>
-          {waitingLabel(item.createdAt, now)}
-        </time>
-      </p>
-
-      {item.holdReason ? (
-        <p
-          data-testid="desk-hold-reason"
-          className="mt-3 rounded-md border border-accent-soft bg-accent-soft px-4 py-3 text-base leading-relaxed text-ink"
-        >
-          {item.holdReason}
-        </p>
-      ) : null}
-    </li>
-  );
-}
-
+/**
+ * The coordinator desk.
+ *
+ * The order on the screen is the order of the promise: a safety hold first,
+ * because someone calls the family today; then the coverage watch, because a
+ * time nobody has taken is a call, not a message; then the Respite Morning
+ * calendar; then claims waiting for confirmation; then the personal-care hold
+ * and the ordinary queue.
+ *
+ * A zero on the coverage watch is the product working. Its sentence is
+ * ordinary text, never an amber warning block.
+ */
 export default async function DeskPage() {
   const { person, session } = await requirePage(DESK_ROLES);
   const [asks, overview, pendingClaims, coverageWatch] = await Promise.all([
@@ -103,13 +49,18 @@ export default async function DeskPage() {
       title="Coordinator desk"
       lead="A person reads every ask, and a signed low-risk policy can let a meal publish itself first; every other kind of time waits for that person. Safety and personal-care asks stay pinned in their own groups."
     >
-      <SessionCalendarStrip overview={overview} />
+      {/*
+        Safety first. This group is the first thing on the page, above the
+        coverage watch and above the calendar, and it is drawn as its own
+        urgent panel with a larger heading than routine coverage.
+      */}
+      <DeskQueueSection category="safety" rows={groups.safety} now={now} />
 
       {coverageWatch.length > 0 ? (
         <section
           data-testid="desk-coverage-watch"
           aria-labelledby="desk-coverage-watch-heading"
-          className="flex flex-col gap-3 rounded-lg border border-amber bg-amber-soft p-5"
+          className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-5"
         >
           <div>
             <h2
@@ -118,9 +69,10 @@ export default async function DeskPage() {
             >
               Coverage watch
             </h2>
-            <p className="mt-1 max-w-prose text-base leading-relaxed text-ink">
+            <p className="mt-1 max-w-prose text-base leading-relaxed text-ink-muted">
               No neighbour has taken these times yet. A person calls; the app
-              sends nothing.
+              sends nothing. A zero below is the promise working, not a
+              failure.
             </p>
           </div>
 
@@ -131,7 +83,7 @@ export default async function DeskPage() {
                 data-testid="desk-coverage-row"
                 data-slot-id={item.slotId}
                 data-messages={item.caregiverOutboxCount}
-                className="rounded-md border border-line bg-surface p-4"
+                className="rounded-md border border-line bg-paper p-4"
               >
                 <a
                   href={`/desk/slot/${item.slotId}`}
@@ -152,10 +104,18 @@ export default async function DeskPage() {
                 </p>
                 <p
                   data-testid="desk-coverage-row-count"
-                  className="mt-2 text-base font-semibold text-ink"
+                  className="mt-2 text-base text-ink"
                 >
                   {coverageMessageCountLine(item.caregiverOutboxCount)}
                 </p>
+                {item.caregiverOutboxCount === 0 ? (
+                  <p
+                    data-testid="desk-coverage-row-promise"
+                    className="mt-1 max-w-prose text-base leading-relaxed text-ink-muted"
+                  >
+                    {COVERAGE_SILENCE_PROMISE}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -168,6 +128,8 @@ export default async function DeskPage() {
           </Link>
         </section>
       ) : null}
+
+      <SessionCalendarStrip overview={overview} />
 
       {pendingClaims.length > 0 ? (
         <section
@@ -257,37 +219,12 @@ export default async function DeskPage() {
             else is oldest first. No ask is hidden behind a number.
           </p>
 
-          {QUEUE_CATEGORY_ORDER.map((category) => {
-            const rows = groups[category];
-            if (rows.length === 0) return null;
-
-            return (
-              <section
-                key={category}
-                data-testid={`desk-category-${category}`}
-                aria-labelledby={`desk-heading-${category}`}
-                className="flex flex-col gap-3"
-              >
-                <div>
-                  <h2
-                    id={`desk-heading-${category}`}
-                    className="font-serif text-2xl text-ink"
-                  >
-                    {QUEUE_CATEGORY_HEADING[category]}
-                  </h2>
-                  <p className="mt-1 max-w-prose text-base leading-relaxed text-ink-muted">
-                    {QUEUE_CATEGORY_NOTE[category]}
-                  </p>
-                </div>
-
-                <ul className="flex flex-col gap-3">
-                  {rows.map((item) => (
-                    <QueueRow key={item.id} item={item} now={now} />
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
+          <DeskQueueSection
+            category="personal_care"
+            rows={groups.personal_care}
+            now={now}
+          />
+          <DeskQueueSection category="waiting" rows={groups.waiting} now={now} />
         </>
       )}
 

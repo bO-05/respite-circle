@@ -21,8 +21,9 @@ export const dynamic = "force-dynamic";
  * The decision log.
  *
  * Two people, one AI, and the app itself all act on an ask. This page keeps
- * their actions apart and states the same five facts for each: who, what,
- * about what, the safe detail, and when.
+ * their actions apart and states the same five facts for each in the order a
+ * coordinator asks about them: when, who, what, about what, and the safe
+ * detail. Ids and digests sit at the end of the row, in the detail block.
  *
  * It is a read-only view by construction. There is no edit or delete control,
  * no server action, and no API route for an audit row; the database's
@@ -122,14 +123,20 @@ export default async function DeskAuditPage({
               role="status"
               className="rounded-lg border border-line bg-surface p-5 text-lg leading-relaxed text-ink"
             >
-              No actions match these filters.{" "}
-              <Link
-                href="/desk/audit"
-                className="font-semibold text-ink underline decoration-accent underline-offset-4"
-              >
-                Show everything
-              </Link>
-              .
+              {filtering ? (
+                <>
+                  No actions match these filters.{" "}
+                  <Link
+                    href="/desk/audit"
+                    className="font-semibold text-ink underline decoration-accent underline-offset-4"
+                  >
+                    Show everything
+                  </Link>
+                  .
+                </>
+              ) : (
+                "Nothing has been decided yet."
+              )}
             </p>
           ) : null}
 
@@ -138,6 +145,8 @@ export default async function DeskAuditPage({
             title="What the AI decided"
             note="Typed answers only. The log keeps a SHA-256 digest of what the model saw, never the family's words."
             emptyLine="No AI decision matches these filters."
+            defaultEmptyLine="The AI has not answered anything yet. When a family sends an ask, the nine typed answers appear here."
+            filtering={filtering}
             rows={groups.ai}
             timeZone={options.timeZone}
           />
@@ -147,6 +156,8 @@ export default async function DeskAuditPage({
             title="What a person decided"
             note="Every human decision: who made it, what they did, which ask or time it was about, and when."
             emptyLine="No person's decision matches these filters."
+            defaultEmptyLine="No person has decided anything yet. The first line appears when a coordinator approves, sends back, or holds an ask."
+            filtering={filtering}
             rows={groups.human}
             timeZone={options.timeZone}
           />
@@ -156,6 +167,8 @@ export default async function DeskAuditPage({
             title="What the app did by itself"
             note="The app's own work — planning Respite Mornings, refusing to build times — records itself here too."
             emptyLine="No app action matches these filters."
+            defaultEmptyLine="Nothing has happened automatically yet. When the app plans a Respite Morning or refuses to build a time, it records itself here."
+            filtering={filtering}
             rows={groups.system}
             timeZone={options.timeZone}
           />

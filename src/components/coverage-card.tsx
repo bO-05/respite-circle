@@ -4,6 +4,7 @@ import {
   CoverageReofferForm,
 } from "@/components/coverage-forms";
 import {
+  COVERAGE_SILENCE_PROMISE,
   coverageCallLeadLine,
   coverageMessageCountLine,
   coverageOutcomeLabel,
@@ -155,7 +156,11 @@ export function CoverageCard({
         ) : null}
       </div>
 
-      <div className="rounded-md border border-amber bg-amber-soft px-4 py-3">
+      <div
+        data-testid="coverage-message-block"
+        data-count={count}
+        className="rounded-md border border-line bg-paper px-4 py-3"
+      >
         <p
           data-testid="coverage-message-count"
           data-count={count}
@@ -163,6 +168,14 @@ export function CoverageCard({
         >
           {coverageMessageCountLine(count)}
         </p>
+        {count === 0 ? (
+          <p
+            data-testid="coverage-silence-promise"
+            className="mt-1 max-w-prose text-base leading-relaxed text-ink-muted"
+          >
+            {COVERAGE_SILENCE_PROMISE}
+          </p>
+        ) : null}
         <p
           data-testid="coverage-pipeline-evidence"
           className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted"

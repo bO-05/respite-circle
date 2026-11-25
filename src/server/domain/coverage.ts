@@ -205,6 +205,14 @@ export function coverageMessageCountLine(count: number): string {
 }
 
 /**
+ * What the zero stands for. It is the product's promise, not an error, so the
+ * desk and the coverage card render it as ordinary text beside the count —
+ * never inside an amber warning block.
+ */
+export const COVERAGE_SILENCE_PROMISE =
+  "Sending nothing is the promise, not a failure: a person makes the call, and the app stays silent.";
+
+/**
  * The lead line on a time that nobody has taken.
  *
  * The coordinator is named from the signed-in desk session, never from the
