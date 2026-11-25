@@ -166,6 +166,26 @@ test("VAL-R2UI-002 — at 360x800 both public calls to action sit inside the fir
     "the masthead leaves room for the h1, the sentence and both paths",
   ).toBeLessThanOrEqual(128);
 
+  // The masthead carries its own way in. It is a call to action too, so it is
+  // measured rather than assumed to be above the fold.
+  const mastheadLinks = page.getByRole("banner").getByRole("link");
+  const mastheadBoxes: Array<Box & { text: string }> = [];
+  for (let index = 0; index < (await mastheadLinks.count()); index += 1) {
+    const link = mastheadLinks.nth(index);
+    if (!(await link.isVisible())) continue;
+    const linkBox = await boxOf(link);
+    expect(
+      linkBox.bottom,
+      `masthead link ${index} is fully inside the first screen`,
+    ).toBeLessThanOrEqual(FOLD);
+    expect(
+      linkBox.height,
+      `masthead link ${index} target height`,
+    ).toBeGreaterThanOrEqual(44);
+    mastheadBoxes.push({ text: (await link.innerText()).trim(), ...linkBox });
+  }
+  expect(mastheadBoxes.length, "the masthead still offers a way in").toBeGreaterThan(0);
+
   await record("home-360x800", {
     viewport: { width: 360, height: FOLD },
     mastheadHeight: masthead.height,
@@ -174,9 +194,20 @@ test("VAL-R2UI-002 — at 360x800 both public calls to action sit inside the fir
     productSentence: sentenceBox,
     demoCallToAction: { ...demoBox, style: demoStyle },
     linkCallToAction: { ...enterBox, style: enterStyle },
+    mastheadLinks: mastheadBoxes,
   });
   expect(await horizontalOverflow(page), "no horizontal scroll at 360").toBeLessThanOrEqual(0);
   await evidenceShot(page, "home-360x800");
+
+  // "Works for someone with no access link" means the action lands on a page
+  // that person can use, not just that an href is present. This browser
+  // context holds no session cookie.
+  await demo.click();
+  await expect(page).toHaveURL(/\/demo$/);
+  await expect(
+    page.locator('[data-testid^="demo-link-"]').first(),
+    "the demo path opens a role list a stranger can use",
+  ).toBeVisible();
 });
 
 test("VAL-R2UI-002 — the sign-in page tells a person without a link what to do next", async ({
