@@ -133,6 +133,17 @@ const WINDOW_CLOCK =
 // pain sits on the ordinary-talk side below. Bare "fall" stays: Q5 asks about
 // a recent fall, so "she fell yesterday" is exactly the signal the question
 // exists to catch.
+//
+// The one harm-name that is not harm is the idiom. "It hurts me to ask for
+// help, but could someone sit with Mum on Saturday?" is a caregiver asking for
+// respite, and "it hurts her to walk to the shops" is a mobility remark; both
+// matched `hurt ... <person>` through "hurts me"/"hurts her" and held the ask
+// at 0.9. The idiom is excluded by its shape only — an impersonal "it hurts"
+// plus a person pronoun and "to <verb>", or the bare "it hurts to ask" — in
+// SAFETY_ORDINARY_TALK below, and CAREGIVER_STRAIN_IDIOM strips that same
+// shape from the text the positive rule reads so the two do not abstain
+// against each other. A sentence that names harm without that shape ("it hurt
+// him", "he hurt me last night") never matches the idiom and still holds.
 const SAFETY_POSITIVE =
   /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt(?:s|ing)?\s+(?:me|us|him|her|them)|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|gone missing|missing|got lost|locked out|abuse|abusive|neglect|chest pain|seizure|overdose|suicid(?:e|al)|self.?harm|can'?t breathe|bleeding|police|aggressive|violent|left the stove|stove on|fire|leav(?:e|es|ing) the (house|home|flat|apartment)|left the (house|home)|out of the house at night|found (her|him|them)[^.;]{0,24}(streets?|blocks?|miles?) away|hiding (her|his|their) (medication|meds|medicine|pills|tablets)|refus(?:es|ing) to eat|won'?t eat|stopped eating|not eating|(?:do not|don'?t|does not|doesn'?t) want to be here|no reason to live|better off dead|front door (wide )?open|coat gone|burn(?:s|ed|ing)?|(?:having|had|signs? of|suspected|possible) (?:a )?stroke|stroke (?:last night|this morning|today)|want(?:s|ed)? (?:to die|to be dead)|wish (?:i|he|she|they) (?:was|were)n'?t (?:still )?alive|wish (?:i|he|she|they) (?:was|were) dead|kill(?:s|ed|ing)?\s+(?:my|your|her|him|our|them)sel(?:f|ves)|hit(?:s|ting)? me|threaten(?:s|ed|ing)?|scared of (?:him|her|them)|(?:not|never)\s+(?:felt\s+|feel(?:ing)?\s+)?safe|(?:don'?t|doesn'?t|didn'?t)\s+(?:feel|feeling)\s+safe|(?:isn'?t|aren'?t|wasn'?t|weren'?t)\s+safe)\b/i;
 
@@ -158,13 +169,40 @@ const SAFETY_DECLINE_TERMS = String.raw`falls?|fallen|falling|injur(?:y|ed|ies)|
 // from lifting her", "my knees hurt and I am exhausted" and "it hurts to lift
 // him" describe the strain of caring, not danger to anyone. They are the asks
 // the app exists for, so they settle Q5 at 0.86 and keep the ordinary route.
-const SAFETY_ORDINARY_TALK = String.raw`(?:husband|wife|partner|mother|mum|mom|father|dad|nana|grandma|grandad|grandpa|granny|brother|sister|son|daughter|friend|neighbou?r|uncle|aunt|he|she|they)\s+(?:died|has died|passed away)|still\s+(?:alive|with us)|(?:garden|gardens|plant|plants|flowers?|tree|trees|bush|bushes|lawn|grass|crops?|roses?)\s+(?:died|dies)|dead on (?:my|her|his|their|your|our) feet|when (?:i|he|she|they|we)\s+(?:die|dies)|(?:my|our|her|his|their)\s+(?:back|knees?|shoulders?|hips?|legs?|arms?|hands?|wrists?|joints?)\s+(?:hurts?|aches?|is sore|are sore|is going|are going|is giving out|are giving out)|it\s+hurts?(?:\s+me)?\s+to\s+(?:lift|bend|kneel|get up|stand|walk|sit|move|carry|dress|wash|roll)`;
+//
+// The "it hurts me to ask" idiom belongs here too. It is the one harm-name
+// that is not harm: "It hurts me to ask for help, but could someone sit with
+// Mum on Saturday?" and "it hurts her to walk to the shops" are how a caregiver
+// asks for respite, and the narrowed `hurt` positive still caught the "hurts
+// me"/"hurts her" inside them. The shape is deliberately narrow — impersonal
+// "it hurts", a person pronoun, then "to" and a verb — plus the bare "it hurts
+// to ask". The word after "to" is kept off determiners, so "it hurt her to
+// the point of tears" is not read as the idiom: it keeps its positive match
+// and holds. The same fragment is stripped from the positive text in
+// CAREGIVER_STRAIN_IDIOM so both sides can never drift apart.
+const HURT_TO_IDIOM_FRAGMENT = String.raw`it\s+hurts?\s+(?:me|us|him|her|them)\s+to\s+(?!the\b|a\b|an\b|no\b|some\b|any\b|this\b|that\b|these\b|those\b|my\b|your\b|his\b|her\b|their\b|our\b|its\b)\w+`;
+
+const SAFETY_ORDINARY_TALK = String.raw`(?:husband|wife|partner|mother|mum|mom|father|dad|nana|grandma|grandad|grandpa|granny|brother|sister|son|daughter|friend|neighbou?r|uncle|aunt|he|she|they)\s+(?:died|has died|passed away)|still\s+(?:alive|with us)|(?:garden|gardens|plant|plants|flowers?|tree|trees|bush|bushes|lawn|grass|crops?|roses?)\s+(?:died|dies)|dead on (?:my|her|his|their|your|our) feet|when (?:i|he|she|they|we)\s+(?:die|dies)|(?:my|our|her|his|their)\s+(?:back|knees?|shoulders?|hips?|legs?|arms?|hands?|wrists?|joints?)\s+(?:hurts?|aches?|is sore|are sore|is going|are going|is giving out|are giving out)|it\s+hurts?(?:\s+me)?\s+to\s+(?:lift|bend|kneel|get up|stand|walk|sit|move|carry|dress|wash|roll)|${HURT_TO_IDIOM_FRAGMENT}|it\s+hurts?\s+to\s+ask`;
 
 const SAFETY_DENIALS = String.raw`(?:i'?m|i am|we'?re|we are|they'?re|they are|he'?s|she'?s|he is|she is|it'?s|it is|is|are|am)\s+safe|safe\s+(?:for now|at the moment|for the moment|right now)|not unsafe|nothing dangerous|not in danger|no\s+(?:${SAFETY_DECLINE_TERMS})|(?:hasn'?t|haven'?t|never)\s+fallen|${SAFETY_ORDINARY_TALK}`;
 
 const SAFETY_NEGATIVE = new RegExp(
   String.raw`\b(?:${SAFETY_DENIALS})\b`,
   "i",
+);
+
+/**
+ * The idiom "it hurts me to ask" names the difficulty of asking, not harm done
+ * to anyone, but it contains the positive shape `hurts me`/`hurts her`.
+ * Removing that one clause before the positive rule runs keeps the two sides
+ * from abstaining against each other, so Q5 settles at the explicit-negative
+ * 0.86 instead of the 0.45 that would hold the ask. The pattern is deliberately
+ * the impersonal "it hurts" plus a person pronoun and "to <verb>"; "it hurt
+ * him" and "he hurt me last night" do not match it and still hold.
+ */
+const CAREGIVER_STRAIN_IDIOM = new RegExp(
+  String.raw`\b(?:${HURT_TO_IDIOM_FRAGMENT})\b`,
+  "gi",
 );
 
 // Q6 — familiar faces
@@ -399,7 +437,10 @@ function answerFor(
     case "Q4":
       return resolveWindow(text);
     case "Q5": {
-      const positiveText = withoutNegatedCareTerms(text);
+      const positiveText = withoutNegatedCareTerms(text).replace(
+        CAREGIVER_STRAIN_IDIOM,
+        " omitted ",
+      );
       return resolveBoolean(
         text,
         SAFETY_POSITIVE,

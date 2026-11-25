@@ -427,3 +427,97 @@ describe("VAL-R2SAFE-005 — a caregiver's own pain is not a disclosure", () => 
     }
   });
 });
+
+/**
+ * VAL-R2SAFE-006 — asking for help is not a disclosure, even when it is hard to
+ * ask.
+ *
+ * "It hurts me to ask for help, but could someone sit with Mum on Saturday?"
+ * is a caregiver sentence this product exists to answer. The narrowed `hurt`
+ * positive (`hurt(?:s|ing)?\s+(?:me|us|him|her|them)`) still matched the
+ * "hurts me"/"hurts her" inside it and held the ask at 0.9. The idiom is
+ * excluded by shape — an impersonal "it hurts" followed by a person pronoun
+ * and "to <verb>", plus the bare "it hurts to ask" — so it settles at the
+ * explicit-negative 0.86 on the ordinary route.
+ *
+ * The shape is what makes it safe: "it hurt him" and "he hurt me last night"
+ * name harm done to a person without that shape, so they keep their YES and
+ * keep holding.
+ */
+const HURT_TO_ASK_IDIOM = [
+  "it hurts me to ask for help, but could someone sit with Mum on Saturday?",
+  "it hurts her to walk to the shops",
+  "it hurts to ask",
+] as const;
+
+/** Harm named without the impersonal "it hurts ... to <verb>" shape. */
+const HARM_WITHOUT_THE_IDIOM = [
+  "it hurt him",
+  "he hurt me last night",
+  // "to the point" is not "to <verb>", so this is not the idiom even though it
+  // starts the same way. It still names harm done to her and still holds.
+  "it hurt her to the point of tears",
+] as const;
+
+describe("VAL-R2SAFE-006 — asking for help is not a disclosure", () => {
+  for (const phrase of HURT_TO_ASK_IDIOM) {
+    it(`answers Q5 NO at the explicit-negative confidence with a slot allowed for "${phrase}"`, async () => {
+      const { result, q5, plan } = await runPipeline(phrase);
+
+      expect(q5.answer, phrase).toBe(false);
+      // 0.86 is EXPLICIT_NEGATIVE_CONFIDENCE: the rule recognised the idiom.
+      // A 0.45 abstention would still hold the ask, and 0.9 was the false
+      // safety hold this fixes.
+      expect(q5.confidence, phrase).toBe(0.86);
+      expect(result.routing.safetyReview, phrase).toBe(false);
+      expect(result.routing.status, phrase).toBe("waiting_coordinator");
+      expect(result.routing.slotConstructionAllowed, phrase).toBe(true);
+      expect(plan.blocked, phrase).toBeNull();
+    });
+  }
+
+  it("still proposes a companion place for the hero idiom ask", async () => {
+    const { plan } = await runPipeline(HURT_TO_ASK_IDIOM[0]);
+
+    expect(plan.blocked).toBeNull();
+    expect(plan.proposals.map((proposal) => proposal.kind)).toContain(
+      "companion",
+    );
+    expect(plan.proposals.length).toBeGreaterThan(0);
+  });
+
+  for (const phrase of HARM_WITHOUT_THE_IDIOM) {
+    it(`still holds harm done to a person without the idiom, "${phrase}"`, async () => {
+      await expectSafetyHold(phrase);
+    });
+  }
+
+  it("still holds a disclosure beside the idiom", async () => {
+    const askText = "it hurts me to ask, but he hurt me last night";
+    const { result, q5, plan } = await runPipeline(askText);
+
+    // The idiom is stripped from the positive text, so the disclosure beside it
+    // keeps its YES; the ordinary-talk side also matches, so the engine
+    // abstains rather than choosing. An abstention is a hold, never a NO.
+    expect(q5.confidence, askText).toBeLessThan(0.6);
+    expect(q5.abstained, askText).toBe(true);
+    expect(result.routing.status, askText).toBe("safety_hold");
+    expect(result.routing.slotConstructionAllowed, askText).toBe(false);
+    expect(plan.proposals, askText).toEqual([]);
+  });
+
+  it("still holds every VAL-R2SAFE-001, 002 and 005 harm form while the idiom stays ordinary", async () => {
+    for (const phrase of [
+      ...SUICIDAL_IDEATION_PHRASES,
+      ...ABUSE_PHRASES,
+      ...DISCLOSURE_COMPOSITES,
+      ...DISCLOSURE_CONTRACTIONS,
+      ...HARM_TO_THE_ANSWERER,
+    ]) {
+      const { q5, result } = await runPipeline(phrase);
+      expect(q5.answer, phrase).toBe(true);
+      expect(q5.confidence, phrase).not.toBe(0.86);
+      expect(result.routing.status, phrase).toBe("safety_hold");
+    }
+  });
+});
