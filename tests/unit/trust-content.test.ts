@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -15,12 +16,15 @@ import {
 } from "@/lib/trust-content";
 import {
   BANNED_CLAIMS,
+  REPORT_CLAIM_FAMILY,
+  REPORT_CLAIM_FAMILY_LABEL,
   REPORT_CLAIM_MESSAGE,
   REPORT_IMPLICATION_CLAIMS,
   REQUIRED_BANNED_CLAIMS,
   claimMessage,
   describeHit,
   scanCopy,
+  scanReportClaims,
 } from "@/server/domain/copy-lint";
 import { NO_REPORT_SENTENCE } from "@/server/domain/holds";
 
@@ -185,6 +189,116 @@ describe("report-implication claims", () => {
         (hit) => hit.claim,
       ),
     ).toContain("a report was submitted");
+  });
+});
+
+/**
+ * VAL-R2COPY-001 — the round-2 audit planted eight paraphrases that the
+ * literal list passed, and three negated denials that must stay legal.
+ *
+ * The rule is a family, not a phrase: `REPORT_CLAIM_FAMILY` is the one place a
+ * future subject, verb, agency or harm object is added. The tests below walk
+ * those lists, so a word that is added without a matching frame fails here
+ * rather than shipping as another blind spot. The scan itself is unchanged:
+ * every `.ts`, `.tsx` and `.md` file under `src` plus `README.md`, minus the
+ * definitions file — 204 files and zero claims when this test was written.
+ */
+const REPORT_PARAPHRASES = [
+  "We've reported this to the authorities.",
+  "We called Adult Protective Services.",
+  "We let the police know.",
+  "CPS has been contacted.",
+  "Grace reported the abuse.",
+  "This was reported to the county.",
+  "We alerted social services.",
+  "CPS has been notified.",
+] as const;
+
+const REPORT_DENIALS = [
+  // The three the audit named, one per family frame.
+  "We did not report this.",
+  "Nothing was reported to anyone.",
+  "The app does not contact the authorities.",
+  // The same denials in the other frames, so the gap cannot quietly widen.
+  "We did not call the police.",
+  "This was never reported to the county.",
+  "A report was never filed.",
+  "The police were not notified.",
+] as const;
+
+describe("report-claim family (VAL-R2COPY-001)", () => {
+  it("fails on each planted paraphrase and names the file, line and rule", () => {
+    for (const sentence of REPORT_PARAPHRASES) {
+      const hit = scanCopy(sentence)[0];
+      expect(hit, sentence).toBeDefined();
+      if (!hit) continue;
+
+      expect(hit.claim, sentence).toBe(REPORT_CLAIM_FAMILY_LABEL);
+      expect(describeHit("src/planted.tsx", hit), sentence).toMatch(
+        /^src\/planted\.tsx:1:\d+ — ".+" \(report claim\)$/,
+      );
+      expect(claimMessage(hit.claim), sentence).toBe(REPORT_CLAIM_MESSAGE);
+      expect(scanReportClaims(sentence), sentence).toHaveLength(1);
+    }
+  });
+
+  it("keeps every negated denial legal", () => {
+    for (const sentence of REPORT_DENIALS) {
+      expect(scanCopy(sentence), sentence).toEqual([]);
+      expect(scanReportClaims(sentence), sentence).toEqual([]);
+    }
+  });
+
+  it("keeps every subject in the family live", () => {
+    for (const subject of REPORT_CLAIM_FAMILY.subjects) {
+      const sentence = `${subject.charAt(0).toUpperCase()}${subject.slice(1)} reported the abuse.`;
+      expect(scanReportClaims(sentence), sentence).toHaveLength(1);
+    }
+  });
+
+  it("keeps every agency in the family live", () => {
+    for (const agency of REPORT_CLAIM_FAMILY.agencies) {
+      expect(scanReportClaims(`We called ${agency}.`), agency).toHaveLength(1);
+    }
+  });
+
+  it("keeps every verb in the family live", () => {
+    for (const verb of REPORT_CLAIM_FAMILY.reportVerbs) {
+      expect(scanReportClaims(`We ${verb} the abuse.`), verb).toHaveLength(1);
+    }
+    for (const verb of REPORT_CLAIM_FAMILY.agencyVerbs) {
+      expect(scanReportClaims(`We ${verb} the police.`), verb).toHaveLength(1);
+    }
+  });
+
+  it("keeps every named harm in the family live", () => {
+    for (const object of REPORT_CLAIM_FAMILY.harmObjects) {
+      expect(scanReportClaims(`We reported ${object}.`), object).toHaveLength(1);
+    }
+  });
+
+  it("runs the lint over the whole app and reports its scan count", () => {
+    const tsxCli = resolve(
+      REPO_ROOT,
+      "node_modules",
+      "tsx",
+      "dist",
+      "cli.mjs",
+    );
+    const result = spawnSync(
+      process.execPath,
+      [tsxCli, "scripts/lint-copy.ts"],
+      { cwd: REPO_ROOT, encoding: "utf8" },
+    );
+
+    expect(result.status, result.stderr).toBe(0);
+    const summary =
+      /copy lint: (\d+) file\(s\) scanned, no banned claims\./.exec(
+        result.stdout,
+      );
+    expect(summary, result.stdout).not.toBeNull();
+    // A collector that silently scans nothing must not read as a clean app.
+    expect(Number(summary?.[1] ?? 0)).toBeGreaterThanOrEqual(200);
   });
 });
 
