@@ -39,6 +39,13 @@ const CONTRADICTORY_MEAL_ASK =
 const SAFETY_ASK =
   "She fell last week and I am scared she will wander out of the house.";
 
+// VAL-R2SAFE-001: a plain disclosure of suicidal ideation from the round-2
+// audit, with a request wrapped around it. Before the lexicon fix the receipt
+// showed the safety question answered No at 0.78 and the ask proceeded as an
+// ordinary ask.
+const DISCLOSURE_ASK =
+  "Sometimes I want to die. Could someone sit with Mum this Saturday?";
+
 const CARE_ASK = "I need help with bathing and remembering her medication.";
 
 const EVIDENCE_DIR = path.join(
@@ -401,6 +408,40 @@ test.describe("VAL-DECIDE-001, VAL-DECIDE-003, VAL-DECIDE-004, VAL-DECIDE-006 an
     expect(await countSlots(db, created.askId)).toBe(0);
 
     await shot(page, "trail-safety-hold");
+    await context.close();
+  });
+
+  test("VAL-R2SAFE-001 — holds a plain disclosure and never prints a safety answer of No", async ({
+    browser,
+  }) => {
+    const { context, page } = await signIn(browser, seedAccessTokens.marta);
+    const created = await createAsk(context, DISCLOSURE_ASK);
+
+    await page.goto(`/ask/${created.askId}`);
+
+    const banner = page.getByTestId("safety-banner");
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText("Safety comes first.");
+    await expect(banner).toContainText("Next step: Grace calls you today");
+    await expect(banner).toContainText(
+      "No time is offered until a person has spoken with you.",
+    );
+    await expect(page.getByTestId("ask-status")).toContainText(
+      "Grace will call you today",
+    );
+
+    // The receipt must never carry a "self-harm, or harm? — No" row. The
+    // safety row is answered Yes, not abstained, and never the 0.86
+    // explicit-negative confidence the bare "safe" rule produced.
+    const safetyRow = page.getByTestId("decision-Q5");
+    await expect(safetyRow).toBeVisible();
+    await expect(safetyRow.getByTestId("decision-answer")).toHaveText("Yes");
+    await expect(safetyRow).not.toContainText("86%");
+
+    expect(await readAskStatus(db, created.askId)).toBe("safety_hold");
+    expect(await countSlots(db, created.askId)).toBe(0);
+
+    await shot(page, "trail-safety-disclosure");
     await context.close();
   });
 

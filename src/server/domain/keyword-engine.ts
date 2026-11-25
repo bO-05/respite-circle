@@ -109,10 +109,31 @@ const WINDOW_CLOCK =
 // or refused food, a door found open, burns, and "doesn't want to be here".
 // A stroke is only immediate when the ask says it is happening or just
 // happened; "since the stroke" is history, not an emergency.
+//
+// Round 2: a plain disclosure is a disclosure. Suicidal ideation ("Sometimes I
+// want to die", "I wish I wasn't alive"), abuse ("my husband hits me", "she
+// threatened me", "I'm scared of him") and "I'm not safe at home" are named in
+// the words families use. A phrase that only declines risk belongs on the
+// negative side, which is why the bare word "safe" is gone from it: it inverted
+// the plainest safety sentence in the set. Never remove a disclosure term to
+// clear a false hold; add the declining form and keep both tested.
 const SAFETY_POSITIVE =
-  /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt|hurting|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|gone missing|missing|got lost|locked out|abuse|abusive|neglect|chest pain|seizure|overdose|suicid(?:e|al)|self.?harm|can'?t breathe|bleeding|police|aggressive|violent|left the stove|stove on|fire|leav(?:e|es|ing) the (house|home|flat|apartment)|left the (house|home)|out of the house at night|found (her|him|them)[^.;]{0,24}(streets?|blocks?|miles?) away|hiding (her|his|their) (medication|meds|medicine|pills|tablets)|refus(?:es|ing) to eat|won'?t eat|stopped eating|not eating|doesn'?t want to be here|don'?t want to be here|no reason to live|better off dead|front door (wide )?open|coat gone|burn(?:s|ed|ing)?|(?:having|had|signs? of|suspected|possible) (?:a )?stroke|stroke (?:last night|this morning|today))\b/i;
-const SAFETY_NEGATIVE =
-  /\b(no falls?|hasn'?t fallen|never fallen|not unsafe|no danger|safe|no injur(?:y|ies)|nothing dangerous|not in danger|no emergency)\b/i;
+  /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt|hurting|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|gone missing|missing|got lost|locked out|abuse|abusive|neglect|chest pain|seizure|overdose|suicid(?:e|al)|self.?harm|can'?t breathe|bleeding|police|aggressive|violent|left the stove|stove on|fire|leav(?:e|es|ing) the (house|home|flat|apartment)|left the (house|home)|out of the house at night|found (her|him|them)[^.;]{0,24}(streets?|blocks?|miles?) away|hiding (her|his|their) (medication|meds|medicine|pills|tablets)|refus(?:es|ing) to eat|won'?t eat|stopped eating|not eating|doesn'?t want to be here|don'?t want to be here|no reason to live|better off dead|front door (wide )?open|coat gone|burn(?:s|ed|ing)?|(?:having|had|signs? of|suspected|possible) (?:a )?stroke|stroke (?:last night|this morning|today)|want(?:s|ed)? to die|die|alive|wish (?:i|he|she|they) (?:was|were)n'?t alive|hit(?:s|ting)? me|threaten(?:s|ed|ing)?|scared of (?:him|her|them)|(?:not|never)\s+(?:felt\s+|feel(?:ing)?\s+)?safe|(?:don'?t|doesn'?t|didn'?t)\s+(?:feel|feeling)\s+safe|(?:isn'?t|aren'?t|wasn'?t|weren'?t)\s+safe)\b/i;
+
+// The risk words a denial may name. `SAFETY_NEGATIVE` and `NEGATED_CARE_TERM`
+// are both built from this one fragment, so a declining phrase and the strip
+// that removes it before the positive rule runs can never drift apart.
+const SAFETY_DECLINE_TERMS = String.raw`falls?|fallen|falling|injur(?:y|ed|ies)|hurt|unsafe|danger|dangerous|emergency`;
+
+// A genuine denial: the person says they are safe, or names no risk. It is
+// deliberately not "safe" on its own — "I'm not safe at home" contains the
+// word and denies nothing.
+const SAFETY_DENIALS = String.raw`(?:i'?m|i am|we'?re|we are|they'?re|they are|he'?s|she'?s|he is|she is|it'?s|it is|is|are|am)\s+safe|safe\s+(?:for now|at the moment|for the moment|right now)|not unsafe|nothing dangerous|not in danger|no\s+(?:${SAFETY_DECLINE_TERMS})|(?:hasn'?t|haven'?t|never)\s+fallen`;
+
+const SAFETY_NEGATIVE = new RegExp(
+  String.raw`\b(?:${SAFETY_DENIALS})\b`,
+  "i",
+);
 
 // Q6 — familiar faces
 const FAMILIAR_POSITIVE =
@@ -163,7 +184,7 @@ const PERSONAL_CARE_NEGATIVE = new RegExp(
  * but she wanders at night" still leaves the wandering signal intact.
  */
 const NEGATED_CARE_TERM = new RegExp(
-  String.raw`\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without|hasn'?t|haven'?t)\b[^.;]{0,32}?\b(?:falls?|fallen|falling|injur(?:y|ed|ies)|hurt|unsafe|danger|emergency|medication|medications|meds|medicine|bathing|toileting|lifting|transfers?|dressing|feeding|personal care|walking|moving|mobility|stairs|steps|${WEAK_CARE_WORDS})\b`,
+  String.raw`\b(?:no|not|never|doesn'?t|does not|doesnt|don'?t|do not|without|hasn'?t|haven'?t)\b[^.;]{0,32}?\b(?:${SAFETY_DECLINE_TERMS}|medication|medications|meds|medicine|bathing|toileting|lifting|transfers?|dressing|feeding|personal care|walking|moving|mobility|stairs|steps|${WEAK_CARE_WORDS})\b`,
   "gi",
 );
 
