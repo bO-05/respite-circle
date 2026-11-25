@@ -23,11 +23,12 @@ export const dynamic = "force-dynamic";
  * the instant it was written. It is in-app only: no email, no SMS, no board
  * post, no broadcast. The family reads it the first time they open their link.
  *
- * The same screen hands over the sign-in link itself. Every person has one
+ * The same screen hands over the sign-in link itself. Every family has one
  * already, and the coordinator is the one who passes it on, the way they
- * already reach that person. The list is read through the same desk role and
- * church scope as the composer, so a caregiver or another church's session
- * never sees a token.
+ * already reach that person. The list is scoped to the active families of the
+ * viewer's own church — never the desk's own link, never a volunteer's — and is
+ * read through the same desk role and church scope as the composer, so a
+ * caregiver or another church's session never sees a token.
  */
 export default async function DeskInvitePage() {
   const { person, session } = await requirePage(DESK_ROLES);

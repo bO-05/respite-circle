@@ -50,7 +50,11 @@ export const seedIds = {
   },
 } as const;
 
-/** Seeded one-time access tokens. Fictional demo access, never real credentials. */
+/**
+ * Seeded personal access tokens. Fictional demo access, never real
+ * credentials. Each one is a reusable sign-in link for exactly one fictional
+ * person: the entry route never consumes it, so the link keeps working.
+ */
 export const seedAccessTokens = {
   grace: "grace-coordinator-4b7e",
   daniel: "daniel-deputy-5c2f",

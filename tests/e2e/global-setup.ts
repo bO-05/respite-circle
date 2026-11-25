@@ -8,7 +8,7 @@ import { assertE2eTarget } from "../../src/db/target";
 import { E2E_BASE_URL } from "./helpers/e2e-env";
 
 /**
- * Playwright's one-time fixture.
+ * Playwright's suite fixture.
  *
  * The ask spec writes asks, so the suite runs against the isolated
  * `respite_circle_e2e` database — the same database the integration suite uses

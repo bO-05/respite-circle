@@ -223,8 +223,8 @@ export async function constructDraftSlots(
   }
 
   const recorded = await database.transaction(async (tx) => {
-    // Claim the one-time construction marker before writing anything. A second
-    // run (or a concurrent one) matches no row and writes nothing.
+    // Claim the construction marker before writing anything. A second run (or
+    // a concurrent one) matches no row and writes nothing.
     const marked = await tx
       .update(ask)
       .set({ slotsConstructedAt: now })

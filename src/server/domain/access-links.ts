@@ -9,6 +9,12 @@ import type { Role } from "@/server/auth/policy";
  * person into the single URL that signs that person in, and describes where the
  * link lands.
  *
+ * The link is personal and reusable. It is not used up by the first sign-in:
+ * the entry route never consumes the token, so the same URL signs the same
+ * person in again in another browser, tomorrow, or next month. The words here
+ * say that plainly, and no sentence may describe a working link as if it
+ * expired after one use.
+ *
  * The link is copied and handed over by a person. Nothing here sends an email,
  * an SMS, or a notification, and no copy may imply that it does.
  */
@@ -20,6 +26,21 @@ import type { Role } from "@/server/auth/policy";
  */
 export const ACCESS_LINK_SEND_LINE =
   "You send this link yourself, the way you already reach them — a text message, a printed note, or a phone call.";
+
+/**
+ * The warning above the list. It names the links as demo credentials, says the
+ * link belongs to one person but keeps working, and states the consequence in
+ * the plainest words available: a holder is signed in as that person.
+ */
+export const ACCESS_LINK_DEMO_WARNING =
+  "These are demo sign-in links for a fictional church. Each link is personal to that person and can be used more than once — anyone who holds it signs in as that person.";
+
+/**
+ * The line under the list. It names the page's scope (families, not the whole
+ * church) and repeats the one duty the coordinator has: hand it to that person.
+ */
+export const ACCESS_LINK_SCOPE_LINE =
+  "Each family in your church has one link of their own. It is the only thing that signs them in, so give it to that person and no one else.";
 
 /**
  * Where a copied link points when the request carries no usable host. The app

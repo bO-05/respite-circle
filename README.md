@@ -33,7 +33,7 @@ demo data is fictional; nothing here is a real congregation's record. See
 |---|---|---|
 | `/` and `/how-it-works`, `/never`, `/promises` | public | Explains the loop, the human gate, the refusals, and the church's promises. |
 | `/calibration` | public | Shows the measured typed-decision results, engine, model, date, and any failing cases. |
-| `/demo` | demo mode only | Lists one-time access links for each fictional role. |
+| `/demo` | demo mode only | Lists personal sign-in links for each fictional role. |
 | `/ask`, `/ask/[id]` | caregiver | Own-words intake with optional dictation, a verbatim receipt, and the decision trail. |
 | `/care` | caregiver | Covered times and the one human confirmation for each. |
 | `/desk` and its sub-pages | coordinator, deputy | Queue, draft slots, exclusion reasons, policy, sessions, invite, coverage watch, audit, metrics. |
@@ -87,8 +87,9 @@ npm run dev
 ```
 
 Open <http://localhost:3130>. With `RC_DEMO_MODE=true`, `/demo` lists the
-one-time role links; each link signs in one fictional person and lands on that
-role's home.
+personal role links; each link signs in one fictional person and lands on that
+role's home. A link is not used up by the first sign-in: the same URL keeps
+working in another browser or another week.
 
 On macOS or Linux, use `cp .env.example .env.local` and
 `export RC_SEED_ALLOW_REMOTE=1` instead.
@@ -442,7 +443,7 @@ npx --yes vercel@latest promote <previous-deployment-url>
 
 ```text
 Browser — caregiver / coordinator / deputy / volunteer
-   │  signed, HTTP-only session cookie from a one-time access link (no passwords)
+   │  signed, HTTP-only session cookie from a personal access link (no passwords)
    ▼
 Next.js 16 App Router — server components, server actions, route handlers
    ├─ src/server/domain     pure TypeScript: ask state machine, slot construction,
@@ -452,9 +453,13 @@ Next.js 16 App Router — server components, server actions, route handlers
    └─ src/db                Drizzle ORM + postgres.js → Neon Postgres 18
 ```
 
-- **Access.** `/enter/<token>` verifies a seeded one-time token and sets
+- **Access.** `/enter/<token>` verifies a seeded personal token and sets
   `rc_session`; every read and write resolves the session and role on the
-  server. Hiding a control is never the enforcement.
+  server. Hiding a control is never the enforcement. The token is a bearer
+  credential and it is reusable — the same link signs that person in again —
+  so the desk's links page carries a plain demo warning and lists only the
+  families the coordinator may invite, never the desk's own link or another
+  role's.
 - **The AI contract.** `decide()` returns answers for Q1–Q9 only: enums,
   booleans, bounded numbers, confidence, model, latency, and a digest.
   Confidence below 0.60 abstains; Q5 (safety) and Q9 (personal care) are sampled

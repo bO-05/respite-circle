@@ -13,7 +13,7 @@ import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
 /**
  * VAL-CONFIRM-005 and VAL-CROSS-001 on the real surface.
  *
- * The whole loop runs through the real UI and server: Marta opens her one-time
+ * The whole loop runs through the real UI and server: Marta opens her personal
  * access link and writes a new ask, Grace publishes it from the desk, Ruth
  * claims the companion time from the congregation board, Grace confirms the
  * claim, Marta reads the one human confirmation, Ruth closes the time from
@@ -25,7 +25,7 @@ import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
  * keeps them byte-identical.
  *
  * The invite composer is a later feature; this spec enters at Marta's seeded
- * one-time link, which is the invite the coordinator sends. Every other step is
+ * personal link, which is the invite the coordinator sends. Every other step is
  * the real route or form.
  */
 
@@ -144,7 +144,7 @@ test.describe.serial("VAL-CONFIRM-005 and VAL-CROSS-001 — the loop closes", ()
     test.setTimeout(600_000);
     db = await openE2eDatabase();
 
-    // Marta arrives by her one-time link and writes her own words.
+    // Marta arrives by her personal link and writes her own words.
     const marta = await signIn(browser, seedAccessTokens.marta);
     await marta.page.goto("/ask");
     await marta.page.getByLabel(/Tell us what a hard week looks like/i).fill(

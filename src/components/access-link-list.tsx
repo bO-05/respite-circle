@@ -1,6 +1,8 @@
 import { ROLE_LABEL } from "@/server/auth/policy";
 import {
+  ACCESS_LINK_DEMO_WARNING,
   ACCESS_LINK_HOME_LINE,
+  ACCESS_LINK_SCOPE_LINE,
   ACCESS_LINK_SEND_LINE,
   accessLinkUrl,
 } from "@/server/domain/access-links";
@@ -8,13 +10,18 @@ import type { ChurchAccessLink } from "@/server/repositories/access-links";
 import { AccessLinkCopy } from "./access-link-copy";
 
 /**
- * The invite screen's list of sign-in links.
+ * The invite screen's list of sign-in links for the families the desk may
+ * invite.
  *
- * One row per active person in the coordinator's own church, each with the
- * link that person already holds and a copy control. The links are built on the
- * server from the request's own origin, so a copied URL opens the same app the
- * coordinator is reading, and the page carries one plain sentence about who
- * sends the link and how.
+ * One row per active family in the coordinator's own church, each with the
+ * link that person already holds and a copy control. The list is scoped by the
+ * repository: never the desk's own link, never a volunteer's, never another
+ * church's. The links are built on the server from the request's own origin, so
+ * a copied URL opens the same app the coordinator is reading.
+ *
+ * The warning says the three things a holder needs to know — these are demo
+ * links, the link is personal and keeps working, and a holder is signed in as
+ * that person — and the line under the list names the page's scope.
  */
 export function AccessLinkList({
   links,
@@ -30,11 +37,17 @@ export function AccessLinkList({
       className="rounded-lg border border-line bg-surface p-5"
     >
       <h2 id="access-links-heading" className="font-serif text-2xl text-ink">
-        Sign-in links for your church
+        Sign-in links for the families you invite
       </h2>
       <p
+        data-testid="access-links-warning"
+        className="mt-3 max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
+      >
+        {ACCESS_LINK_DEMO_WARNING}
+      </p>
+      <p
         data-testid="access-links-send-line"
-        className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted"
+        className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted"
       >
         {ACCESS_LINK_SEND_LINE}
       </p>
@@ -44,8 +57,8 @@ export function AccessLinkList({
           data-testid="access-links-empty"
           className="mt-4 max-w-prose text-base leading-relaxed text-ink-muted"
         >
-          No one in your church has a link yet. A person adds the first record,
-          and the link appears here.
+          No family in your church has a link yet. A person adds the first
+          family record, and the link appears here.
         </p>
       ) : (
         <ul className="mt-4 flex flex-col gap-4">
@@ -84,9 +97,11 @@ export function AccessLinkList({
         </ul>
       )}
 
-      <p className="mt-4 max-w-prose text-base leading-relaxed text-ink-muted">
-        Every person in your church has one link of their own. It is the only
-        thing that signs them in, so give it to that person and no one else.
+      <p
+        data-testid="access-links-scope-line"
+        className="mt-4 max-w-prose text-base leading-relaxed text-ink-muted"
+      >
+        {ACCESS_LINK_SCOPE_LINE}
       </p>
     </section>
   );

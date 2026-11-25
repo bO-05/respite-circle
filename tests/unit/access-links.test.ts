@@ -1,7 +1,11 @@
+import { readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  ACCESS_LINK_DEMO_WARNING,
   ACCESS_LINK_FALLBACK_ORIGIN,
   ACCESS_LINK_HOME_LINE,
+  ACCESS_LINK_SCOPE_LINE,
   ACCESS_LINK_SEND_LINE,
   accessLinkPath,
   accessLinkUrl,
@@ -10,12 +14,17 @@ import {
 import { ROLES } from "@/server/auth/policy";
 
 /**
- * VAL-AUDITFIX-014, the pure half.
+ * VAL-AUDITFIX-014 and VAL-R2PROM-007, the pure half.
  *
  * The token already exists on the person row; this module only turns it into
  * the one URL that signs that person in, and decides which origin the copied
  * URL names. It never mints a token, never mints a second link, and never
  * promises the app will send anything.
+ *
+ * VAL-R2PROM-007 adds the words. The page must warn that these are demo links
+ * a holder can use as that person, say the link is personal and keeps working,
+ * and never call a reusable link one-time or single-use — in this module, in
+ * the rest of `src`, or in the README.
  */
 
 const MARTA_TOKEN = "marta-caregiver-9a1d";
@@ -128,6 +137,41 @@ describe("the sentence a coordinator reads", () => {
   });
 });
 
+describe("the demo warning and the scope line", () => {
+  it("says the links are demo links and that a holder is signed in as that person", () => {
+    expect(ACCESS_LINK_DEMO_WARNING).toMatch(/demo/i);
+    expect(ACCESS_LINK_DEMO_WARNING).toMatch(
+      /anyone who holds it signs in as that person/i,
+    );
+  });
+
+  it("calls the link personal and says it can be used more than once", () => {
+    expect(ACCESS_LINK_DEMO_WARNING).toMatch(/personal/i);
+    expect(ACCESS_LINK_DEMO_WARNING).toMatch(/more than once/i);
+    expect(ACCESS_LINK_DEMO_WARNING).not.toMatch(/one[- ]time|single[- ]use/i);
+  });
+
+  it("names families as the scope of the page", () => {
+    expect(ACCESS_LINK_SCOPE_LINE).toMatch(/each family/i);
+    expect(ACCESS_LINK_SCOPE_LINE).toMatch(/give it to that person/i);
+    expect(ACCESS_LINK_SCOPE_LINE).not.toMatch(/one[- ]time|single[- ]use/i);
+  });
+
+  it("never says one-time or single-use about a link anywhere in src or the README", () => {
+    const root = process.cwd();
+    const files = [
+      ...sourceFiles(path.join(root, "src"), root),
+      path.join(root, "README.md"),
+    ];
+
+    const offenders = files.filter((file) =>
+      /one-time|single-use|single use/i.test(readFileSync(file, "utf8")),
+    );
+
+    expect(offenders.map((file) => path.relative(root, file))).toEqual([]);
+  });
+});
+
 describe("where each link lands", () => {
   it("names every role's own home, never another role's", () => {
     for (const role of ROLES) {
@@ -141,3 +185,19 @@ describe("where each link lands", () => {
     expect(ACCESS_LINK_HOME_LINE.pastor).toMatch(/numbers/);
   });
 });
+
+/** Every `.ts`/`.tsx` file under `dir`, so the copy scan cannot miss a route. */
+function sourceFiles(dir: string, root: string): string[] {
+  const files: string[] = [];
+
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...sourceFiles(full, root));
+    } else if (/\.(ts|tsx)$/.test(entry.name)) {
+      files.push(full);
+    }
+  }
+
+  return files;
+}

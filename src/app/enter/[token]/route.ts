@@ -10,9 +10,11 @@ import {
 } from "@/server/auth/session";
 
 /**
- * One-time access link. The token is a bearer credential stored on the person
- * row; opening the link signs exactly that person in and lands on the home for
- * their single session role. No password, no email, no third-party auth.
+ * Personal access link. The token is a bearer credential stored on the person
+ * row, and it is reusable: opening the link signs exactly that person in and
+ * lands on the home for their single session role, and the same link signs
+ * them in again in another browser or another week. Nothing is consumed,
+ * rotated, or expired here. No password, no email, no third-party auth.
  */
 
 export const dynamic = "force-dynamic";
