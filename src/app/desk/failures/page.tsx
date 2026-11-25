@@ -18,18 +18,21 @@ export const dynamic = "force-dynamic";
  * This page sends nothing. A card may close a time and write the church's
  * proof that zero messages were sent; it never creates an email, a text, or an
  * outbox row.
+ *
+ * The card names the coordinator responsible for the family, read from the
+ * case by the repository. It never names the person looking at the page: a
+ * deputy covering the desk must see the same name the lead sees.
  */
 export default async function CoverageWatchPage() {
   const { person, session } = await requirePage(DESK_ROLES);
   const items = await listCoverageWatch(session);
-  const coordinatorName = `${person.firstName} ${person.lastName}`;
 
   return (
     <RolePage
       person={person}
       role={session.role}
       title="Coverage watch"
-      lead={`Times that nobody has taken yet. ${coordinatorName} makes the call; the app sends nothing.`}
+      lead="Times that nobody has taken yet. A person makes the call; the app sends nothing."
     >
       {items.length === 0 ? (
         <section
@@ -78,10 +81,7 @@ export default async function CoverageWatchPage() {
           >
             {items.map((item) => (
               <li key={item.slotId}>
-                <CoverageCard
-                  item={item}
-                  coordinatorName={coordinatorName}
-                />
+                <CoverageCard item={item} />
                 <p className="mt-2 px-1 text-base text-ink-muted">
                   <Link
                     href={`/desk/slot/${item.slotId}`}

@@ -215,16 +215,23 @@ export const COVERAGE_SILENCE_PROMISE =
 /**
  * The lead line on a time that nobody has taken.
  *
- * The coordinator is named from the signed-in desk session, never from the
- * seed: a deputy covering the desk is the person who will actually pick up the
- * phone, so the deputy's name belongs on the card. The family's first name and
- * the product's central claim stay in the same sentence.
+ * It names the coordinator responsible for that family, read from the case —
+ * the person who approved the ask, or the person who published the time when
+ * the ask has no approver yet. It is never the signed-in viewer: the deputy
+ * covering the desk must not see their own name where the card means the lead,
+ * and every viewer of one case must read the same sentence. The caller cannot
+ * pass a session name because the only name input is the resolved responsible
+ * coordinator; `null` says plainly that none is assigned and names nobody.
  */
 export function coverageCallLeadLine(input: {
-  coordinatorName: string;
+  responsibleCoordinatorName: string | null;
   caregiverFirstName: string;
 }): string {
-  return `${input.coordinatorName} calls ${input.caregiverFirstName}; the app sends nothing.`;
+  const name = input.responsibleCoordinatorName?.trim();
+  if (!name) {
+    return "No coordinator is assigned to this family yet; the app sends nothing.";
+  }
+  return `${name} calls ${input.caregiverFirstName}; the app sends nothing.`;
 }
 
 /**

@@ -188,7 +188,7 @@ test.describe("the failure path", () => {
     await david.context.close();
   });
 
-  test("VAL-FAILURE-006 — the failure card names whoever holds the desk, and always offers a way through", async ({
+  test("VAL-FAILURE-006 / VAL-R2PROM-006 — the failure card names the responsible coordinator, not the viewer, and always offers a way through", async ({
     browser,
     request,
   }) => {
@@ -196,8 +196,8 @@ test.describe("the failure path", () => {
 
     const cardSelector = `[data-testid="coverage-card"][data-slot-id="${DEMO_IDS.slotFailure}"]`;
 
-    // Grace holds the desk, so the card names Grace — read from the session,
-    // not from a fixed string in the component.
+    // Grace approved this family's ask, so the card names Grace. The name is
+    // read from the case, not from the fixed string in the component.
     const grace = await signIn(browser, seedAccessTokens.grace);
     await grace.page.goto("/desk/failures");
     const graceCard = grace.page.locator(cardSelector);
@@ -205,11 +205,16 @@ test.describe("the failure path", () => {
     await expect(graceCard.getByTestId("coverage-lead")).toHaveText(
       "Grace Whitfield calls David; the app sends nothing.",
     );
+    // The page lead is role-neutral: it names nobody, so it cannot contradict
+    // the card under a deputy or a second coordinator.
     await expect(
       grace.page.getByText(
-        "Grace Whitfield makes the call; the app sends nothing.",
+        "Times that nobody has taken yet. A person makes the call; the app sends nothing.",
       ),
     ).toBeVisible();
+    await expect(
+      grace.page.getByText("Grace Whitfield makes the call", { exact: false }),
+    ).toHaveCount(0);
 
     // The lead line sits alongside the family, the window, the time open, and
     // the live zero-message line the card already carried.
@@ -247,22 +252,35 @@ test.describe("the failure path", () => {
       grace.page.locator(`a[href="/desk/slot/${DEMO_IDS.slotFailure}"]`),
     ).toHaveText("Open the full time review");
 
-    // A deputy covering the desk sees the deputy's own name on the same card.
+    // A deputy covering the desk reads the same responsible name on the same
+    // card. Their own name must not replace Grace's: the card names who is
+    // responsible for this family, not who is looking (VAL-R2PROM-006).
     const daniel = await signIn(browser, seedAccessTokens.daniel);
     await daniel.page.goto("/desk/failures");
     const danielCard = daniel.page.locator(cardSelector);
     await expect(danielCard).toBeVisible();
     await expect(danielCard.getByTestId("coverage-lead")).toHaveText(
-      "Daniel Okafor calls David; the app sends nothing.",
+      "Grace Whitfield calls David; the app sends nothing.",
     );
     await expect(danielCard.getByTestId("coverage-lead")).not.toContainText(
-      "Grace",
+      "Daniel",
     );
     await expect(
       daniel.page.getByText(
-        "Daniel Okafor makes the call; the app sends nothing.",
+        "Times that nobody has taken yet. A person makes the call; the app sends nothing.",
       ),
     ).toBeVisible();
+    await expect(
+      daniel.page.getByText("Daniel Okafor makes the call", { exact: false }),
+    ).toHaveCount(0);
+
+    // The slot review renders the same card, so it names the same person.
+    await daniel.page.goto(`/desk/slot/${DEMO_IDS.slotFailure}`);
+    await expect(
+      daniel.page
+        .locator(`[data-testid="coverage-card"][data-slot-id="${DEMO_IDS.slotFailure}"]`)
+        .getByTestId("coverage-lead"),
+    ).toHaveText("Grace Whitfield calls David; the app sends nothing.");
 
     // The caregiver's surfaces are untouched: no desk name, no card line.
     const david = await signIn(browser, seedAccessTokens.david);

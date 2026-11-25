@@ -112,6 +112,15 @@ export type CoverageWatchItem = {
   timeZone: string;
   caregiverFirstName: string;
   careRecipientFirstName: string;
+  /**
+   * The coordinator accountable for this family, read from the case and never
+   * from the session that renders it. Precedence: the person who approved the
+   * ask, then the person who published this specific time (a held draft can be
+   * resolved before the ask's approval). `null` means no human ever took the
+   * case — a time the signed low-risk policy published by itself — and the card
+   * says so in plain words instead of naming the viewer.
+   */
+  responsibleCoordinatorName: string | null;
   /** The instant this time was published to the board. */
   openSince: Date;
   openForMs: number;
@@ -242,6 +251,15 @@ function toCallRow(row: {
   };
 }
 
+/** A joined person's display name, or null when the left join matched nobody. */
+function joinedPersonName(
+  firstName: string | null,
+  lastName: string | null,
+): string | null {
+  if (!firstName || !lastName) return null;
+  return `${firstName} ${lastName}`;
+}
+
 function buildItem(input: {
   row: {
     slotId: string;
@@ -257,6 +275,10 @@ function buildItem(input: {
     careRecipientFirstName: string;
     approvedAt: Date | null;
     createdAt: Date;
+    askApproverFirstName: string | null;
+    askApproverLastName: string | null;
+    slotApproverFirstName: string | null;
+    slotApproverLastName: string | null;
   };
   calls: CoverageCallRow[];
   reofferCount: number;
@@ -276,6 +298,18 @@ function buildItem(input: {
     openAfterHours: input.openAfterHours,
   });
 
+  // The family-level approval is the assignment that belongs to the person;
+  // the publication decision covers a time published before that approval.
+  const responsibleCoordinatorName =
+    joinedPersonName(
+      input.row.askApproverFirstName,
+      input.row.askApproverLastName,
+    ) ??
+    joinedPersonName(
+      input.row.slotApproverFirstName,
+      input.row.slotApproverLastName,
+    );
+
   return {
     slotId: input.row.slotId,
     askId: input.row.askId,
@@ -291,6 +325,7 @@ function buildItem(input: {
     timeZone: input.row.timeZone,
     caregiverFirstName: input.row.caregiverFirstName,
     careRecipientFirstName: input.row.careRecipientFirstName,
+    responsibleCoordinatorName,
     openSince,
     openForMs: openFor.ms,
     openForLabel: openFor.label,
@@ -342,6 +377,8 @@ export async function getDeskSlotCoverage(
 
   const caregiverPerson = alias(person, "coverage_caregiver");
   const coordinatorPerson = alias(person, "coverage_coordinator");
+  const askApproverPerson = alias(person, "coverage_ask_approver");
+  const slotApproverPerson = alias(person, "coverage_slot_approver");
 
   const rows = await database
     .select({
@@ -349,12 +386,30 @@ export async function getDeskSlotCoverage(
       timeZone: church.timezone,
       caregiverFirstName: caregiverPerson.firstName,
       careRecipientFirstName: careRecipient.firstName,
+      askApproverFirstName: askApproverPerson.firstName,
+      askApproverLastName: askApproverPerson.lastName,
+      slotApproverFirstName: slotApproverPerson.firstName,
+      slotApproverLastName: slotApproverPerson.lastName,
     })
     .from(slot)
     .innerJoin(ask, eq(ask.id, slot.askId))
     .innerJoin(church, eq(church.id, slot.churchId))
     .innerJoin(careRecipient, eq(careRecipient.id, ask.careRecipientId))
     .innerJoin(caregiverPerson, eq(caregiverPerson.id, ask.caregiverId))
+    .leftJoin(
+      askApproverPerson,
+      and(
+        eq(askApproverPerson.id, ask.approvedBy),
+        eq(askApproverPerson.churchId, actor.churchId),
+      ),
+    )
+    .leftJoin(
+      slotApproverPerson,
+      and(
+        eq(slotApproverPerson.id, slot.approvedBy),
+        eq(slotApproverPerson.churchId, actor.churchId),
+      ),
+    )
     .where(and(eq(slot.id, slotId), eq(slot.churchId, actor.churchId)))
     .limit(1);
 
@@ -489,6 +544,8 @@ export async function listCoverageWatch(
 
   const caregiverPerson = alias(person, "coverage_caregiver");
   const coordinatorPerson = alias(person, "coverage_coordinator");
+  const askApproverPerson = alias(person, "coverage_ask_approver");
+  const slotApproverPerson = alias(person, "coverage_slot_approver");
 
   const rows = await database
     .select({
@@ -496,12 +553,30 @@ export async function listCoverageWatch(
       timeZone: church.timezone,
       caregiverFirstName: caregiverPerson.firstName,
       careRecipientFirstName: careRecipient.firstName,
+      askApproverFirstName: askApproverPerson.firstName,
+      askApproverLastName: askApproverPerson.lastName,
+      slotApproverFirstName: slotApproverPerson.firstName,
+      slotApproverLastName: slotApproverPerson.lastName,
     })
     .from(slot)
     .innerJoin(ask, eq(ask.id, slot.askId))
     .innerJoin(church, eq(church.id, slot.churchId))
     .innerJoin(careRecipient, eq(careRecipient.id, ask.careRecipientId))
     .innerJoin(caregiverPerson, eq(caregiverPerson.id, ask.caregiverId))
+    .leftJoin(
+      askApproverPerson,
+      and(
+        eq(askApproverPerson.id, ask.approvedBy),
+        eq(askApproverPerson.churchId, actor.churchId),
+      ),
+    )
+    .leftJoin(
+      slotApproverPerson,
+      and(
+        eq(slotApproverPerson.id, slot.approvedBy),
+        eq(slotApproverPerson.churchId, actor.churchId),
+      ),
+    )
     .where(
       and(eq(slot.churchId, actor.churchId), eq(slot.status, "open")),
     )

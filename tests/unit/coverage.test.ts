@@ -413,30 +413,41 @@ describe("closing a time unclaimed", () => {
 });
 
 describe("the call line on the failure card", () => {
-  it("names the person holding the desk, not a fixed seed name", () => {
-    const graceLine = coverageCallLeadLine({
-      coordinatorName: "Grace Whitfield",
+  it("VAL-R2PROM-006 — names the responsible coordinator, never the viewer", () => {
+    const line = coverageCallLeadLine({
+      responsibleCoordinatorName: "Grace Whitfield",
       caregiverFirstName: "Marta",
     });
-    expect(graceLine).toBe(
-      "Grace Whitfield calls Marta; the app sends nothing.",
-    );
+    expect(line).toBe("Grace Whitfield calls Marta; the app sends nothing.");
 
-    // A deputy covering the desk is the person who will actually call, so the
-    // line follows whoever is signed in rather than the seeded coordinator.
-    const danielLine = coverageCallLeadLine({
-      coordinatorName: "Daniel Okafor",
+    // The same case read by the deputy and by a second coordinator produces
+    // the same sentence. The viewer is not an input to this function, so the
+    // only way to put a viewer's name here is to pass them as responsible.
+    const deputyView = coverageCallLeadLine({
+      responsibleCoordinatorName: "Grace Whitfield",
       caregiverFirstName: "Marta",
     });
-    expect(danielLine).toBe(
-      "Daniel Okafor calls Marta; the app sends nothing.",
-    );
-    expect(danielLine).not.toContain("Grace");
+    expect(deputyView).toBe(line);
+    expect(deputyView).not.toContain("Daniel");
+    expect(deputyView).not.toContain("Okafor");
 
-    for (const line of [graceLine, danielLine]) {
-      expect(line).toContain("the app sends nothing");
-      expect(line.toLowerCase()).not.toMatch(GARBAGE_WORDS);
-    }
+    expect(line).toContain("the app sends nothing");
+    expect(line.toLowerCase()).not.toMatch(GARBAGE_WORDS);
+  });
+
+  it("VAL-R2PROM-006 — says plainly that no coordinator is assigned, naming nobody", () => {
+    const line = coverageCallLeadLine({
+      responsibleCoordinatorName: null,
+      caregiverFirstName: "Marta",
+    });
+
+    expect(line).toBe(
+      "No coordinator is assigned to this family yet; the app sends nothing.",
+    );
+    // Nobody is named: not the seeded cast, not a role word standing in for a
+    // person, and not the caregiver as a substitute.
+    expect(line).not.toMatch(/Grace|Whitfield|Daniel|Okafor|Marta/);
+    expect(line.toLowerCase()).not.toMatch(GARBAGE_WORDS);
   });
 });
 

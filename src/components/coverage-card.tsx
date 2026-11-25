@@ -61,10 +61,8 @@ function messageCountNote(count: number, churchCount: number): string {
 
 export function CoverageCard({
   item,
-  coordinatorName,
 }: {
   item: CoverageWatchItem | DeskSlotCoverage;
-  coordinatorName: string;
 }) {
   const timeZone = item.timeZone;
   const count = item.caregiverOutboxCount;
@@ -100,7 +98,7 @@ export function CoverageCard({
             className="text-xl leading-relaxed text-ink"
           >
             {coverageCallLeadLine({
-              coordinatorName,
+              responsibleCoordinatorName: item.responsibleCoordinatorName,
               caregiverFirstName: item.caregiverFirstName,
             })}
           </p>
@@ -307,14 +305,13 @@ export function CoverageCard({
 
 /**
  * The slot page's coverage section. The card is the same one the coverage
- * watch shows, so the desk reads identical evidence from either screen.
+ * watch shows, so the desk reads identical evidence from either screen — the
+ * named coordinator comes from the case, never from the reader.
  */
 export function CoverageSection({
   coverage,
-  coordinatorName,
 }: {
   coverage: DeskSlotCoverage;
-  coordinatorName: string;
 }) {
   return (
     <section
@@ -335,7 +332,7 @@ export function CoverageSection({
           message exists.
         </p>
       </div>
-      <CoverageCard item={coverage} coordinatorName={coordinatorName} />
+      <CoverageCard item={coverage} />
     </section>
   );
 }
