@@ -7,8 +7,9 @@ import { decide } from "@/server/services/decide";
 import { createDeterministicProvider } from "@/server/services/providers";
 
 /**
- * VAL-R2SAFE-001, VAL-R2SAFE-002 and VAL-R2SAFE-003 — the offline safety
- * screen for plain disclosures.
+ * VAL-R2SAFE-001, VAL-R2SAFE-002, VAL-R2SAFE-003 and VAL-R2SAFE-004 — the
+ * offline safety screen for plain disclosures, and the ordinary talk it must
+ * not mistake for one.
  *
  * The deterministic engine is the labelled fallback whenever no model provider
  * is configured or the provider errors, and it is the engine every published
@@ -131,6 +132,35 @@ const DENIAL_PHRASES = [
   "not unsafe",
 ] as const;
 
+/**
+ * VAL-R2SAFE-004 — ordinary talk of death, bereavement and old age. A husband
+ * who died last year, a mother who is 93 and still alive, a frost-bitten
+ * garden, a caregiver dead on her feet, and a family that talked about what
+ * happens when someone dies are all descriptions of life. None of them says
+ * the person answering is in danger, and holding them turns a tired caregiver
+ * away from respite. Each must reach a real NO at the explicit-negative
+ * confidence — not an abstention that holds the ask.
+ */
+const ORDINARY_TALK_OF_DEATH = [
+  "my husband died last year and I haven't slept since",
+  "she is 93 and still alive and loves the garden",
+  "the garden died in the frost",
+  "I'm dead on my feet by Friday",
+  "we talked about what happens when she dies",
+] as const;
+
+/**
+ * The disclosure forms the narrowing kept once bare "die" and bare "alive"
+ * were removed. Each names the disclosure itself rather than the noun or verb,
+ * so each must still hold on its own.
+ */
+const NARROWED_DISCLOSURE_FORMS = [
+  "Sometimes I want to be dead",
+  "I wish I was dead",
+  "I could kill myself",
+  "some days I think about killing myself",
+] as const;
+
 describe("VAL-R2SAFE-001 — suicidal ideation reaches the safety hold", () => {
   for (const phrase of SUICIDAL_IDEATION_PHRASES) {
     it(`answers YES, holds the ask, and proposes nothing for "${phrase}"`, async () => {
@@ -194,6 +224,39 @@ describe("VAL-R2SAFE-003 — a denial reads as a denial, a disclosure never does
     const { q5 } = await runPipeline("I'm not safe at home");
     expect(q5.answer).toBe(true);
     expect(q5.confidence).toBeGreaterThan(0.6);
+  });
+});
+
+describe("VAL-R2SAFE-004 — ordinary talk of death and old age is not a disclosure", () => {
+  for (const phrase of ORDINARY_TALK_OF_DEATH) {
+    it(`answers NO at the explicit-negative confidence on the ordinary route for "${phrase}"`, async () => {
+      const { result, q5, plan } = await runPipeline(phrase);
+
+      expect(q5.answer, phrase).toBe(false);
+      // 0.86 is EXPLICIT_NEGATIVE_CONFIDENCE: the rule recognised ordinary
+      // talk. A default 0.78 would be a guess and a sub-0.60 answer would
+      // abstain into a safety hold, which is the diversion this guards.
+      expect(q5.confidence, phrase).toBe(0.86);
+      expect(result.routing.safetyReview, phrase).toBe(false);
+      expect(result.routing.status, phrase).toBe("waiting_coordinator");
+      expect(result.routing.slotConstructionAllowed, phrase).toBe(true);
+      expect(plan.blocked, phrase).toBeNull();
+    });
+  }
+
+  it("still holds every disclosure phrase beside the ordinary-talk set", async () => {
+    for (const phrase of [...SUICIDAL_IDEATION_PHRASES, ...ABUSE_PHRASES]) {
+      const { q5, result } = await runPipeline(phrase);
+      expect(q5.answer, phrase).toBe(true);
+      expect(q5.confidence, phrase).not.toBe(0.86);
+      expect(result.routing.status, phrase).toBe("safety_hold");
+    }
+  });
+
+  it("still holds the disclosure forms the narrowing kept", async () => {
+    for (const phrase of NARROWED_DISCLOSURE_FORMS) {
+      await expectSafetyHold(phrase);
+    }
   });
 });
 

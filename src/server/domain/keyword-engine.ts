@@ -115,10 +115,18 @@ const WINDOW_CLOCK =
 // threatened me", "I'm scared of him") and "I'm not safe at home" are named in
 // the words families use. A phrase that only declines risk belongs on the
 // negative side, which is why the bare word "safe" is gone from it: it inverted
-// the plainest safety sentence in the set. Never remove a disclosure term to
-// clear a false hold; add the declining form and keep both tested.
+// the plainest safety sentence in the set.
+//
+// The positive side names the disclosure, never the bare noun or verb. Bare
+// "die" and bare "alive" once sat here to carry the disclosure phrases and held
+// ordinary sentences with them ("my husband died last year", "she is 93 and
+// still alive"), which turns a tired caregiver away from respite. The forms
+// below are specific to a disclosure: wanting to die, wishing not to be alive,
+// not wanting to be here, no reason to live, better off dead, killing oneself,
+// and the self-harm terms. Never remove a disclosure term to clear a false
+// hold; narrow the pattern and add the ordinary form to the negative side.
 const SAFETY_POSITIVE =
-  /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt|hurting|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|gone missing|missing|got lost|locked out|abuse|abusive|neglect|chest pain|seizure|overdose|suicid(?:e|al)|self.?harm|can'?t breathe|bleeding|police|aggressive|violent|left the stove|stove on|fire|leav(?:e|es|ing) the (house|home|flat|apartment)|left the (house|home)|out of the house at night|found (her|him|them)[^.;]{0,24}(streets?|blocks?|miles?) away|hiding (her|his|their) (medication|meds|medicine|pills|tablets)|refus(?:es|ing) to eat|won'?t eat|stopped eating|not eating|doesn'?t want to be here|don'?t want to be here|no reason to live|better off dead|front door (wide )?open|coat gone|burn(?:s|ed|ing)?|(?:having|had|signs? of|suspected|possible) (?:a )?stroke|stroke (?:last night|this morning|today)|want(?:s|ed)? to die|die|alive|wish (?:i|he|she|they) (?:was|were)n'?t alive|hit(?:s|ting)? me|threaten(?:s|ed|ing)?|scared of (?:him|her|them)|(?:not|never)\s+(?:felt\s+|feel(?:ing)?\s+)?safe|(?:don'?t|doesn'?t|didn'?t)\s+(?:feel|feeling)\s+safe|(?:isn'?t|aren'?t|wasn'?t|weren'?t)\s+safe)\b/i;
+  /\b(fall|falls|fell|fallen|falling|tripped|emergency|911|unsafe|danger|dangerous|in danger|hurt|hurting|injur(?:y|ed|ies)|wander(?:s|ed|ing)?|went missing|gone missing|missing|got lost|locked out|abuse|abusive|neglect|chest pain|seizure|overdose|suicid(?:e|al)|self.?harm|can'?t breathe|bleeding|police|aggressive|violent|left the stove|stove on|fire|leav(?:e|es|ing) the (house|home|flat|apartment)|left the (house|home)|out of the house at night|found (her|him|them)[^.;]{0,24}(streets?|blocks?|miles?) away|hiding (her|his|their) (medication|meds|medicine|pills|tablets)|refus(?:es|ing) to eat|won'?t eat|stopped eating|not eating|(?:do not|don'?t|does not|doesn'?t) want to be here|no reason to live|better off dead|front door (wide )?open|coat gone|burn(?:s|ed|ing)?|(?:having|had|signs? of|suspected|possible) (?:a )?stroke|stroke (?:last night|this morning|today)|want(?:s|ed)? (?:to die|to be dead)|wish (?:i|he|she|they) (?:was|were)n'?t (?:still )?alive|wish (?:i|he|she|they) (?:was|were) dead|kill(?:s|ed|ing)?\s+(?:my|your|her|him|our|them)sel(?:f|ves)|hit(?:s|ting)? me|threaten(?:s|ed|ing)?|scared of (?:him|her|them)|(?:not|never)\s+(?:felt\s+|feel(?:ing)?\s+)?safe|(?:don'?t|doesn'?t|didn'?t)\s+(?:feel|feeling)\s+safe|(?:isn'?t|aren'?t|wasn'?t|weren'?t)\s+safe)\b/i;
 
 // The risk words a denial may name. `SAFETY_NEGATIVE` and `NEGATED_CARE_TERM`
 // are both built from this one fragment, so a declining phrase and the strip
@@ -128,7 +136,18 @@ const SAFETY_DECLINE_TERMS = String.raw`falls?|fallen|falling|injur(?:y|ed|ies)|
 // A genuine denial: the person says they are safe, or names no risk. It is
 // deliberately not "safe" on its own — "I'm not safe at home" contains the
 // word and denies nothing.
-const SAFETY_DENIALS = String.raw`(?:i'?m|i am|we'?re|we are|they'?re|they are|he'?s|she'?s|he is|she is|it'?s|it is|is|are|am)\s+safe|safe\s+(?:for now|at the moment|for the moment|right now)|not unsafe|nothing dangerous|not in danger|no\s+(?:${SAFETY_DECLINE_TERMS})|(?:hasn'?t|haven'?t|never)\s+fallen`;
+//
+// Ordinary talk of death, bereavement and old age belongs here too. A husband
+// who died last year, a mother who is 93 and still alive, a garden that died in
+// the frost, a caregiver dead on her feet, and a family that talked about what
+// happens when someone dies are all descriptions of life. Holding them turns a
+// tired caregiver away from respite, so they settle Q5 at the explicit-negative
+// confidence. If a disclosure phrase appears beside one of them — "my husband
+// died and sometimes I want to die" — `resolveBoolean` abstains and the ask
+// holds, so the ordinary form can never suppress a disclosure.
+const SAFETY_ORDINARY_TALK = String.raw`(?:husband|wife|partner|mother|mum|mom|father|dad|nana|grandma|grandad|grandpa|granny|brother|sister|son|daughter|friend|neighbou?r|uncle|aunt|he|she|they)\s+(?:died|has died|passed away)|still\s+(?:alive|with us)|(?:garden|gardens|plant|plants|flowers?|tree|trees|bush|bushes|lawn|grass|crops?|roses?)\s+(?:died|dies)|dead on (?:my|her|his|their|your|our) feet|when (?:i|he|she|they|we)\s+(?:die|dies)`;
+
+const SAFETY_DENIALS = String.raw`(?:i'?m|i am|we'?re|we are|they'?re|they are|he'?s|she'?s|he is|she is|it'?s|it is|is|are|am)\s+safe|safe\s+(?:for now|at the moment|for the moment|right now)|not unsafe|nothing dangerous|not in danger|no\s+(?:${SAFETY_DECLINE_TERMS})|(?:hasn'?t|haven'?t|never)\s+fallen|${SAFETY_ORDINARY_TALK}`;
 
 const SAFETY_NEGATIVE = new RegExp(
   String.raw`\b(?:${SAFETY_DENIALS})\b`,

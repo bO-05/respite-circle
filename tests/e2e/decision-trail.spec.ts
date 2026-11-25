@@ -445,6 +445,39 @@ test.describe("VAL-DECIDE-001, VAL-DECIDE-003, VAL-DECIDE-004, VAL-DECIDE-006 an
     await context.close();
   });
 
+  test("VAL-R2SAFE-004 — ordinary talk of a death and old age keeps the ordinary route", async ({
+    browser,
+  }) => {
+    // Before the precision fix the bare word "alive" in the safety rule held
+    // this sentence, and a tired caregiver was turned away from respite by a
+    // safety banner that no disclosure had earned.
+    const { context, page } = await signIn(browser, seedAccessTokens.marta);
+    const created = await createAsk(
+      context,
+      "she is 93 and still alive and loves the garden",
+    );
+
+    await page.goto(`/ask/${created.askId}`);
+
+    await expect(page.getByTestId("safety-banner")).toHaveCount(0);
+    await expect(page.getByTestId("care-banner")).toHaveCount(0);
+    await expect(page.getByTestId("ask-status")).toContainText("not read yet");
+
+    const safetyRow = page.getByTestId("decision-Q5");
+    await expect(safetyRow).toBeVisible();
+    await expect(safetyRow.getByTestId("decision-answer")).toHaveText("No");
+    // 0.86 is the explicit-negative confidence: the rules recognised ordinary
+    // talk. A 0.78 default would be a guess and anything below 0.60 would
+    // abstain into the safety hold this test exists to prevent.
+    await expect(safetyRow).toContainText("86%");
+
+    expect(await readAskStatus(db, created.askId)).toBe("waiting_coordinator");
+    expect(await countSlots(db, created.askId)).toBe(0);
+
+    await shot(page, "trail-ordinary-talk");
+    await context.close();
+  });
+
   test("VAL-SAFETY-003 — shows the personal-care banner and human referrals for a care hold", async ({
     browser,
   }) => {
