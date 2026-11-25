@@ -8,6 +8,7 @@ import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import {
+  receiptDecisionSentences,
   receiptSentence,
   sentBackReceiptSentence,
 } from "@/server/domain/ask-intake";
@@ -33,7 +34,8 @@ export const dynamic = "force-dynamic";
  * reach the congregation board before a person approves it. Below them the
  * page shows the nine typed answers for the *latest* revision only, plus the
  * model metadata, the policy version, and the digest. There is no model prose
- * anywhere on this page, and no edit control for the words.
+ * anywhere on this page, no edit control for the words, and no control that
+ * accepts or declines a time — the "What happens next" list says so in words.
  */
 
 type StatusCopy = { label: string; tone: "amber" | "green" | "ink" };
@@ -121,6 +123,10 @@ export default async function AskReceiptPage({
   );
   const reader = name ?? "your coordinator";
   const sender = receipt.sentBackByFirstName ?? name ?? "Your coordinator";
+  // The family has no in-app control to accept or decline a time, so the
+  // "What happens next" list names the real decision point instead: the call,
+  // and the coordinator.
+  const decision = receiptDecisionSentences(name);
 
   return (
     <RolePage
@@ -265,12 +271,9 @@ export default async function AskReceiptPage({
         </h2>
         <ol className="mt-3 flex list-decimal flex-col gap-2 pl-6 text-base leading-relaxed text-ink">
           <li>{name ?? "Your coordinator"} reads your words.</li>
+          <li>{decision.call}</li>
           <li>
-            A call may come to understand the week better. Nothing is decided
-            without you.
-          </li>
-          <li>
-            If a time can be offered, you decide whether it helps.{" "}
+            {decision.offer}{" "}
             {receipt.autoPublishLowRisk
               ? `Under the church's signed low-risk policy, a meal time may go on the congregation board before ${name ?? "your coordinator"} approves that time. Your words are never shown there.`
               : `Nothing is shown to a neighbour until ${name ?? "your coordinator"} approves it.`}

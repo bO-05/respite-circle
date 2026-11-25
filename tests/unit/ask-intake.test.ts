@@ -4,6 +4,7 @@ import {
   characterCountLabel,
   consentSentence,
   MAX_ASK_LENGTH,
+  receiptDecisionSentences,
   receiptSentence,
   sentBackReceiptSentence,
   validateAskSubmission,
@@ -184,6 +185,51 @@ describe("ask copy", () => {
     expect(sentence).not.toMatch(/nothing was published/i);
     expect(sentence).not.toMatch(/nothing was shared with a neighbour/i);
     expect(sentence).not.toContain("null");
+  });
+
+  it("names the real decision point and offers no control the app cannot take", () => {
+    const named = receiptDecisionSentences("Grace");
+
+    expect(named.call).toBe(
+      "Grace may call to talk the week through. You can say what would help, and what would not.",
+    );
+    expect(named.offer).toBe(
+      "If a time does not suit you, tell Grace on the phone — there is no button here to say whether it helps.",
+    );
+
+    // The real decision point, in plain words: the call and the coordinator.
+    expect(named.call).toContain("Grace may call");
+    expect(named.offer).toContain("tell Grace on the phone");
+    expect(named.offer).toContain("there is no button here");
+
+    for (const sentence of [named.call, named.offer]) {
+      // No sentence gives the family a decision the app cannot take.
+      expect(sentence).not.toMatch(/\byou (decide|approve|accept|decline)\b/i);
+      expect(sentence).not.toMatch(/decide whether it helps/i);
+      expect(sentence).not.toMatch(/nothing is decided without you/i);
+      // The caregiver screens carry no desk vocabulary.
+      expect(sentence).not.toMatch(/\b(waiting|declined?|unclaimed|count)\b/i);
+    }
+  });
+
+  it("keeps the same plain words when no coordinator name resolves", () => {
+    const anonymous = receiptDecisionSentences(null);
+
+    expect(anonymous.call).toBe(
+      "Your coordinator may call to talk the week through. You can say what would help, and what would not.",
+    );
+    expect(anonymous.offer).toBe(
+      "If a time does not suit you, tell your coordinator on the phone — there is no button here to say whether it helps.",
+    );
+    expect(anonymous.call).not.toContain("Grace");
+    expect(anonymous.offer).not.toContain("null");
+  });
+
+  it("trims a coordinator's name rather than printing stray spaces", () => {
+    const trimmed = receiptDecisionSentences("  Grace  ");
+
+    expect(trimmed.call).toMatch(/^Grace may call/);
+    expect(trimmed.offer).toContain("tell Grace on the phone");
   });
 
   it("counts characters without judging them", () => {

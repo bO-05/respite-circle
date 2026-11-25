@@ -161,6 +161,41 @@ export function sentBackReceiptSentence(
   return `${sender} read your words and sent this back with a note. Nothing was shared with a neighbour, and nothing was published.`;
 }
 
+/**
+ * The two decision sentences under "What happens next" on the receipt.
+ *
+ * The family has no in-app control to accept or decline a published time:
+ * every `"use server"` module is desk-scoped, and the only caregiver action on
+ * a slot keeps a thank-you after the time is done. So these sentences name the
+ * real decision point instead of inventing one — the call, where the family
+ * says what would help, and the coordinator, whom they tell when a time does
+ * not suit them. The page says plainly that there is no button here.
+ *
+ * `tests/unit/caregiver-agency.test.ts` keeps the action list and this copy
+ * checked together; if a caregiver action is ever added, both change.
+ */
+export function receiptDecisionSentences(coordinatorFirstName: string | null): {
+  /** The call, named as the family's real channel for saying what helps. */
+  call: string;
+  /** What to do when an offered time does not suit the family. */
+  offer: string;
+} {
+  const name = coordinatorFirstName?.trim();
+
+  if (!name) {
+    return {
+      call: "Your coordinator may call to talk the week through. You can say what would help, and what would not.",
+      offer:
+        "If a time does not suit you, tell your coordinator on the phone — there is no button here to say whether it helps.",
+    };
+  }
+
+  return {
+    call: `${name} may call to talk the week through. You can say what would help, and what would not.`,
+    offer: `If a time does not suit you, tell ${name} on the phone — there is no button here to say whether it helps.`,
+  };
+}
+
 /** A quiet character count, with the limit stated only once it is exceeded. */
 export function characterCountLabel(
   length: number,
