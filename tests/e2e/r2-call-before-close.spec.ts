@@ -122,8 +122,8 @@ async function notificationCount(
  */
 async function ensureFixture(db: E2eDatabase): Promise<void> {
   await db.client`
-    INSERT INTO church (id, name, timezone)
-    VALUES (${CHURCH}, 'Quiet Fellowship', ${TIME_ZONE})
+    INSERT INTO church (id, name, timezone, demo_mode)
+    VALUES (${CHURCH}, 'Quiet Fellowship', ${TIME_ZONE}, false)
     ON CONFLICT (id) DO NOTHING
   `;
 

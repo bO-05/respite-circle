@@ -122,8 +122,8 @@ async function shot(page: Page, name: string): Promise<void> {
 
 async function ensureFixture(db: E2eDatabase): Promise<void> {
   await db.client`
-    INSERT INTO church (id, name, timezone)
-    VALUES (${FIXTURE_CHURCH}, 'Low Road Chapel', ${TIME_ZONE})
+    INSERT INTO church (id, name, timezone, demo_mode)
+    VALUES (${FIXTURE_CHURCH}, 'Low Road Chapel', ${TIME_ZONE}, false)
     ON CONFLICT (id) DO NOTHING
   `;
 

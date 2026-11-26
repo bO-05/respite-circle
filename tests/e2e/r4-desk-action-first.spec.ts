@@ -57,8 +57,8 @@ const FIXTURE_WORDS =
 
 async function ensureNamelessFixture(db: E2eDatabase): Promise<void> {
   await db.client`
-    INSERT INTO church (id, name, timezone)
-    VALUES (${FIXTURE_CHURCH}, 'Action First Fellowship', 'America/New_York')
+    INSERT INTO church (id, name, timezone, demo_mode)
+    VALUES (${FIXTURE_CHURCH}, 'Action First Fellowship', 'America/New_York', false)
     ON CONFLICT (id) DO NOTHING
   `;
 

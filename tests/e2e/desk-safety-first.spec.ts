@@ -88,8 +88,8 @@ async function ensureFixture(db: E2eDatabase): Promise<void> {
   const watchEnd = new Date(now.getTime() + 14 * HOUR);
 
   await db.client`
-    INSERT INTO church (id, name, timezone)
-    VALUES (${DESK_CHURCH}, 'Safety First Fellowship', ${TIME_ZONE})
+    INSERT INTO church (id, name, timezone, demo_mode)
+    VALUES (${DESK_CHURCH}, 'Safety First Fellowship', ${TIME_ZONE}, false)
     ON CONFLICT (id) DO NOTHING
   `;
 

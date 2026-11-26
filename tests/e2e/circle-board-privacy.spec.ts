@@ -133,8 +133,8 @@ test.describe("VAL-BOARD-001…006 — the congregation board", () => {
     // A church with no published time at all, isolated from the seeded demo
     // board so the empty state is genuinely empty whenever this spec runs.
     await db.client`
-      INSERT INTO church (id, name, timezone)
-      VALUES (${QUIET_CHURCH}, 'Quiet Chapel', 'America/New_York')
+      INSERT INTO church (id, name, timezone, demo_mode)
+      VALUES (${QUIET_CHURCH}, 'Quiet Chapel', 'America/New_York', false)
       ON CONFLICT (id) DO NOTHING
     `;
     await db.client`

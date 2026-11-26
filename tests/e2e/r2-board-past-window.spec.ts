@@ -101,8 +101,8 @@ async function ensureFixture(db: E2eDatabase): Promise<void> {
   await db.client`DELETE FROM slot WHERE church_id = ${CHURCH}`;
 
   await db.client`
-    INSERT INTO church (id, name, timezone)
-    VALUES (${CHURCH}, 'Cornerstone Fellowship', ${TIME_ZONE})
+    INSERT INTO church (id, name, timezone, demo_mode)
+    VALUES (${CHURCH}, 'Cornerstone Fellowship', ${TIME_ZONE}, false)
     ON CONFLICT (id) DO NOTHING
   `;
 

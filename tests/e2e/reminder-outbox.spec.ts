@@ -148,8 +148,8 @@ async function ensureQuietChurch(db: E2eDatabase): Promise<void> {
   await clearQuietChurchMessages(db);
 
   await db.client`
-    INSERT INTO church (id, name, timezone)
-    VALUES (${QUIET_CHURCH}, 'Quiet Chapel', ${TIME_ZONE})
+    INSERT INTO church (id, name, timezone, demo_mode)
+    VALUES (${QUIET_CHURCH}, 'Quiet Chapel', ${TIME_ZONE}, false)
     ON CONFLICT (id) DO NOTHING
   `;
 

@@ -77,8 +77,8 @@ async function deskReadAt(
 
 async function ensureFixture(db: E2eDatabase): Promise<void> {
   await db.client`
-    INSERT INTO church (id, name, timezone)
-    VALUES (${CHURCH}, 'Quiet Fellowship', 'America/New_York')
+    INSERT INTO church (id, name, timezone, demo_mode)
+    VALUES (${CHURCH}, 'Quiet Fellowship', 'America/New_York', false)
     ON CONFLICT (id) DO NOTHING
   `;
 
