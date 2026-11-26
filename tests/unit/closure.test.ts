@@ -133,6 +133,13 @@ describe("the closure copy", () => {
     const claimed = closureLead("claimed", "Grace");
     expect(claimed).toMatch(/Grace/);
     expectCalmCopy(claimed);
+
+    // VAL-R2UI-006: with no coordinator resolved the fallback opens the
+    // sentence, so it starts with a capital.
+    const unnamed = closureLead("claimed", null);
+    expect(unnamed).toMatch(/^Your coordinator still confirms this time\./);
+    expect(unnamed).not.toMatch(/^your coordinator/);
+    expectCalmCopy(unnamed);
   });
 
   it("names no next action on a cancelled time", () => {

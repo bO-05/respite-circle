@@ -1,4 +1,8 @@
-import { boardLockCopy, coordinatorDisplayName } from "./board";
+import {
+  boardLockCopy,
+  coordinatorDisplayName,
+  coordinatorSentenceName,
+} from "./board";
 import { RULE_CODES, type RuleCode } from "./gating";
 
 /**
@@ -73,9 +77,11 @@ export function claimCopy(
   options: ClaimCopyOptions = {},
 ): string {
   const name = coordinatorDisplayName(options.coordinatorFirstName ?? null);
-  // "your coordinator" reads as a sentence opener only when capitalised; a
-  // real first name is already capitalised.
-  const sentenceName = name.charAt(0).toUpperCase() + name.slice(1);
+  // Both outcomes below open with the name, so the shared sentence builder
+  // capitalises only the fallback and leaves a resolved name untouched.
+  const sentenceName = coordinatorSentenceName(
+    options.coordinatorFirstName ?? null,
+  );
 
   switch (code) {
     case "claimed":

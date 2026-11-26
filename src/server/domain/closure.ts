@@ -12,6 +12,8 @@
  * an obligation.
  */
 
+import { coordinatorSentenceName } from "./board";
+
 // ---------------------------------------------------------------------------
 // The optional thank-you
 // ---------------------------------------------------------------------------
@@ -91,7 +93,8 @@ export function closureLead(
   status: string,
   coordinatorFirstName: string | null,
 ): string {
-  const name = coordinatorFirstName ?? "your coordinator";
+  // This lead opens the closure page, so the fallback is capitalised there.
+  const name = coordinatorSentenceName(coordinatorFirstName);
 
   switch (status) {
     case "done":

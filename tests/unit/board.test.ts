@@ -101,7 +101,14 @@ describe("board lock copy", () => {
 
   it("uses the named coordinator when there is one and a plain role when there is not", () => {
     expect(boardLockCopy("no_checklist", "Grace").unlock).toContain("Grace");
-    expect(boardLockCopy("no_checklist", null).unlock).toMatch(/coordinator/i);
+    // Mid-sentence the fallback stays lower case; only a sentence opener is
+    // capitalised (VAL-R2UI-006).
+    expect(boardLockCopy("no_checklist", null).unlock).toContain(
+      "Ask your coordinator to record",
+    );
+    expect(boardLockCopy("no_checklist", null).unlock).not.toContain(
+      "Your coordinator",
+    );
   });
 
   it("explains the in-home gate and the driver gate in the family's terms", () => {
@@ -123,7 +130,10 @@ describe("board claim action", () => {
     expect(boardClaimHint("Grace")).toBe(
       "Grace will confirm it with you before the time is covered.",
     );
-    expect(boardClaimHint(null)).toMatch(/coordinator/i);
+    // VAL-R2UI-006: the fallback opens the sentence, so it is capitalised.
+    expect(boardClaimHint(null)).toBe(
+      "Your coordinator will confirm it with you before the time is covered.",
+    );
   });
 });
 

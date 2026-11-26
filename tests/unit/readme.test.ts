@@ -156,6 +156,11 @@ describe("VAL-AUDITFIX-012 — delivery is stated as in-app", () => {
  * (`published_via = auto_low_risk`, logged as `slot_auto_published`). Pin the
  * qualified sentence here so the old absolute cannot return through a copy
  * edit that no other test reads.
+ *
+ * It also has to stay short. At 2b2aa2c the 50-word version measured 130 px at
+ * 1280x800 and pushed the first safety card's "Open this ask" action to
+ * 835.9–882.7, below the fold. Twenty words still measure two lines (817.7),
+ * so this pins the one-line budget that keeps the action inside 800 px.
  */
 const deskDir = join(root, "src", "app", "desk");
 
@@ -175,13 +180,9 @@ describe("VAL-AUDITFIX-011 — the desk lead names the meal exception", () => {
     expect(lead).not.toBe("");
   });
 
-  it("keeps the person-reads promise and names the signed low-risk meal in the same passage", () => {
-    expect(lead).toMatch(/^A person reads every ask\b/);
-    expect(lead).toMatch(/the church has signed the low-risk meal policy/i);
-    expect(lead).toMatch(
-      /a reheated meal can reach the board before a person sees it/i,
-    );
-    expect(lead).toMatch(/every other kind of time waits for a person/i);
+  it("keeps the person-reads promise and names the signed meal exception in the same sentence", () => {
+    expect(lead).toMatch(/^A person reads every ask;/);
+    expect(lead).toMatch(/a signed policy lets a reheated meal go first/i);
   });
 
   it("no longer claims a person reads every ask before a neighbour sees a time", () => {
@@ -199,9 +200,15 @@ describe("VAL-AUDITFIX-011 — the desk lead names the meal exception", () => {
     }
   });
 
-  it("keeps safety and personal-care asks in their own groups ahead of the ordinary queue", () => {
-    expect(lead).toMatch(
-      /safety and personal-care asks sit in their own groups, ahead of the ordinary queue\./i,
+  it("stays one line at 1280 so the first safety action stays inside 800 px", () => {
+    // A 20-word lead is still two lines and left "Open this ask" at 817.7 px;
+    // the measured one-line budget is 72 characters at this width. The
+    // grouping is shown structurally by the labelled safety panel, so the
+    // lead no longer explains it.
+    expect(lead.length).toBeLessThanOrEqual(72);
+    expect(lead.trim().split(/\s+/).filter(Boolean).length).toBeLessThanOrEqual(
+      16,
     );
+    expect(lead).not.toMatch(/own groups|ordinary queue/i);
   });
 });

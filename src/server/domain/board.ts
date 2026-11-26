@@ -114,6 +114,21 @@ export function coordinatorDisplayName(
 }
 
 /**
+ * The same person, named where a sentence begins.
+ *
+ * A resolved first name is returned exactly as stored — the name path does not
+ * change. Only the "your coordinator" fallback is capitalised, so a standalone
+ * sentence never opens in lower case (VAL-R2UI-006). Copy that uses the name
+ * mid-sentence keeps calling `coordinatorDisplayName`, which stays lower case
+ * ("Ask your coordinator to record…").
+ */
+export function coordinatorSentenceName(
+  coordinatorFirstName: string | null,
+): string {
+  return coordinatorFirstName?.trim() || "Your coordinator";
+}
+
+/**
  * The lock reason for a viewer who is not eligible, written in the second
  * person. The domain's `RULE_CODE_COPY` speaks to a coordinator arranging a
  * rota ("they", "their file"); a neighbour needs to read about themselves and
@@ -175,7 +190,7 @@ export const BOARD_ACTION_LABEL = "Claim this time";
 export function boardClaimHint(
   coordinatorFirstName: string | null,
 ): string {
-  return `${coordinatorDisplayName(coordinatorFirstName)} will confirm it with you before the time is covered.`;
+  return `${coordinatorSentenceName(coordinatorFirstName)} will confirm it with you before the time is covered.`;
 }
 
 export type BoardEmptyCopy = {
@@ -197,7 +212,7 @@ export function boardEmptyCopy(
   const name = coordinatorDisplayName(coordinatorFirstName);
 
   if (role === "volunteer") {
-    const subject = coordinatorFirstName?.trim() || "Your coordinator";
+    const subject = coordinatorSentenceName(coordinatorFirstName);
     return {
       title: "Nothing is open just now",
       body: `${subject} is preparing the next Respite Morning. If you would like to help, tell ${name} after a Sunday service, and the next open time will appear here.`,
