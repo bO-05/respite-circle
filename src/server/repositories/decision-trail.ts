@@ -57,6 +57,11 @@ export type DecisionTrailView = {
   draftKinds: string[];
   /** Slots the congregation can already see (open, claimed, covered, done). */
   publishedCount: number;
+  /**
+   * Slots a neighbour took and a coordinator confirmed (covered or done).
+   * The receipt's last lifecycle stage may only be reached on this count.
+   */
+  coveredCount: number;
 };
 
 const PUBLISHED_SLOT_STATUSES = new Set([
@@ -65,6 +70,8 @@ const PUBLISHED_SLOT_STATUSES = new Set([
   "covered",
   "done",
 ]);
+
+const COVERED_SLOT_STATUSES = new Set(["covered", "done"]);
 
 export async function getDecisionTrailForRevision(
   actor: Actor,
@@ -170,6 +177,9 @@ export async function getDecisionTrailForRevision(
     draftKinds,
     publishedCount: slotRows.filter((row) =>
       PUBLISHED_SLOT_STATUSES.has(row.status),
+    ).length,
+    coveredCount: slotRows.filter((row) =>
+      COVERED_SLOT_STATUSES.has(row.status),
     ).length,
   };
 }

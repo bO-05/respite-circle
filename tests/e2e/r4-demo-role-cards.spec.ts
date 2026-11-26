@@ -1,5 +1,12 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Locator,
+  type Page,
+} from "@playwright/test";
 import { seedAccessTokens } from "../../src/db/seed-data";
+import { E2E_RESET_PATH, E2E_RESET_TOKEN } from "./helpers/e2e-env";
 
 /**
  * VAL-R4VIS-004 — the demo shows roles, not an essay.
@@ -9,6 +16,12 @@ import { seedAccessTokens } from "../../src/db/seed-data";
  * initials, the written name, the role, one true show line and one full-width
  * "Enter as {first name}". The model note follows the doors, still expanded,
  * with the audited sentence in place of the retired routing headline.
+ *
+ * `/demo` lists every church whose `demo_mode` is on, and a test fixture church
+ * defaults to on. This file therefore resets the isolated demo database first:
+ * a fixture that an earlier spec in the same run left behind must not add a
+ * fourth role card or a second "Grace" to this page. Resetting asserts the
+ * canonical cast; it does not relax any expectation.
  */
 
 const FOLD = 800;
@@ -152,6 +165,22 @@ async function shot(
     fullPage,
   });
 }
+
+async function reset(request: APIRequestContext): Promise<void> {
+  const response = await request.post(E2E_RESET_PATH, {
+    headers: { "x-demo-reset-token": E2E_RESET_TOKEN },
+    failOnStatusCode: false,
+    timeout: 90_000,
+  });
+  expect(response.status()).toBe(200);
+  expect((await response.json()).reset).toBe(true);
+}
+
+test.describe.configure({ timeout: 240_000 });
+
+test.beforeEach(async ({ request }) => {
+  await reset(request);
+});
 
 test("VAL-R4VIS-004 — 1280x800 leads with two sentences, then a group of role cards with a visible way in", async ({
   page,

@@ -5,10 +5,12 @@ import {
   consentSentence,
   MAX_ASK_LENGTH,
   receiptDecisionSentences,
+  receiptLifecycleSteps,
   receiptSentence,
   receiptStatusCopy,
   sentBackReceiptSentence,
   validateAskSubmission,
+  type ReceiptStatus,
 } from "@/server/domain/ask-intake";
 import {
   ASK_SAMPLES,
@@ -322,6 +324,148 @@ describe("waiting pill read state (VAL-R2PROM-005)", () => {
         deskReadAt: null,
       }).label,
     ).toBe("Read — Daniel will be in touch");
+  });
+});
+
+describe("receipt lifecycle (VAL-R4VIS-006)", () => {
+  const READ_AT = new Date("2026-11-25T14:00:00.000Z");
+
+  function lifecycle(
+    input: Partial<{
+      status: ReceiptStatus;
+      coordinatorFirstName: string | null;
+      deskReadAt: Date | null;
+      publishedCount: number;
+      coveredCount: number;
+    }> = {},
+  ) {
+    return receiptLifecycleSteps({
+      status: "waiting_coordinator",
+      coordinatorFirstName: "Grace",
+      deskReadAt: null,
+      publishedCount: 0,
+      coveredCount: 0,
+      ...input,
+    });
+  }
+
+  function states(input: Parameters<typeof lifecycle>[0] = {}) {
+    return lifecycle(input).map((step) => step.state);
+  }
+
+  it("names the four stages in order, with the church's coordinator", () => {
+    expect(lifecycle().map((step) => step.label)).toEqual([
+      "Written",
+      "Grace is reading",
+      "On the board",
+      "Covered",
+    ]);
+    expect(lifecycle().map((step) => step.kind)).toEqual([
+      "written",
+      "reading",
+      "board",
+      "covered",
+    ]);
+  });
+
+  it("starts an unread waiting ask at Written and never claims a reading", () => {
+    expect(states()).toEqual(["current", "future", "future", "future"]);
+    expect(lifecycle()[1]!.state).not.toBe("done");
+  });
+
+  it("advances the reading stage only when the desk read is recorded", () => {
+    expect(states({ deskReadAt: READ_AT })).toEqual([
+      "done",
+      "current",
+      "future",
+      "future",
+    ]);
+  });
+
+  it("shows the route the hold actually took, and keeps an unread hold's reading future", () => {
+    const safety = lifecycle({ status: "safety_hold" });
+    expect(safety.map((step) => step.label)).toEqual([
+      "Written",
+      "Grace is reading",
+      "Call today",
+      "Covered",
+    ]);
+    expect(states({ status: "safety_hold" })).toEqual([
+      "done",
+      "future",
+      "current",
+      "future",
+    ]);
+    expect(states({ status: "safety_hold", deskReadAt: READ_AT })).toEqual([
+      "done",
+      "done",
+      "current",
+      "future",
+    ]);
+
+    const care = lifecycle({ status: "care_hold" });
+    expect(care[2]!.label).toBe("Needs professional help");
+    expect(care[2]!.state).toBe("current");
+  });
+
+  it("fills On the board from a published time and Covered only from a confirmed one", () => {
+    expect(states({ status: "approved", publishedCount: 2 })).toEqual([
+      "done",
+      "done",
+      "current",
+      "future",
+    ]);
+    expect(
+      states({ status: "approved", publishedCount: 2, coveredCount: 1 }),
+    ).toEqual(["done", "done", "done", "current"]);
+    // A claimed but unconfirmed time is on the board, never covered.
+    expect(
+      lifecycle({
+        status: "approved",
+        publishedCount: 2,
+        coveredCount: 0,
+      })[3]!.state,
+    ).toBe("future");
+  });
+
+  it("does not call an approved ask 'on the board' before a time is published", () => {
+    expect(states({ status: "approved", publishedCount: 0 })).toEqual([
+      "done",
+      "current",
+      "future",
+      "future",
+    ]);
+  });
+
+  it("keeps a closed ask's reached stages done and points at no next step", () => {
+    const closed = lifecycle({
+      status: "closed",
+      deskReadAt: READ_AT,
+      publishedCount: 1,
+    });
+    expect(closed.map((step) => step.state)).toEqual([
+      "done",
+      "done",
+      "done",
+      "future",
+    ]);
+    expect(closed.some((step) => step.state === "current")).toBe(false);
+  });
+
+  it("shows a covered close as the Covered stage, the one fact that remains", () => {
+    expect(states({ status: "closed", coveredCount: 1 })).toEqual([
+      "done",
+      "done",
+      "done",
+      "current",
+    ]);
+  });
+
+  it("never hardcodes a coordinator name", () => {
+    const unnamed = lifecycle({ coordinatorFirstName: null });
+    expect(unnamed[1]!.label).toBe("Your coordinator is reading");
+    expect(unnamed.map((step) => step.label).join(" ")).not.toContain("Grace");
+    expect(unnamed[1]!.label).not.toContain("null");
   });
 });
 

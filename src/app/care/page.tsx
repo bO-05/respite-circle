@@ -13,9 +13,13 @@ import {
   isCareThanksFlashCode,
 } from "@/server/domain/closure";
 import { formatWindowLabel } from "@/server/domain/slots";
+import { receiptLifecycleSteps } from "@/server/domain/ask-intake";
 import { publishedNotBookedSentence } from "@/server/domain/published-time";
 import { listCaregiverNotes } from "@/server/repositories/ask-review";
-import { listCaregiverAsks } from "@/server/repositories/asks";
+import {
+  listCaregiverAskLifecycles,
+  listCaregiverAsks,
+} from "@/server/repositories/asks";
 import { listCaregiverConfirmations } from "@/server/repositories/claim-review";
 import { listCaregiverWorkingLines } from "@/server/repositories/coverage";
 import {
@@ -46,16 +50,25 @@ export default async function CarePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { person, session } = await requirePage(CAREGIVER_ROLES);
-  const [notes, confirmations, reminders, working, invites, asks, query] =
-    await Promise.all([
-      listCaregiverNotes(session),
-      listCaregiverConfirmations(session),
-      listCaregiverReminders(session),
-      listCaregiverWorkingLines(session),
-      listCaregiverInvites(session),
-      listCaregiverAsks(session),
-      searchParams,
-    ]);
+  const [
+    notes,
+    confirmations,
+    reminders,
+    working,
+    invites,
+    asks,
+    lifecycles,
+    query,
+  ] = await Promise.all([
+    listCaregiverNotes(session),
+    listCaregiverConfirmations(session),
+    listCaregiverReminders(session),
+    listCaregiverWorkingLines(session),
+    listCaregiverInvites(session),
+    listCaregiverAsks(session),
+    listCaregiverAskLifecycles(session),
+    searchParams,
+  ]);
 
   if (invites.some((invite) => invite.seenAt === null)) {
     // A failed marker must not cost the family their page; the words remain.
@@ -64,6 +77,22 @@ export default async function CarePage({
 
   const thanksParam = typeof query.thanks === "string" ? query.thanks : null;
   const thanksCode = isCareThanksFlashCode(thanksParam) ? thanksParam : null;
+
+  // The same four stages the receipt draws, per ask. A stepper is a claim
+  // about progress, so every stage is derived from the ask's own row and its
+  // times: no stage fills because a later one would look tidier.
+  const lifecycleSteps = Object.fromEntries(
+    lifecycles.map((row) => [
+      row.askId,
+      receiptLifecycleSteps({
+        status: row.status,
+        coordinatorFirstName: row.coordinatorFirstName,
+        deskReadAt: row.deskReadAt,
+        publishedCount: row.publishedCount,
+        coveredCount: row.coveredCount,
+      }),
+    ]),
+  );
 
   return (
     <RolePage
@@ -215,6 +244,7 @@ export default async function CarePage({
 
       <CaregiverAskLinks
         asks={asks}
+        lifecycleSteps={lifecycleSteps}
         heading="Your words, and what happens next"
         lead="Your words are kept exactly as you sent them. Open an ask to read it again."
         linkLabel="Read your words and the nine answers"

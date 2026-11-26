@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
+import { ClipboardList, HeartHandshake, Phone } from "lucide-react";
+import { IconWell } from "@/components/visual-primitives";
 import {
   QUEUE_CATEGORY_HEADING,
   QUEUE_CATEGORY_NOTE,
@@ -19,6 +22,11 @@ import type { DeskQueueItem } from "@/server/repositories/coordinator";
  * Every held card carries a labelled action of its own beside the name link,
  * so the name link is never the only way into the ask. A safety row leads with
  * the call itself — "Call Priya today" — before it gives the reason.
+ *
+ * Each group carries one decorative icon well beside its heading: a phone for
+ * the call, joined hands for professional help, a clipboard for the desk's
+ * ordinary queue. The icon says nothing the heading does not, so it is
+ * `aria-hidden` and never a control.
  */
 
 const PANEL: Record<QueueCategory, string> = {
@@ -31,6 +39,12 @@ const HEADING: Record<QueueCategory, string> = {
   safety: "font-serif text-3xl leading-tight text-ink",
   personal_care: "font-serif text-2xl text-ink",
   waiting: "font-serif text-2xl text-ink",
+};
+
+const CATEGORY_ICON: Record<QueueCategory, LucideIcon> = {
+  safety: Phone,
+  personal_care: HeartHandshake,
+  waiting: ClipboardList,
 };
 
 function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
@@ -134,21 +148,27 @@ export function DeskQueueSection({
       aria-labelledby={`desk-heading-${category}`}
       className={`flex flex-col gap-3 ${PANEL[category]}`}
     >
-      <div>
-        {safety ? (
-          <p
-            data-testid="desk-safety-first"
-            className="text-base font-semibold uppercase tracking-wider text-ink"
-          >
-            First on this desk
+      <div className="flex items-start gap-3">
+        <IconWell
+          icon={CATEGORY_ICON[category]}
+          tone={safety ? "amber" : "accent"}
+        />
+        <div>
+          {safety ? (
+            <p
+              data-testid="desk-safety-first"
+              className="text-base font-semibold uppercase tracking-wider text-ink"
+            >
+              First on this desk
+            </p>
+          ) : null}
+          <h2 id={`desk-heading-${category}`} className={HEADING[category]}>
+            {QUEUE_CATEGORY_HEADING[category]}
+          </h2>
+          <p className="mt-1 max-w-prose text-base leading-relaxed text-ink">
+            {QUEUE_CATEGORY_NOTE[category]}
           </p>
-        ) : null}
-        <h2 id={`desk-heading-${category}`} className={HEADING[category]}>
-          {QUEUE_CATEGORY_HEADING[category]}
-        </h2>
-        <p className="mt-1 max-w-prose text-base leading-relaxed text-ink">
-          {QUEUE_CATEGORY_NOTE[category]}
-        </p>
+        </div>
       </div>
 
       <ul className="flex flex-col gap-3">

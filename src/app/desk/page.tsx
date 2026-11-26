@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { CalendarOff } from "lucide-react";
 import { DeskQueueSection } from "@/components/desk-queue-section";
 import { RolePage } from "@/components/role-page";
 import { SessionCalendarStrip } from "@/components/session-calendar-strip";
+import { IconWell } from "@/components/visual-primitives";
 import { DESK_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { groupDeskQueue } from "@/server/domain/desk-queue";
@@ -195,9 +197,10 @@ export default async function DeskPage() {
           aria-labelledby="desk-empty-heading"
           className="rounded-lg border border-line bg-surface p-5"
         >
+          <IconWell icon={CalendarOff} tone="accent" />
           <h2
             id="desk-empty-heading"
-            className="font-serif text-2xl text-ink"
+            className="mt-3 font-serif text-2xl text-ink"
           >
             Nothing is waiting for a person
           </h2>

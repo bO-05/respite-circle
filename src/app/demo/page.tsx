@@ -1,5 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
+import {
+  ClipboardList,
+  HandHelping,
+  Heart,
+  ScrollText,
+} from "lucide-react";
 import { PublicPage } from "@/components/public-page";
 import { RoleCard } from "@/components/role-card";
 import { isDemoModeEnabled, ROLE_LABEL, type Role } from "@/server/auth/policy";
@@ -13,12 +20,25 @@ import { listDemoLinks } from "@/server/repositories/demo";
  * The page leads with the people, not an essay. Each card says what that
  * person's side of the seeded week actually shows, and the model note follows
  * the doors, expanded, so no disclosure is behind a click.
+ *
+ * Each card carries one decorative role icon beside the role's written name:
+ * the desk clipboard, the family heart, the volunteer's helping hand, the
+ * pastor's reading scroll. The icon is `aria-hidden`; the word is the label.
  */
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   robots: { index: false, follow: false },
+};
+
+/** One decorative icon per role; the written role beside it is the label. */
+const ROLE_ICON: Record<Role, LucideIcon> = {
+  coordinator: ClipboardList,
+  deputy: ClipboardList,
+  caregiver: Heart,
+  volunteer: HandHelping,
+  pastor: ScrollText,
 };
 
 /**
@@ -145,6 +165,7 @@ export default async function DemoPage() {
                     firstName={person.firstName}
                     lastName={person.lastName}
                     roleLabel={ROLE_LABEL[person.role]}
+                    icon={ROLE_ICON[person.role]}
                     showLine={showLineFor(person)}
                     href={`/enter/${person.accessToken}`}
                     testId={`demo-link-${person.role}`}

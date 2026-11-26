@@ -3,7 +3,10 @@ import { DEMO_IDS, DEMO_TEXT, seedDemoState } from "../../src/db/demo-state";
 import { truncateAll } from "../../src/db/reset";
 import { seedDatabase } from "../../src/db/seed";
 import { seedIds } from "../../src/db/seed-data";
-import { listCaregiverAsks } from "../../src/server/repositories/asks";
+import {
+  listCaregiverAskLifecycles,
+  listCaregiverAsks,
+} from "../../src/server/repositories/asks";
 import { openTestDatabase, type TestDatabase } from "./helpers/db";
 
 /**
@@ -105,5 +108,50 @@ describe("the caregiver's ask links", () => {
     await expect(listCaregiverAsks(GRACE, t.db)).rejects.toMatchObject({
       failure: "forbidden",
     });
+  });
+
+  it("draws each ask's lifecycle from its own row and times, without the words", async () => {
+    const marta = await listCaregiverAskLifecycles(MARTA, t.db);
+    expect(marta).toHaveLength(1);
+    expect(marta[0]).toMatchObject({
+      askId: DEMO_IDS.askHero,
+      status: "approved",
+      deskReadAt: null,
+      coordinatorFirstName: "Grace",
+      publishedCount: 2,
+      coveredCount: 0,
+    });
+
+    const david = await listCaregiverAskLifecycles(DAVID, t.db);
+    expect(david.map((row) => row.askId)).toEqual([
+      DEMO_IDS.askFailure,
+      DEMO_IDS.askWaiting,
+    ]);
+    expect(
+      david.find((row) => row.askId === DEMO_IDS.askWaiting),
+    ).toMatchObject({
+      status: "waiting_coordinator",
+      deskReadAt: null,
+      publishedCount: 0,
+      coveredCount: 0,
+    });
+    expect(
+      david.find((row) => row.askId === DEMO_IDS.askFailure),
+    ).toMatchObject({ status: "approved", publishedCount: 1, coveredCount: 0 });
+
+    // A safety hold has no time and never will; the roadmap is the call.
+    const priya = await listCaregiverAskLifecycles(PRIYA, t.db);
+    expect(priya.map((row) => row.askId)).toEqual([DEMO_IDS.askSafetyHold]);
+    expect(priya[0]).toMatchObject({
+      status: "safety_hold",
+      publishedCount: 0,
+      coveredCount: 0,
+    });
+
+    // The lifecycle read is as narrow as the link list: no words, no decisions.
+    const payload = JSON.stringify([...marta, ...david, ...priya]);
+    expect(payload).not.toContain(DEMO_TEXT.hero.slice(0, 40));
+    expect(payload).not.toContain(DEMO_TEXT.waiting.slice(0, 40));
+    expect(payload).not.toContain(DEMO_TEXT.failure.slice(0, 40));
   });
 });

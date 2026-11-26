@@ -4,11 +4,13 @@ import {
   AskHoldBanner,
   DecisionTrail,
 } from "@/components/decision-trail";
+import { LifecycleSteps } from "@/components/lifecycle-steps";
 import { RolePage } from "@/components/role-page";
 import { CAREGIVER_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import {
   receiptDecisionSentences,
+  receiptLifecycleSteps,
   receiptSentence,
   sentBackReceiptSentence,
 } from "@/server/domain/ask-intake";
@@ -43,6 +45,10 @@ export const dynamic = "force-dynamic";
  * model metadata, the policy version, and the digest. There is no model prose
  * anywhere on this page, no edit control for the words, and no control that
  * accepts or declines a time — the "What happens next" list says so in words.
+ * A four-stage stepper opens the page, above the "nine answers" heading, and
+ * fills a stage only from evidence on the ask itself: the first desk read, a
+ * published time, a coordinator's confirmation. It never leads the receipt
+ * with the answers, and it never marks a stage that has not happened.
  * The words section names the human path for a change or a withdrawal: the
  * church office or the coordinator, the same people /enter names for a lost
  * link. No control is offered, because the app has no way to change the words.
@@ -100,6 +106,15 @@ export default async function AskReceiptPage({
   // "What happens next" list names the real decision point instead: the call,
   // and the coordinator.
   const decision = receiptDecisionSentences(name);
+  // The stepper opens the page, above the "nine answers" heading. Its stages
+  // come from the ask's own row and its times, never from an assumption.
+  const lifecycle = receiptLifecycleSteps({
+    status: receipt.status,
+    coordinatorFirstName: name,
+    deskReadAt: receipt.deskReadAt,
+    publishedCount: trail?.publishedCount ?? 0,
+    coveredCount: trail?.coveredCount ?? 0,
+  });
 
   return (
     <RolePage
@@ -108,6 +123,8 @@ export default async function AskReceiptPage({
       title={`Thank you — your words are with ${reader}.`}
       lead={receiptSentence(name, receipt.autoPublishLowRisk)}
     >
+      <LifecycleSteps steps={lifecycle} label="Where your ask is" />
+
       <p
         data-testid="ask-status"
         className={`w-fit rounded-full border px-4 py-2 text-base font-semibold ${TONE_CLASS[status.tone]}`}

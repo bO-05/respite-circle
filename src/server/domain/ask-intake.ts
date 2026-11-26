@@ -262,6 +262,129 @@ export function receiptStatusCopy(input: {
   }
 }
 
+/**
+ * The four stages an ask moves through, and the exact point it has reached.
+ *
+ * A stepper is a claim about progress, so a stage may only be marked as
+ * reached when the row that proves it exists:
+ *
+ * - "Written" is true the moment the ask exists.
+ * - "{name} is reading" needs the ask's first desk read, or a status that
+ *   could only happen after a person read the words.
+ * - "On the board" needs a published time. The two hold labels are the route
+ *   itself, which is recorded at submission, so they are reached by the hold.
+ * - "Covered" needs a time a neighbour took and a coordinator confirmed.
+ *
+ * The furthest reached stage is the current one. A hold nobody has read yet
+ * therefore shows "Call today" as current while the reading stage stays in
+ * the future: the screen never invents a reading that has not happened. A
+ * closed ask keeps the stages that did happen as done, and shows no current
+ * stage, because there is no next step to point at.
+ */
+export type ReceiptLifecycleKind =
+  | "written"
+  | "reading"
+  | "board"
+  | "call"
+  | "professional"
+  | "covered";
+
+export type ReceiptLifecycleState = "done" | "current" | "future";
+
+export type ReceiptLifecycleStep = {
+  kind: ReceiptLifecycleKind;
+  label: string;
+  state: ReceiptLifecycleState;
+};
+
+const ROUTE_STEP = {
+  board: { kind: "board", label: "On the board" },
+  call: { kind: "call", label: "Call today" },
+  professional: {
+    kind: "professional",
+    label: "Needs professional help",
+  },
+} as const satisfies Record<
+  "board" | "call" | "professional",
+  { kind: ReceiptLifecycleKind; label: string }
+>;
+
+export function receiptLifecycleSteps(input: {
+  status: ReceiptStatus;
+  coordinatorFirstName: string | null;
+  /** The ask's first desk read, or null while nobody has opened it. */
+  deskReadAt: Date | null;
+  /** Times the congregation can already see: open, claimed, covered, done. */
+  publishedCount?: number;
+  /** Times a neighbour took and a coordinator confirmed: covered or done. */
+  coveredCount?: number;
+}): ReceiptLifecycleStep[] {
+  const name = input.coordinatorFirstName?.trim() || "Your coordinator";
+  const publishedCount = Math.max(0, input.publishedCount ?? 0);
+  const coveredCount = Math.max(0, input.coveredCount ?? 0);
+
+  const route =
+    input.status === "safety_hold"
+      ? ROUTE_STEP.call
+      : input.status === "care_hold"
+        ? ROUTE_STEP.professional
+        : ROUTE_STEP.board;
+
+  // A closed ask was read by a person before it could close, and a covered
+  // time is proof of a reading whatever the ask's status says today.
+  const readReached =
+    input.deskReadAt !== null ||
+    input.status === "approved" ||
+    input.status === "sent_back" ||
+    input.status === "closed" ||
+    coveredCount > 0;
+
+  const routeReached =
+    input.status === "safety_hold" ||
+    input.status === "care_hold" ||
+    publishedCount > 0 ||
+    coveredCount > 0;
+
+  const reached: Array<{
+    kind: ReceiptLifecycleKind;
+    label: string;
+    reached: boolean;
+  }> = [
+    { kind: "written", label: "Written", reached: true },
+    { kind: "reading", label: `${name} is reading`, reached: readReached },
+    { kind: route.kind, label: route.label, reached: routeReached },
+    { kind: "covered", label: "Covered", reached: coveredCount > 0 },
+  ];
+
+  const finishedWithoutCoverage =
+    (input.status === "closed" || input.status === "withdrawn") &&
+    coveredCount === 0;
+
+  if (finishedWithoutCoverage) {
+    return reached.map((step) => ({
+      kind: step.kind,
+      label: step.label,
+      state: step.reached ? "done" : "future",
+    }));
+  }
+
+  const currentIndex = reached.reduce(
+    (last, step, index) => (step.reached ? index : last),
+    0,
+  );
+
+  return reached.map((step, index) => ({
+    kind: step.kind,
+    label: step.label,
+    state:
+      index === currentIndex
+        ? "current"
+        : step.reached
+          ? "done"
+          : "future",
+  }));
+}
+
 /** A quiet character count, with the limit stated only once it is exceeded. */
 export function characterCountLabel(
   length: number,

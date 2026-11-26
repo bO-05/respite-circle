@@ -10,6 +10,7 @@ import {
   church,
   person,
   policy,
+  slot,
 } from "@/db/schema";
 import { resolveNow } from "@/lib/clock";
 import {
@@ -388,6 +389,70 @@ export async function listCaregiverAsks(
       ),
     )
     .orderBy(desc(ask.createdAt), desc(ask.id));
+}
+
+/**
+ * One row of lifecycle evidence per ask the caregiver owns.
+ *
+ * `/care` draws the same four-stage stepper the receipt draws, and a stepper
+ * is a claim about progress: the last stage may only fill when a coordinator
+ * confirmed a time. This projection carries exactly what that rule needs —
+ * the ask's own status, its first desk read, and two counts over its times.
+ *
+ * It stays a separate read from `listCaregiverAsks` on purpose. The link list
+ * keeps its four-field allow-list and no status at all; this one is added to
+ * the page only to label the stages, and it still carries no words, no
+ * decision values, no other family and no slot detail. Ownership is the query
+ * filter, exactly as it is for every caregiver read.
+ */
+export type CaregiverAskLifecycle = {
+  askId: string;
+  status: AskStatus;
+  deskReadAt: Date | null;
+  coordinatorFirstName: string | null;
+  /** Times the congregation can see: open, claimed, covered, done. */
+  publishedCount: number;
+  /** Times a neighbour took and a coordinator confirmed: covered, done. */
+  coveredCount: number;
+};
+
+export async function listCaregiverAskLifecycles(
+  actor: Actor,
+  database: AppDatabase = appDb,
+): Promise<CaregiverAskLifecycle[]> {
+  requireRoleSession(actor, CAREGIVER_ROLES);
+
+  const [rows, coordinatorFirstName] = await Promise.all([
+    database
+      .select({
+        askId: ask.id,
+        status: ask.status,
+        deskReadAt: ask.deskReadAt,
+        createdAt: ask.createdAt,
+        publishedCount: sql<number>`count(${slot.id}) FILTER (WHERE ${slot.status} IN ('open', 'claimed', 'covered', 'done'))::int`,
+        coveredCount: sql<number>`count(${slot.id}) FILTER (WHERE ${slot.status} IN ('covered', 'done'))::int`,
+      })
+      .from(ask)
+      .leftJoin(slot, eq(slot.askId, ask.id))
+      .where(
+        and(
+          eq(ask.churchId, actor.churchId),
+          eq(ask.caregiverId, actor.personId),
+        ),
+      )
+      .groupBy(ask.id, ask.status, ask.deskReadAt, ask.createdAt)
+      .orderBy(desc(ask.createdAt), desc(ask.id)),
+    findCoordinatorFirstName(actor.churchId, database),
+  ]);
+
+  return rows.map((row) => ({
+    askId: row.askId,
+    status: row.status,
+    deskReadAt: row.deskReadAt,
+    coordinatorFirstName,
+    publishedCount: Number(row.publishedCount),
+    coveredCount: Number(row.coveredCount),
+  }));
 }
 
 /** The caregiver's own receipt: only the caregiver whose session it is. */
