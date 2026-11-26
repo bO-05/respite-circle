@@ -216,7 +216,7 @@ test.describe("VAL-DESK-001 and VAL-DESK-002 — coordinator desk queue", () => 
       "Waiting 2 days",
     );
     await expect(safetyRow.getByTestId("desk-hold-reason")).toContainText(
-      "call the family today",
+      "A safety concern was raised in the family's words.",
     );
     await expect(safetyRow.getByTestId("desk-hold-reason")).toContainText(
       "No time is offered",

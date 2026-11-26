@@ -148,10 +148,10 @@ export default async function CalibrationPage() {
             counts how often an ask marked as a safety concern went to a person
             instead of becoming a time.{" "}
             <span className="font-semibold text-ink">
-              Safety holds that were right
+              Call today: how often it was right
             </span>{" "}
-            counts how many of the safety holds the app raised were on the
-            right ask. A hold on the wrong ask still sends that ask to a
+            counts how many of the safety flags the app raised were on the
+            right ask. A flag on the wrong ask still sends that ask to a
             person; the page shows it rather than hiding it.
           </li>
           <li className="max-w-prose text-base leading-relaxed text-ink-muted">

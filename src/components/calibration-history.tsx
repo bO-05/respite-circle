@@ -119,7 +119,7 @@ export function CalibrationHistory({
               </div>
               <div>
                 <dt className="text-base font-semibold text-ink">
-                  Personal-care holds that were right
+                  Needs professional help: how often it was right
                 </dt>
                 <dd className="mt-0.5 text-base leading-relaxed text-ink-muted">
                   {entry.personalCarePrecision}

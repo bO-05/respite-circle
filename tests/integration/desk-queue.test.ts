@@ -251,8 +251,10 @@ describe("coordinator desk queue", () => {
     expect(item.careRecipientFirstName).toBe("Elena");
     expect(item.reasonSummary).toBe("Companionship · A Saturday");
     expect(item.pinLabel).toBe("Call today");
-    expect(item.holdReason).toMatch(/call the family today/i);
-    expect(item.holdReason).toMatch(/no time is offered/i);
+    expect(item.holdReason).not.toMatch(/call the family today/i);
+    expect(item.holdReason).toMatch(
+      /no time is offered until a person has spoken with the family/i,
+    );
     expect(item.answers.map((entry) => entry.questionId)).toEqual([
       "Q1",
       "Q4",

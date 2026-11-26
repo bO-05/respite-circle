@@ -218,8 +218,8 @@ export default async function DeskPage() {
       ) : (
         <>
           <p className="max-w-prose text-base leading-relaxed text-ink-muted">
-            Safety and personal care are pinned in their own groups. Everything
-            else is oldest first. No ask is hidden behind a number.
+            A call today and a need for professional help are pinned first.
+            Everything else is oldest first. No ask is hidden behind a number.
           </p>
 
           <DeskQueueSection

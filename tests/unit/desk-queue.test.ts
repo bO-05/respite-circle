@@ -323,8 +323,12 @@ describe("typed reason summary", () => {
 });
 
 describe("hold reasons", () => {
-  it("names the next human action for each hold", () => {
-    expect(HOLD_REASON.safety_hold).toMatch(/call the family today/i);
+  it("keeps each hold reason plain and free of the retired label", () => {
+    // The safety row's own title already says "Call Priya today", so the
+    // reason box must not repeat that call or open with "Safety flag".
+    expect(HOLD_REASON.safety_hold).not.toMatch(/^safety flag/i);
+    expect(HOLD_REASON.safety_hold).not.toMatch(/call the family today/i);
+    expect(HOLD_REASON.safety_hold).toMatch(/safety concern/i);
     expect(HOLD_REASON.care_hold).toMatch(/professional help/i);
 
     expect(holdReasonFor("safety_hold")).toBe(HOLD_REASON.safety_hold);
@@ -333,7 +337,9 @@ describe("hold reasons", () => {
   });
 
   it("does not offer a time on a safety hold and never creates a personal-care time", () => {
-    expect(HOLD_REASON.safety_hold).toMatch(/no time is offered/i);
+    expect(HOLD_REASON.safety_hold).toMatch(
+      /no time is offered until a person has spoken with the family/i,
+    );
     expect(HOLD_REASON.care_hold).toMatch(/no personal-care time/i);
   });
 });

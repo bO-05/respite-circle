@@ -36,7 +36,7 @@ demo data is fictional; nothing here is a real congregation's record. See
 | `/demo` | demo mode only | Lists personal sign-in links for each fictional role. |
 | `/ask`, `/ask/[id]` | caregiver | Own-words intake with optional dictation, a verbatim receipt, and the decision trail. |
 | `/care` | caregiver | Covered times and the one human confirmation for each. |
-| `/desk` and its sub-pages | coordinator, deputy | Queue, draft slots, exclusion reasons, policy, sessions, invite, coverage watch, audit, metrics. |
+| `/desk` and its sub-pages | coordinator, deputy | Queue, draft slots, exclusion reasons, policy, sessions, invite, Times nobody has taken yet, audit, metrics. |
 | `/circle`, `/my-claims` | volunteer | The board of open times and the claims that person made. |
 
 ## Limits
@@ -531,10 +531,11 @@ Next.js 16 App Router — server components, server actions, route handlers
   a rewritten confirmation; `cancelled` keeps the claim so cancelling a morning
   never erases who said yes. Safety and personal-care asks never produce slots.
 - **The failure path.** An unclaimed slot creates no notification at all.
-  Coverage watch writes an `absence_proof` from the live zero-row query and its
-  digest, and the coordinator logs the call. A time whose card says it needs a
-  call cannot close without one: the close is refused until that call is on
-  record, and a time that has not reached the watch yet closes as before.
+  The Times nobody has taken yet view writes an `absence_proof` from the live
+  zero-row query and its digest, and the coordinator logs the call. A time whose
+  card says it needs a call cannot close without one: the close is refused until
+  that call is on record, and a time that has not reached the watch yet closes as
+  before.
 
 Directory map: `src/app` routes, `src/server/domain` rules, `src/server/services`
 application services, `src/db` schema and client, `drizzle/` migrations,

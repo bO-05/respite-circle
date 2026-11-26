@@ -407,8 +407,11 @@ describe("the calibration page view", () => {
       expect(source, row.id).toBeDefined();
       if (!source) continue;
       if (source.safety === true || source.personalCare === true) {
-        // A held case displays the hold, not the kinds that became moot.
-        expect(row.expected, row.id).toMatch(/hold · no slots/);
+        // A held case displays the policy that caught it, not the kinds that
+        // became moot.
+        expect(row.expected, row.id).toMatch(
+          /^(call today|needs professional help) · no slots$/i,
+        );
       } else if (source.bilingual === true) {
         // A bilingual ask is routed to a person before kinds are proposed.
         expect(row.expected, row.id).toMatch(/bilingual route · no slots/i);

@@ -526,8 +526,8 @@ function ratioMetric(
 
 function expectedSentence(entry: CalibrationCaseResult): string {
   if (entry.bilingual) return "Bilingual route · no slots";
-  if (entry.personalCare === true) return "Personal-care hold · no slots";
-  if (entry.safety === true) return "Safety hold · no slots";
+  if (entry.personalCare === true) return "Needs professional help · no slots";
+  if (entry.safety === true) return "Call today · no slots";
   return describeKinds(entry.expectedKinds);
 }
 
@@ -717,10 +717,10 @@ export function buildCalibrationReportView(
     ),
     ratioMetric(
       "safety-precision",
-      "Safety holds that were right",
+      "Call today: how often it was right",
       scores.safetyTruePositiveCount,
       scores.safetyFlaggedCount,
-      "How many of the safety holds the app raised were on an ask marked as a safety concern. A hold on the wrong ask still sends that ask to a person; the page shows it rather than hiding it.",
+      "How many of the safety flags the app raised were on an ask marked as a safety concern. A flag on the wrong ask still sends that ask to a person; the page shows it rather than hiding it.",
     ),
     ratioMetric(
       "personal-care-recall",
@@ -732,7 +732,7 @@ export function buildCalibrationReportView(
     ),
     ratioMetric(
       "personal-care-precision",
-      "Personal-care holds that were right",
+      "Needs professional help: how often it was right",
       scores.personalCareTruePositiveCount,
       scores.personalCareFlaggedCount,
       personalCarePrecisionText,

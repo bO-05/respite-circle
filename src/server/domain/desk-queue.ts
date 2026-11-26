@@ -86,7 +86,7 @@ export function safetyRowTitle(
  */
 export const HOLD_REASON = {
   safety_hold:
-    "Safety flag — call the family today. No time is offered until a person has spoken with them.",
+    "A safety concern was raised in the family's words. No time is offered until a person has spoken with the family.",
   care_hold:
     "Personal care mentioned — connect the family with professional help. No personal-care time is ever created.",
 } as const;

@@ -145,7 +145,7 @@ export default async function DeskSessionsPage() {
         {template ? (
           <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
             Every {template.weekdayLabel}, {template.timeLabel}, with{" "}
-            {template.capacity} companion places. Plain code plans the next four
+            {template.capacity} companion places. The rules plan the next four
             Tuesdays from this template; running it again creates nothing twice.
           </p>
         ) : (
