@@ -4,8 +4,10 @@ import { PageMain } from "./page-main";
 /**
  * Public, no-session pages: landing support, entry help, and demo access.
  *
- * `wide` is for the trust page only: four trust matrices cannot be read in a
- * 70-character column, and each matrix still keeps a reading measure per cell.
+ * `wide` is for the trust page and the demo's role-card grid: four trust
+ * matrices cannot be read in a 70-character column, and a two-up card grid in
+ * the default column would squeeze each card to about 197px. Each matrix and
+ * each card still keeps a reading measure of its own.
  */
 export function PublicPage({
   eyebrow,

@@ -77,9 +77,12 @@ describe("VAL-R2PROM-004 — the desk audit page states both halves", () => {
 describe("VAL-R2PROM-008 — the demo says what it actually does", () => {
   const demoPage = flatten(read(demoPagePath));
 
-  it("says the routing is the live model's", () => {
-    expect(demoPage).toMatch(/routing is the live model's/i);
+  it("says the live model's answers route each ask and the fixed rules can override", () => {
+    expect(demoPage).toMatch(
+      /the live model's answers route each ask; the app's fixed rules can override\./i,
+    );
     expect(demoPage).toMatch(/nine typed questions/i);
+    expect(demoPage).not.toMatch(/routing is the live model's/i);
   });
 
   it("says the calendar around it is fixed so the demonstration repeats", () => {
@@ -108,7 +111,10 @@ describe("VAL-R2PROM-008 — the demo says what it actually does", () => {
 
   it("carries the same receipt explanation beside the reset form", () => {
     const resetPage = flatten(read(demoResetPath));
-    expect(resetPage).toMatch(/routing is the live model's/i);
+    expect(resetPage).toMatch(
+      /the live model's answers route each ask; the app's fixed rules can override\./i,
+    );
+    expect(resetPage).not.toMatch(/routing is the live model's/i);
     expect(resetPage).toMatch(/calendar around it is fixed/i);
     expect(resetPage).toMatch(/falls back to the app's backup rules/i);
     expect(resetPage).toMatch(/reason in plain words/i);

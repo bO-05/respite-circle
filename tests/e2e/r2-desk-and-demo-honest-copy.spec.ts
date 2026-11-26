@@ -152,7 +152,10 @@ test.describe("round 2 — honest desk and demo copy", () => {
   }) => {
     await page.goto("/demo");
     await expect(
-      page.getByRole("heading", { level: 1, name: /choose a role for the demo/i }),
+      page.getByRole("heading", {
+        level: 1,
+        name: /choose someone to walk in as/i,
+      }),
     ).toBeVisible();
 
     const note = page.getByTestId("demo-model-note");
@@ -160,7 +163,9 @@ test.describe("round 2 — honest desk and demo copy", () => {
     await expect(
       note.getByRole("heading", { name: /what this demo really does/i }),
     ).toBeVisible();
-    await expect(note).toContainText("The routing is the live model's");
+    await expect(note).toContainText(
+      "The live model's answers route each ask; the app's fixed rules can override.",
+    );
     await expect(note).toContainText("The calendar around it is fixed");
     await expect(note).toContainText("so the demonstration repeats");
     await expect(note).toContainText("The model does not build the board");
@@ -169,11 +174,21 @@ test.describe("round 2 — honest desk and demo copy", () => {
     );
     await expect(note).toContainText("names the reason in plain words");
 
-    // No sentence on the demo surface claims the model produced the board.
+    // No sentence on the demo surface claims the model produced the board,
+    // and the round-4 rewrite retired the overclaim rather than hiding it.
     const pageText = await page.locator("body").innerText();
     expect(pageText).not.toMatch(
       /model (?:built|builds|produced|produces|wrote|writes) the (?:whole )?board/i,
     );
+    for (const retired of [
+      "The routing is the live model's",
+      "labelled rules engine",
+      "failure path",
+    ]) {
+      expect(pageText, `the demo still says "${retired}"`).not.toContain(
+        retired,
+      );
+    }
 
     await shot(page, "demo-what-it-does");
     await mkdir(EVIDENCE_DIR, { recursive: true });
@@ -196,6 +211,9 @@ test.describe("round 2 — honest desk and demo copy", () => {
     });
 
     await page.goto("/demo/reset");
+    await expect(page.getByTestId("demo-reset-disclosure")).toContainText(
+      "The live model's answers route each ask; the app's fixed rules can override.",
+    );
     await expect(page.getByTestId("demo-reset-disclosure")).toContainText(
       "falls back to the app's backup rules",
     );

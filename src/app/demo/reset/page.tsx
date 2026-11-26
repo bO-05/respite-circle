@@ -44,12 +44,13 @@ export default function DemoResetPage() {
             How to read the receipt
           </h2>
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
-            The routing is the live model&apos;s: each of the four asks goes
-            through the same model path as a real ask. The calendar around it
-            is fixed, so the demonstration repeats. When the model does not
-            answer, or its answers disagree with the church&apos;s policy, that
-            ask falls back to the app&apos;s backup rules, and the receipt names
-            the reason in plain words.
+            The live model&apos;s answers route each ask; the app&apos;s fixed
+            rules can override. Each of the four asks goes through the same
+            model path as a real ask. The calendar around it is fixed, so the
+            demonstration repeats. When the model does not answer, or its
+            answers disagree with the church&apos;s policy, that ask falls back
+            to the app&apos;s backup rules, and the receipt names the reason in
+            plain words.
           </p>
           <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
             <Link
