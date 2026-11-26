@@ -81,7 +81,7 @@ export type BoardSlotStatus = "open" | "claimed" | "covered";
 
 /**
  * The calm state of a time someone has already said yes to. A claimed time is
- * amber and human: "Claimed — waiting for Grace". A covered time is simply
+ * amber and human: "Waiting for Grace to confirm". A covered time is simply
  * "Covered". An open time has no pill — it has an action.
  */
 export function boardClaimStateCopy(
@@ -91,9 +91,22 @@ export function boardClaimStateCopy(
   if (status === "covered") return "Covered";
   if (status === "claimed") {
     const name = coordinatorFirstName?.trim() || "a coordinator";
-    return `Claimed — waiting for ${name}`;
+    return `Waiting for ${name} to confirm`;
   }
   return null;
+}
+
+/**
+ * The one hint under a claimed time on the board. It names the person who
+ * confirms it, in the third person, because the neighbour reading the board may
+ * not be the one who took it: "with you" would be false for everyone else.
+ */
+export function boardClaimedHint(
+  coordinatorFirstName: string | null,
+): string {
+  return `${coordinatorSentenceName(
+    coordinatorFirstName,
+  )} confirms a taken time before it is covered.`;
 }
 
 export type BoardLockCopy = {
@@ -178,14 +191,14 @@ export function boardLockCopy(
       };
     case "recipient_not_eligible":
       return {
-        title: "This one is not for you to claim.",
+        title: "This one is not yours to take.",
         unlock: `You are close to this family in another way. Ask ${name} who else could help.`,
       };
   }
 }
 
-/** The one primary action on a claimable time. */
-export const BOARD_ACTION_LABEL = "Claim this time";
+/** The one primary action on a claimable time. One verb for a volunteer's yes. */
+export const BOARD_ACTION_LABEL = "I'll take this time";
 
 export function boardClaimHint(
   coordinatorFirstName: string | null,

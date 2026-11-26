@@ -193,7 +193,7 @@ test.describe.serial("VAL-CONFIRM-005 and VAL-CROSS-001 — the loop closes", ()
       `[data-testid="board-slot"][data-slot-id="${slotId}"]`,
     );
     await expect(card).toBeVisible();
-    await card.getByRole("button", { name: "Claim this time" }).click();
+    await card.getByRole("button", { name: "I'll take this time" }).click();
     await ruth.page.waitForURL(/\/circle\?claim=claimed/, { timeout: 20_000 });
     await ruth.context.close();
 

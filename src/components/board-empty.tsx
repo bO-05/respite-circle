@@ -1,12 +1,15 @@
 import Link from "next/link";
+import { CalendarOff } from "lucide-react";
 import { boardEmptyCopy } from "@/server/domain/board";
+import { IconWell } from "./visual-primitives";
 
 /**
  * The calm empty board.
  *
  * It never shows a number, a wait, or a failure. It names the one human action
  * that changes the situation: a neighbour speaks to the coordinator, or the
- * desk team reads the waiting asks and publishes the times that are ready.
+ * desk team reads the waiting asks and publishes the times that are ready. The
+ * calendar-off well says the same thing as the words beside it, decoratively.
  */
 export function BoardEmpty({
   role,
@@ -23,7 +26,11 @@ export function BoardEmpty({
       aria-labelledby="board-empty-heading"
       className="rounded-lg border border-line bg-surface p-5"
     >
-      <h2 id="board-empty-heading" className="font-serif text-2xl text-ink">
+      <IconWell icon={CalendarOff} tone="accent" />
+      <h2
+        id="board-empty-heading"
+        className="mt-3 font-serif text-2xl text-ink"
+      >
         {empty.title}
       </h2>
       <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">

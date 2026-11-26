@@ -162,6 +162,8 @@ test.describe("VAL-BOARD-001…006 — the congregation board", () => {
     const empty = ada.page.getByTestId("board-empty");
     await expect(empty).toBeVisible();
     await expect(empty).toContainText("Nothing is open just now");
+    // The calendar-off well is decoration beside the words, never a control.
+    await expect(empty.locator("svg")).toHaveCount(1);
     // The next human action is named, and no number or shaming word appears.
     await expect(empty).toContainText(/coordinator/i);
     await expect(empty).toContainText(/tell|speak|ask/i);
@@ -251,7 +253,7 @@ test.describe("VAL-BOARD-001…006 — the congregation board", () => {
     // board may legitimately offer other open times to Ruth.
     for (const card of [companionCard, homeCard]) {
       const claimButton = card.getByRole("button", {
-        name: "Claim this time",
+        name: "I'll take this time",
       });
       await expect(claimButton).toHaveCount(1);
       const box = await claimButton.boundingBox();
@@ -325,7 +327,7 @@ test.describe("VAL-BOARD-001…006 — the congregation board", () => {
       /two references|checklist/i,
     );
     await expect(
-      tomHome.getByRole("button", { name: "Claim this time" }),
+      tomHome.getByRole("button", { name: "I'll take this time" }),
     ).toHaveCount(0);
     await expect(
       tom.page.locator(
@@ -354,7 +356,7 @@ test.describe("VAL-BOARD-001…006 — the congregation board", () => {
     );
     await expect(claimedCard).toHaveAttribute("data-status", "claimed");
     await expect(claimedCard.getByTestId("board-status")).toHaveText(
-      "Claimed — waiting for Grace",
+      "Waiting for Grace to confirm",
     );
     await expect(claimedCard.getByTestId("board-claim")).toHaveCount(0);
     const claimedContainer = sara.page.locator(

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BOARD_ACTION_LABEL,
+  boardClaimedHint,
   boardClaimHint,
   boardClaimStateCopy,
   boardEmptyCopy,
@@ -67,10 +68,10 @@ describe("board kind copy", () => {
 describe("board status copy", () => {
   it("shows a calm claimed state naming the coordinator, and a calm covered state", () => {
     expect(boardClaimStateCopy("claimed", "Grace")).toBe(
-      "Claimed — waiting for Grace",
+      "Waiting for Grace to confirm",
     );
     expect(boardClaimStateCopy("claimed", null)).toBe(
-      "Claimed — waiting for a coordinator",
+      "Waiting for a coordinator to confirm",
     );
     expect(boardClaimStateCopy("covered", "Grace")).toBe("Covered");
     expect(boardClaimStateCopy("open", "Grace")).toBeNull();
@@ -122,11 +123,17 @@ describe("board lock copy", () => {
       /driver/i,
     );
   });
+
+  it("calls a time close to the family one that is not the viewer's to take", () => {
+    expect(boardLockCopy("recipient_not_eligible", "Grace").title).toBe(
+      "This one is not yours to take.",
+    );
+  });
 });
 
 describe("board claim action", () => {
-  it("offers one plain action and names the person who confirms it", () => {
-    expect(BOARD_ACTION_LABEL).toBe("Claim this time");
+  it("offers one plain action with the volunteer's own verb", () => {
+    expect(BOARD_ACTION_LABEL).toBe("I'll take this time");
     expect(boardClaimHint("Grace")).toBe(
       "Grace will confirm it with you before the time is covered.",
     );
@@ -134,6 +141,16 @@ describe("board claim action", () => {
     expect(boardClaimHint(null)).toBe(
       "Your coordinator will confirm it with you before the time is covered.",
     );
+  });
+
+  it("names the coordinator under a time someone has taken", () => {
+    expect(boardClaimedHint("Grace")).toBe(
+      "Grace confirms a taken time before it is covered.",
+    );
+    expect(boardClaimedHint(null)).toBe(
+      "Your coordinator confirms a taken time before it is covered.",
+    );
+    expectCalmCopy(boardClaimedHint("Grace"));
   });
 });
 

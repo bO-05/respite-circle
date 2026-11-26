@@ -196,7 +196,7 @@ test.describe.serial("VAL-CLAIM-001…004 — the atomic claim", () => {
         response.url().includes(`/api/slots/${companionId}/claim`) &&
         response.request().method() === "POST",
     );
-    await card.getByRole("button", { name: "Claim this time" }).click();
+    await card.getByRole("button", { name: "I'll take this time" }).click();
     const claimResponse = await posted;
     expect([200, 303]).toContain(claimResponse.status());
 
@@ -212,7 +212,7 @@ test.describe.serial("VAL-CLAIM-001…004 — the atomic claim", () => {
     );
     await expect(claimedCard).toHaveAttribute("data-status", "claimed");
     await expect(claimedCard.getByTestId("board-status")).toHaveText(
-      "Claimed — waiting for Grace",
+      "Waiting for Grace to confirm",
     );
     await expect(claimedCard.getByTestId("board-claim")).toHaveCount(0);
     await shot(ruth.page, "claim-eligible-success");

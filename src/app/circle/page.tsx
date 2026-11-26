@@ -1,10 +1,12 @@
 import { BoardEmpty } from "@/components/board-empty";
 import { BoardSlotCard } from "@/components/board-slot-card";
 import { ClaimBanner } from "@/components/claim-banner";
+import { DateGroup } from "@/components/date-group";
 import { RolePage } from "@/components/role-page";
 import { BOARD_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { isClaimOutcome, isRuleCode } from "@/server/domain/claim";
+import { dayGroupCount, groupByChurchDay } from "@/server/domain/day-groups";
 import { getBoard } from "@/server/repositories/board";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,11 @@ export const dynamic = "force-dynamic";
  * orientation note, a claimant's name, or any count. Neighbours see times, never
  * stories. A claim that comes back as a redirect reads one calm sentence here;
  * the closed code is validated, never echoed.
+ *
+ * When the week holds more than one day, the open times are grouped under a
+ * weekday-and-date rail in calendar order. One day needs no rail, so there the
+ * card itself carries the day in its time block instead. No time is ever listed
+ * under two headings.
  */
 export default async function CirclePage({
   searchParams,
@@ -50,6 +57,37 @@ export default async function CirclePage({
 
   const openSlots = board?.slots.filter((slot) => slot.status === "open") ?? [];
   const takenSlots = board?.slots.filter((slot) => slot.status !== "open") ?? [];
+  const timeZone = board?.timeZone ?? "UTC";
+  const coordinatorFirstName = board?.coordinatorFirstName ?? null;
+
+  const openByDay = groupByChurchDay(
+    openSlots,
+    (slot) => slot.windowStart,
+    timeZone,
+  );
+  const takenByDay = groupByChurchDay(
+    takenSlots,
+    (slot) => slot.windowStart,
+    timeZone,
+  );
+  const openHasSeveralDays = dayGroupCount(openByDay) > 1;
+  const takenHasSeveralDays = dayGroupCount(takenByDay) > 1;
+
+  const card = (
+    slot: (typeof openSlots)[number],
+    headingLevel: 3 | 4,
+    showDay = false,
+  ) => (
+    <BoardSlotCard
+      key={slot.id}
+      slot={slot}
+      timeZone={timeZone}
+      viewerRole={viewerRole}
+      coordinatorFirstName={coordinatorFirstName}
+      headingLevel={headingLevel}
+      showDay={showDay}
+    />
+  );
 
   return (
     <RolePage
@@ -83,25 +121,33 @@ export default async function CirclePage({
         </div>
 
         {openSlots.length > 0 ? (
-          <ul
-            data-testid="board-list"
-            aria-label="Open times"
-            className="flex flex-col gap-4"
-          >
-            {openSlots.map((slot) => (
-              <BoardSlotCard
-                key={slot.id}
-                slot={slot}
-                timeZone={board?.timeZone ?? "UTC"}
-                viewerRole={viewerRole}
-                coordinatorFirstName={board?.coordinatorFirstName ?? null}
-              />
-            ))}
-          </ul>
+          <div data-testid="board-list" className="flex flex-col gap-6">
+            {openHasSeveralDays ? (
+              <>
+                {openByDay.groups.map((group) => (
+                  <DateGroup key={group.day.key} day={group.day}>
+                    {group.items.map((slot) => card(slot, 4))}
+                  </DateGroup>
+                ))}
+                {openByDay.undated.length > 0 ? (
+                  <ul
+                    aria-label="Times to be chosen with the family"
+                    className="flex flex-col gap-4"
+                  >
+                    {openByDay.undated.map((slot) => card(slot, 4))}
+                  </ul>
+                ) : null}
+              </>
+            ) : (
+              <ul aria-label="Open times" className="flex flex-col gap-4">
+                {openSlots.map((slot) => card(slot, 3, true))}
+              </ul>
+            )}
+          </div>
         ) : (
           <BoardEmpty
             role={viewerRole}
-            coordinatorFirstName={board?.coordinatorFirstName ?? null}
+            coordinatorFirstName={coordinatorFirstName}
           />
         )}
       </section>
@@ -124,21 +170,32 @@ export default async function CirclePage({
               nothing about who said yes.
             </p>
           </div>
-          <ul
-            data-testid="board-taken-list"
-            aria-label="Times that are already spoken for"
-            className="flex flex-col gap-4"
-          >
-            {takenSlots.map((slot) => (
-              <BoardSlotCard
-                key={slot.id}
-                slot={slot}
-                timeZone={board?.timeZone ?? "UTC"}
-                viewerRole={viewerRole}
-                coordinatorFirstName={board?.coordinatorFirstName ?? null}
-              />
-            ))}
-          </ul>
+          <div data-testid="board-taken-list" className="flex flex-col gap-6">
+            {takenHasSeveralDays ? (
+              <>
+                {takenByDay.groups.map((group) => (
+                  <DateGroup key={group.day.key} day={group.day}>
+                    {group.items.map((slot) => card(slot, 4))}
+                  </DateGroup>
+                ))}
+                {takenByDay.undated.length > 0 ? (
+                  <ul
+                    aria-label="Times to be chosen with the family"
+                    className="flex flex-col gap-4"
+                  >
+                    {takenByDay.undated.map((slot) => card(slot, 4))}
+                  </ul>
+                ) : null}
+              </>
+            ) : (
+              <ul
+                aria-label="Times that are already spoken for"
+                className="flex flex-col gap-4"
+              >
+                {takenSlots.map((slot) => card(slot, 3, true))}
+              </ul>
+            )}
+          </div>
         </section>
       ) : null}
     </RolePage>

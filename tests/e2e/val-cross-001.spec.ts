@@ -300,14 +300,14 @@ test.describe("VAL-CROSS-001 — invite, ask, edit, approve, claim, confirm, don
       `[data-testid="board-slot"][data-slot-id="${slotId}"]`,
     );
     await expect(card).toBeVisible();
-    await expect(card.getByRole("heading", { level: 3 })).toHaveText(
+    await expect(card.getByRole("heading", { name: EDITED_LABEL })).toHaveText(
       EDITED_LABEL,
     );
     await expect(card).not.toContainText(CONSTRUCTED_LABEL);
     await shot(ruth.page, "08-board-carries-the-edited-label");
 
     // 7. Ruth claims it through the board's real form.
-    await card.getByRole("button", { name: "Claim this time" }).click();
+    await card.getByRole("button", { name: "I'll take this time" }).click();
     await ruth.page.waitForURL(/\/circle\?claim=claimed/, {
       timeout: 30_000,
     });

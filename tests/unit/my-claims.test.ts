@@ -6,6 +6,7 @@ import {
   isMyClaimStatus,
   isVisitAction,
   isVisitFlashCode,
+  myClaimCardHint,
   myClaimEmptyCopy,
   myClaimExpectationCopy,
   myClaimNoteMissingCopy,
@@ -69,14 +70,32 @@ describe("a volunteer's claim status", () => {
 
   it("names the coordinator in a claimed or covered line", () => {
     expect(myClaimStatusCopy("claimed", "Grace").label).toBe(
-      "Claimed — waiting for Grace",
+      "Waiting for Grace to confirm",
     );
     expect(myClaimStatusCopy("covered", "Grace").label).toBe(
       "Covered — Grace confirmed it",
     );
     expect(myClaimStatusCopy("claimed", null).label).toBe(
-      "Claimed — waiting for your coordinator",
+      "Waiting for your coordinator to confirm",
     );
+  });
+
+  it("gives every time one calm hint that names the coordinator", () => {
+    expect(myClaimCardHint("claimed", "Grace")).toBe(
+      "Grace confirms this time before the family's orientation note appears.",
+    );
+    expect(myClaimCardHint("covered", "Grace")).toBe(
+      "The family's orientation note is on this time's own page.",
+    );
+    expect(myClaimCardHint("done", "Grace")).toBe(
+      "This time is finished. Thank you for taking it.",
+    );
+    expect(myClaimCardHint("cancelled", "Grace")).toBe(
+      "Grace cancelled this time, so nothing is expected of you.",
+    );
+    for (const status of ["claimed", "covered", "done", "cancelled"] as const) {
+      expectCalmCopy(myClaimCardHint(status, "Grace"));
+    }
   });
 
   it("closes the loop in plain words without a score or a count", () => {

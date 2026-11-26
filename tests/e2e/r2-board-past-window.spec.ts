@@ -236,7 +236,7 @@ test.describe("VAL-R2PROM-001 — a time that has started is never offered or cl
     await expect(futureCard).toBeVisible();
     await expect(futureCard).toHaveAttribute("data-status", "open");
     const claimButton = futureCard.getByRole("button", {
-      name: "Claim this time",
+      name: "I'll take this time",
     });
     await expect(claimButton).toHaveCount(1);
     const box = await claimButton.boundingBox();
@@ -302,7 +302,7 @@ test.describe("VAL-R2PROM-001 — a time that has started is never offered or cl
     ).toHaveAttribute("data-status", "claimed");
     await expect(
       ada.page.getByTestId("board-slot").filter({ hasText: FUTURE_LABEL }),
-    ).toContainText("Claimed — waiting for Grace");
+    ).toContainText("Waiting for Grace to confirm");
     await shot(ada.page, "circle-future-time-claimed");
     await ada.context.close();
   });

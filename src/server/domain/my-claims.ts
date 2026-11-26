@@ -61,7 +61,7 @@ export function myClaimStatusCopy(
   switch (status) {
     case "claimed":
       return {
-        label: `Claimed — waiting for ${name}`,
+        label: `Waiting for ${name} to confirm`,
         tone: "amber",
       };
     case "covered":
@@ -73,6 +73,27 @@ export function myClaimStatusCopy(
       return { label: "Done — thank you", tone: "green" };
     case "cancelled":
       return { label: "Cancelled by the church", tone: "muted" };
+  }
+}
+
+/** The one plain hint under a time on `/my-claims`. */
+export function myClaimCardHint(
+  status: MyClaimStatus,
+  coordinatorFirstName: string | null,
+): string {
+  switch (status) {
+    case "claimed":
+      return `${sentenceName(
+        coordinatorFirstName,
+      )} confirms this time before the family's orientation note appears.`;
+    case "covered":
+      return "The family's orientation note is on this time's own page.";
+    case "done":
+      return "This time is finished. Thank you for taking it.";
+    case "cancelled":
+      return `${sentenceName(
+        coordinatorFirstName,
+      )} cancelled this time, so nothing is expected of you.`;
   }
 }
 

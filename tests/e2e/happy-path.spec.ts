@@ -135,7 +135,7 @@ test.describe("VAL-CROSS-001 — the happy path", () => {
         response.url().includes(`/api/slots/${slot.id}/claim`) &&
         response.request().method() === "POST",
     );
-    await card.getByRole("button", { name: "Claim this time" }).click();
+    await card.getByRole("button", { name: "I'll take this time" }).click();
     expect([200, 303]).toContain((await posted).status());
     await ruth.page.waitForURL(/\/circle\?claim=claimed/, { timeout: 30_000 });
     await expect(ruth.page.getByTestId("claim-banner")).toContainText(

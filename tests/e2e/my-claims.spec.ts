@@ -276,7 +276,7 @@ test.describe.serial("VAL-CLAIM-005, VAL-CLAIM-006, VAL-ACCESS-004 and VAL-CROSS
     );
     await expect(companion).toHaveAttribute("data-status", "claimed");
     await expect(companion.getByTestId("my-claim-status")).toHaveText(
-      "Claimed — waiting for Grace",
+      "Waiting for Grace to confirm",
     );
     await expect(home).toHaveAttribute("data-status", "covered");
     await expect(home.getByTestId("my-claim-status")).toHaveText(

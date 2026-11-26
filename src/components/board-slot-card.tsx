@@ -2,14 +2,15 @@ import { formatApprovalLine } from "@/server/domain/ask-review";
 import { AUTO_PUBLISH_BOARD_LABEL } from "@/server/domain/auto-publish";
 import {
   BOARD_ACTION_LABEL,
+  boardClaimedHint,
   boardClaimHint,
   boardClaimStateCopy,
   boardGatedLine,
   boardKindCopy,
   boardLockCopy,
 } from "@/server/domain/board";
-import { formatWindowLabel } from "@/server/domain/slots";
 import type { BoardSlot } from "@/server/repositories/board";
+import { TimeCard } from "./time-card";
 
 export type BoardViewerRole = "volunteer" | "coordinator" | "deputy";
 
@@ -27,77 +28,72 @@ export type BoardViewerRole = "volunteer" | "coordinator" | "deputy";
  * enforcement.
  */
 
-function ClaimArea({
+function ClaimAction({
   slot,
-  viewerRole,
-  coordinatorFirstName,
+  hintId,
 }: {
   slot: BoardSlot;
-  viewerRole: BoardViewerRole;
-  coordinatorFirstName: string | null;
+  hintId: string;
 }) {
-  if (viewerRole !== "volunteer") {
-    return (
-      <p
-        data-testid="board-desk-note"
-        className="mt-4 max-w-prose text-base leading-relaxed text-ink-muted"
-      >
-        You are seeing this as the desk team. A neighbour claims the time from
-        their own board, and a coordinator confirms it.
-      </p>
-    );
-  }
-
-  if (!slot.claim) return null;
-
-  if (!slot.claim.eligible) {
-    const lock = boardLockCopy(slot.claim.ruleCode, coordinatorFirstName);
-    return (
-      <div
-        data-testid="board-lock"
-        data-rule-code={slot.claim.ruleCode}
-        className="mt-4 max-w-prose rounded-md border border-line bg-paper p-4"
-      >
-        <h4
-          data-testid="board-lock-title"
-          className="text-lg font-semibold leading-snug text-ink"
-        >
-          {lock.title}
-        </h4>
-        <p
-          data-testid="board-lock-unlock"
-          className="mt-1 text-base leading-relaxed text-ink"
-        >
-          {lock.unlock}
-        </p>
-      </div>
-    );
-  }
-
-  const hintId = `board-claim-hint-${slot.id}`;
-
   return (
     <form
       action={`/api/slots/${slot.id}/claim`}
       method="post"
       data-testid="board-claim"
-      className="mt-4 flex flex-col gap-2"
+      className="flex w-fit"
     >
       <button
         type="submit"
         aria-describedby={hintId}
-        className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-accent bg-accent px-5 py-2 text-lg font-semibold text-accent-foreground"
+        className="inline-flex min-h-11 min-w-11 touch-manipulation items-center justify-center rounded-md border border-accent bg-accent px-5 py-2 text-lg font-semibold text-accent-foreground"
       >
         {BOARD_ACTION_LABEL}
       </button>
-      <p
-        id={hintId}
-        data-testid="board-claim-hint"
-        className="max-w-prose text-base leading-relaxed text-ink-muted"
-      >
-        {boardClaimHint(coordinatorFirstName)}
-      </p>
     </form>
+  );
+}
+
+function LockBlock({
+  slot,
+  coordinatorFirstName,
+}: {
+  slot: BoardSlot;
+  coordinatorFirstName: string | null;
+}) {
+  if (!slot.claim || slot.claim.eligible) return null;
+  const lock = boardLockCopy(slot.claim.ruleCode, coordinatorFirstName);
+
+  return (
+    <div
+      data-testid="board-lock"
+      data-rule-code={slot.claim.ruleCode}
+      className="max-w-prose rounded-md border border-line bg-paper p-4"
+    >
+      <p
+        data-testid="board-lock-title"
+        className="text-lg font-semibold leading-snug text-ink"
+      >
+        {lock.title}
+      </p>
+      <p
+        data-testid="board-lock-unlock"
+        className="mt-1 text-base leading-relaxed text-ink"
+      >
+        {lock.unlock}
+      </p>
+    </div>
+  );
+}
+
+function DeskNote() {
+  return (
+    <p
+      data-testid="board-desk-note"
+      className="max-w-prose text-base leading-relaxed text-ink-muted"
+    >
+      You are seeing this as the desk team. A neighbour takes the time from
+      their own board, and a coordinator confirms it.
+    </p>
   );
 }
 
@@ -106,11 +102,15 @@ export function BoardSlotCard({
   timeZone,
   viewerRole,
   coordinatorFirstName,
+  headingLevel = 3,
+  showDay = false,
 }: {
   slot: BoardSlot;
   timeZone: string;
   viewerRole: BoardViewerRole;
   coordinatorFirstName: string | null;
+  headingLevel?: 3 | 4;
+  showDay?: boolean;
 }) {
   const kind = boardKindCopy(slot.kind);
   const gatedLine = boardGatedLine(slot.kind);
@@ -126,101 +126,93 @@ export function BoardSlotCard({
         timeZone,
       });
   const statusCopy = boardClaimStateCopy(slot.status, coordinatorFirstName);
+  const status = statusCopy
+    ? {
+        label: statusCopy,
+        tone: slot.status === "covered" ? ("green" as const) : ("amber" as const),
+      }
+    : null;
 
-  return (
-    <li
-      data-testid="board-slot"
-      data-slot-id={slot.id}
-      data-kind={slot.kind}
-      data-status={slot.status}
-      data-gated={slot.gated ? "true" : "false"}
-      data-eligible={slot.claim ? String(slot.claim.eligible) : undefined}
-      className="rounded-lg border border-line bg-surface p-5"
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p
-          data-testid="board-kind"
-          className="inline-flex min-h-7 items-center rounded-full border border-line bg-paper px-3 text-base font-semibold text-ink"
-        >
-          {kind.word}
-        </p>
-        {statusCopy ? (
-          <p
-            data-testid="board-status"
-            className={`inline-flex min-h-7 items-center rounded-full border px-3 text-base font-semibold text-ink ${
-              slot.status === "covered"
-                ? "border-green bg-green-soft"
-                : "border-amber bg-amber-soft"
-            }`}
-          >
-            {statusCopy}
-          </p>
-        ) : null}
-      </div>
+  const isVolunteer = viewerRole === "volunteer";
+  const canTake = isOpen && isVolunteer && slot.claim?.eligible === true;
+  const isLocked = isOpen && isVolunteer && slot.claim?.eligible === false;
+  const hintId = `board-claim-hint-${slot.id}`;
 
-      <h3 className="mt-3 font-serif text-2xl leading-snug text-ink">
-        {slot.label}
-      </h3>
+  const hint = canTake
+    ? boardClaimHint(coordinatorFirstName)
+    : slot.status === "claimed"
+      ? boardClaimedHint(coordinatorFirstName)
+      : slot.status === "covered"
+        ? "This time is covered. It stays here in plain words, with nothing about the family."
+        : null;
 
-      <div className="mt-3 flex flex-col gap-1">
-        <p
-          data-testid="board-window"
-          className="max-w-prose text-lg leading-relaxed text-ink"
-        >
-          {formatWindowLabel(slot.windowStart, slot.windowEnd, timeZone)}
-        </p>
-        <p
-          data-testid="board-location"
-          className="max-w-prose text-base leading-relaxed text-ink"
-        >
-          {kind.location}
-        </p>
-        <p
-          data-testid="board-capacity"
-          className="max-w-prose text-base leading-relaxed text-ink-muted"
-        >
-          {kind.capacity}
-        </p>
-      </div>
-
+  const hasDetails = gatedLine !== null || autoPublished || approvalLine;
+  const details = hasDetails ? (
+    <>
       {gatedLine ? (
         <p
           data-testid="board-gated"
-          className="mt-3 max-w-prose text-base leading-relaxed text-ink"
+          className="max-w-prose text-base leading-relaxed text-ink"
         >
           {gatedLine}
         </p>
       ) : null}
-
       {autoPublished ? (
         <p
           data-testid="board-auto-published"
-          className="mt-3 max-w-prose text-base font-semibold text-ink-muted"
+          className="max-w-prose text-base font-semibold text-ink-muted"
         >
           {AUTO_PUBLISH_BOARD_LABEL}
         </p>
       ) : approvalLine ? (
         <p
           data-testid="board-approval-line"
-          className="mt-3 text-base font-semibold text-ink-muted"
+          className="text-base font-semibold text-ink-muted"
         >
           {approvalLine}
         </p>
       ) : null}
+    </>
+  ) : null;
 
-      {isOpen ? (
-        <ClaimArea
-          slot={slot}
-          viewerRole={viewerRole}
-          coordinatorFirstName={coordinatorFirstName}
-        />
-      ) : (
-        <p className="mt-4 max-w-prose text-base leading-relaxed text-ink-muted">
-          {slot.status === "claimed"
-            ? "A coordinator confirms every claim before the time is covered."
-            : "This time is covered. It stays here in plain words, with nothing about the family."}
-        </p>
-      )}
-    </li>
+  return (
+    <TimeCard
+      testId="board-slot"
+      dataAttributes={{
+        "data-slot-id": slot.id,
+        "data-kind": slot.kind,
+        "data-status": slot.status,
+        "data-gated": slot.gated ? "true" : "false",
+        "data-eligible": slot.claim ? String(slot.claim.eligible) : undefined,
+      }}
+      kind={slot.kind}
+      kindWord={kind.word}
+      kindTestId="board-kind"
+      label={slot.label}
+      windowStart={slot.windowStart}
+      windowEnd={slot.windowEnd}
+      windowTestId="board-window"
+      timeZone={timeZone}
+      location={kind.location}
+      locationTestId="board-location"
+      capacity={kind.capacity}
+      capacityTestId="board-capacity"
+      status={status}
+      statusTestId="board-status"
+      action={canTake ? <ClaimAction slot={slot} hintId={hintId} /> : null}
+      hint={hint}
+      hintId={canTake ? hintId : undefined}
+      hintTestId={canTake ? "board-claim-hint" : "board-card-hint"}
+      details={details}
+      extra={
+        isLocked ? (
+          <LockBlock slot={slot} coordinatorFirstName={coordinatorFirstName} />
+        ) : isOpen && !isVolunteer ? (
+          <DeskNote />
+        ) : null
+      }
+      headingLevel={headingLevel}
+      showDay={showDay}
+    />
   );
 }

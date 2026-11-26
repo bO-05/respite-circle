@@ -259,7 +259,7 @@ test.describe("VAL-CROSS-006 and VAL-DEMO-001 — demo reset", () => {
     );
     await expect(companionCard).toBeVisible();
     await expect(
-      companionCard.getByRole("button", { name: "Claim this time" }),
+      companionCard.getByRole("button", { name: "I'll take this time" }),
     ).toBeVisible();
     await expect(ruth.page.getByTestId("board-slot")).not.toHaveCount(0);
     await expect(ruth.page.getByTestId("board-empty")).toHaveCount(0);
