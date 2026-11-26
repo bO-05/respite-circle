@@ -335,8 +335,9 @@ measured.
 The published live record is the run of **2026-11-25 at commit `6376a35`**
 against `mistral-small-latest`, over 71 cases: 31 slottable, 15 safety, 30
 personal-care. That set is the 33-case spec set plus the eight audited safety
-phrasings and the fourteen audited personal-care phrasings from the round-2
-audit, so this run can see the words the audit typed.
+phrasings, and the thirty personal-care cases — sixteen base plus the fourteen
+audited personal-care phrasings from the round-2 audit — so this run can see
+the words the audit typed.
 
 On 2026-11-25, slot-kind agreement is **26/31 (83.8%)**. The five misses are
 named on the page: `CAL-002` and `CAL-024` lost their times to a care hold,
