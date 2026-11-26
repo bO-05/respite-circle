@@ -1,28 +1,52 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Handshake, PenLine, Phone, UserCheck } from "lucide-react";
 import { PageMain } from "@/components/page-main";
+import { ProcessStrip, type ProcessStep } from "@/components/process-strip";
+import { IconWell } from "@/components/visual-primitives";
+import {
+  SAMPLE_RECEIPT,
+  SAMPLE_RECEIPT_LABEL,
+} from "@/lib/ask-samples";
 import { isDemoModeEnabled } from "@/server/auth/policy";
 
 export const metadata: Metadata = {
   title: "Respite Circle — a church-run break for a family that cares for someone",
   description:
-    "A named coordinator reads what you write, a neighbour claims a time, and if nobody claims it, a person calls.",
+    "A named coordinator reads what you write, a neighbour takes a time, and if nobody takes it, your coordinator is asked to call you.",
 };
 
-const STEPS = [
+/*
+ * The three moments of the loop. The titles are pinned by
+ * tests/e2e/shell.spec.ts and are deliberately longer than the mockup's short
+ * ones; the meal exception is said once under the strip, not inside step 2.
+ */
+const STEPS: readonly ProcessStep[] = [
   {
+    icon: PenLine,
     title: "You write it in your own words",
     body: "Type it or say it. Your words are kept exactly as you wrote them, and they stay with the person who reads them.",
   },
   {
+    icon: UserCheck,
     title: "A person approves what is offered",
-    body: "A named coordinator reads every word and decides what, if anything, is offered. A signed church policy can put a meal on the board before that decision; nothing else can.",
+    body: "A named coordinator reads every word and decides what, if anything, is offered.",
   },
   {
-    title: "A neighbour claims a time",
+    icon: Handshake,
+    title: "A neighbour takes a time",
     body: "They see a time and what it needs. They never see your words, your family's name, or the reason you asked.",
   },
+];
+
+const TRUST_LINKS = [
+  { href: "/how-it-works", label: "How it works" },
+  { href: "/never", label: "What we never do" },
+  { href: "/promises", label: "Read what we promise" },
 ] as const;
+
+const TEXT_LINK =
+  "inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4";
 
 export default function HomePage() {
   const demoMode = isDemoModeEnabled();
@@ -52,7 +76,9 @@ export default function HomePage() {
           A stranger without an access link cannot use the link path, so the
           demo is the filled action and it is met first. Both paths stay inside
           the 360x800 first screen; tests/e2e/r2-first-screen.spec.ts measures
-          the boxes rather than trusting this comment.
+          the boxes rather than trusting this comment. Nothing new may be
+          inserted above this row: the process strip starts below it so the
+          demo call to action keeps its measured bottom edge.
         */}
         <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
           {demoMode ? (
@@ -78,105 +104,124 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section aria-labelledby="loop-heading" className="mt-14">
+      {/*
+        The strip comes before the "How a hard week becomes a few hours" heading
+        on purpose: at 1280x800 the CTA row ends near y=502, so a heading and a
+        note above the cards would push the three steps most of the way out of
+        the first screen. The heading sits directly below the cards as the
+        caption for the rest of the loop.
+      */}
+      <section
+        aria-label="Three steps from an ask to a time"
+        className="mt-10 sm:mt-14"
+      >
+        <ProcessStrip steps={STEPS} />
+      </section>
+
+      <section aria-labelledby="loop-heading" className="mt-8">
         <h2
           id="loop-heading"
-          className="font-serif text-3xl leading-tight text-ink"
+          className="font-serif text-2xl leading-tight text-ink"
         >
           How a hard week becomes a few hours
         </h2>
-        <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
+        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
           Three short steps. A person at church reads what you write.
         </p>
-
-        <ol className="mt-6 grid gap-4 sm:grid-cols-3">
-          {STEPS.map((step, index) => (
-            <li
-              key={step.title}
-              data-testid="landing-step-card"
-              className="flex h-full flex-col rounded-lg border border-line bg-surface p-5"
-            >
-              <p className="text-base font-semibold uppercase tracking-wide text-ink-muted">
-                Step {index + 1}
-              </p>
-              <h3 className="mt-2 font-serif text-2xl leading-snug text-ink">
-                {step.title}
-              </h3>
-              <p className="mt-2 text-base leading-relaxed text-ink-muted">
-                {step.body}
-              </p>
-            </li>
-          ))}
-        </ol>
-
         <p
           data-testid="landing-auto-publish-note"
-          className="mt-4 max-w-prose text-base leading-relaxed text-ink-muted"
+          className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted"
         >
           One signed exception: a church policy can put a meal on the
           congregation board without a person approving that time first.
           Errands are not available yet.{" "}
-          <Link
-            href="/how-it-works"
-            className="font-semibold text-ink underline decoration-accent underline-offset-4"
-          >
+          <Link href="/how-it-works" className={TEXT_LINK}>
             Read how the exception works
           </Link>
           .
         </p>
       </section>
 
+      {/*
+        The failure path, shown as a call request rather than asserted as a
+        promise. The app never places the call and never sends the family a
+        message, so the row says both plainly.
+      */}
       <section
-        aria-labelledby="failure-heading"
-        data-testid="landing-failure-card"
-        className="mt-4 rounded-lg border border-line bg-amber-soft p-5 sm:mt-6 sm:p-6"
+        aria-labelledby="call-heading"
+        data-testid="landing-call-request"
+        className="mt-6 rounded-lg border border-line bg-amber-soft p-5 sm:mt-8 sm:p-6"
       >
-        <p className="text-base font-semibold uppercase tracking-wide text-ink-muted">
-          When a time goes unclaimed
-        </p>
-        <h2
-          id="failure-heading"
-          className="mt-2 font-serif text-2xl leading-snug text-ink"
-        >
-          If nobody claims it, a person calls.
-        </h2>
-        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
-          You are not sent a message, a count, or a reminder. The app stays
-          quiet. Your coordinator picks up the phone and works out the week with
-          you.
-        </p>
-      </section>
-
-      <section aria-labelledby="ai-heading" className="mt-14">
-        <h2 id="ai-heading" className="font-serif text-3xl leading-tight text-ink">
-          What the computer does
-        </h2>
-        <p className="mt-3 max-w-prose text-xl leading-relaxed text-ink">
-          It reads your words into nine short answers — yes or no, and a few
-          choices. It does not write a message, rank anyone, or decide who gets
-          help.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-          <Link
-            href="/how-it-works"
-            className="inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
-          >
-            How it works
-          </Link>
-          <Link
-            href="/never"
-            className="inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
-          >
-            What we never do
-          </Link>
-          <Link
-            href="/promises"
-            className="inline-flex min-h-11 items-center text-base font-semibold text-ink underline decoration-accent underline-offset-4"
-          >
-            Read what we promise
-          </Link>
+        <div className="flex items-start gap-4">
+          <IconWell icon={Phone} tone="amber" />
+          <div className="min-w-0">
+            <h2
+              id="call-heading"
+              className="font-serif text-2xl leading-snug text-ink"
+            >
+              If nobody takes it, a person calls.
+            </h2>
+            <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
+              The app sends nothing — no email and no text. Your coordinator is
+              asked to call you and work out the week with you.
+            </p>
+          </div>
         </div>
       </section>
+
+      {/*
+        One sample receipt instead of a "what the computer does" paragraph: the
+        three yes/no lines are what the coordinator actually reads. The label
+        names the role, never a person, because the home page has no church to
+        resolve a coordinator's name from.
+      */}
+      <section
+        aria-labelledby="sample-heading"
+        data-testid="landing-sample-receipt"
+        className="mt-8"
+      >
+        <h2
+          id="sample-heading"
+          className="font-serif text-2xl leading-tight text-ink"
+        >
+          {SAMPLE_RECEIPT_LABEL}
+        </h2>
+        <div className="mt-3 rounded-lg border border-line bg-surface p-5">
+          <blockquote className="border-l-2 border-line pl-4 font-serif text-lg leading-relaxed text-ink">
+            {SAMPLE_RECEIPT.words}
+          </blockquote>
+          <dl className="mt-4 divide-y divide-line border-t border-line">
+            {SAMPLE_RECEIPT.lines.map((line) => (
+              <div
+                key={line.label}
+                className="flex items-baseline justify-between gap-4 py-3"
+              >
+                <dt className="text-base leading-relaxed text-ink">
+                  {line.label}
+                </dt>
+                <dd className="text-base font-semibold text-ink">
+                  {line.answer}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-3 text-base leading-relaxed text-ink-muted">
+            {SAMPLE_RECEIPT.note}
+          </p>
+        </div>
+      </section>
+
+      <nav aria-label="More about Respite Circle" className="mt-8">
+        <ul className="flex flex-wrap gap-x-6 gap-y-2">
+          {TRUST_LINKS.map((link) => (
+            <li key={link.href}>
+              <Link href={link.href} className={TEXT_LINK}>
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </PageMain>
   );
 }

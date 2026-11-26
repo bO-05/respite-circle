@@ -46,11 +46,11 @@ test("VAL-SHELL-001 — landing explains the loop and gives the failure path equ
     page.getByRole("heading", { name: /a person approves what is offered/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: /a neighbour claims a time/i }),
+    page.getByRole("heading", { name: /a neighbour takes a time/i }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
-      name: /if nobody claims it, a person calls/i,
+      name: /if nobody takes it, a person calls/i,
     }),
   ).toBeVisible();
 
@@ -71,7 +71,7 @@ test("VAL-SHELL-001 — landing explains the loop and gives the failure path equ
     .getByRole("heading", { name: /you write it in your own words/i })
     .evaluate((el) => getComputedStyle(el).fontSize);
   const failureSize = await page
-    .getByRole("heading", { name: /if nobody claims it, a person calls/i })
+    .getByRole("heading", { name: /if nobody takes it, a person calls/i })
     .evaluate((el) => getComputedStyle(el).fontSize);
   expect(failureSize).toBe(stepSize);
 
@@ -331,7 +331,7 @@ test("VAL-A11Y-001 — the layout works at 360px and at 200% zoom width", async 
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: /if nobody claims it, a person calls/i }),
+    page.getByRole("heading", { name: /if nobody takes it, a person calls/i }),
   ).toBeVisible();
   expect(
     await page.evaluate(

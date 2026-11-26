@@ -738,10 +738,10 @@ test("VAL-SHELL-001 — the landing's step cards share a height and the failure 
   expect(new Set(heights).size, `step heights ${heights.join("/")}`).toBe(1);
   expect(heights[0]).toBeGreaterThan(120);
 
-  const failure = page.getByTestId("landing-failure-card");
+  const failure = page.getByTestId("landing-call-request");
   await expect(failure).toBeVisible();
   await expect(
-    failure.getByRole("heading", { level: 2, name: /if nobody claims it/i }),
+    failure.getByRole("heading", { level: 2, name: /if nobody takes it/i }),
   ).toBeVisible();
   const box = await failure.boundingBox();
   expect(box?.width ?? 0).toBeGreaterThanOrEqual((await page.viewportSize())!.width * 0.6);
@@ -761,7 +761,7 @@ test("VAL-SHELL-001 — the landing's step cards share a height and the failure 
   // path reads with the same weight as the happy path.
   const headingSizes = await page.evaluate(() => {
     const step = document.querySelector('[data-testid="landing-step-card"] h3');
-    const fail = document.querySelector('[data-testid="landing-failure-card"] h2');
+    const fail = document.querySelector('[data-testid="landing-call-request"] h2');
     if (!step || !fail) return null;
     return [getComputedStyle(step).fontSize, getComputedStyle(fail).fontSize];
   });

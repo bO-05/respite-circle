@@ -246,6 +246,23 @@ test("VAL-R2UI-003 and VAL-R2UI-006 — the compose screen names Nora once, not 
     expect(body).not.toMatch(/change it later/i);
 
     await shot(marta.page, "01-compose-one-reassurance");
+
+    // The public home page's sample receipt names the role, never a person. On
+    // this church the coordinator is Nora, so neither she nor the seeded Grace
+    // may appear in the card or its label (VAL-R4VIS-002).
+    await marta.page.goto("/");
+    const sample = marta.page.getByTestId("landing-sample-receipt");
+    await expect(sample).toBeVisible();
+    await expect(
+      sample.getByRole("heading", {
+        level: 2,
+        name: "A sample of what your coordinator reads",
+      }),
+    ).toBeVisible();
+    const sampleText = await sample.innerText();
+    expect(sampleText).not.toContain("Grace");
+    expect(sampleText).not.toContain("Nora");
+
     await marta.context.close();
   } finally {
     await db.client.end();

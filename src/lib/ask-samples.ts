@@ -67,3 +67,35 @@ export const ASK_SAMPLES: readonly AskSample[] = [
 export function sampleById(id: string): AskSample | undefined {
   return ASK_SAMPLES.find((sample) => sample.id === id);
 }
+
+/**
+ * The home page's one sample receipt: three of the nine typed answers, so a
+ * visitor can see the shape of what a coordinator reads instead of a paragraph
+ * explaining "what the computer does".
+ *
+ * The label names the role, never a person. A coordinator's name is resolved
+ * per church (the receipt and the desk do that), and the public home page has
+ * no church to resolve one from, so any name here would be false on every
+ * other church's screen. Three lines only; the full receipt keeps all nine.
+ */
+export type SampleReceiptLine = {
+  label: string;
+  answer: "Yes" | "No";
+};
+
+export const SAMPLE_RECEIPT_LABEL = "A sample of what your coordinator reads";
+
+export const SAMPLE_RECEIPT_NOTE =
+  "Fictional example. The full record has nine answers; this card shows three.";
+
+const SAMPLE_RECEIPT_LINES: readonly SampleReceiptLine[] = [
+  { label: "Someone to sit with her", answer: "Yes" },
+  { label: "A meal that reheats", answer: "No" },
+  { label: "A safety concern", answer: "No" },
+];
+
+export const SAMPLE_RECEIPT = {
+  words: "I need a Tuesday morning with Mum so I can go to the dentist.",
+  lines: SAMPLE_RECEIPT_LINES,
+  note: SAMPLE_RECEIPT_NOTE,
+} as const;
