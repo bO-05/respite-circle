@@ -215,8 +215,8 @@ export default async function CarePage({
 
       <CaregiverAskLinks
         asks={asks}
-        heading="Your words, and the nine answers"
-        lead="Your words are kept exactly as you sent them. Open an ask to read it again, with the nine answers about it."
+        heading="Your words, and what happens next"
+        lead="Your words are kept exactly as you sent them. Open an ask to read it again."
         linkLabel="Read your words and the nine answers"
         testId="care-ask-links"
         headingId="care-ask-links-heading"

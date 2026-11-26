@@ -1,5 +1,5 @@
 /**
- * Why a demo ask was answered by the labelled rules engine, in plain words.
+ * Why a demo ask was answered by the app's backup rules, in plain words.
  *
  * The reset already returns a machine reason per ask
  * (`provider_unconfigured`, `provider_failed`, `structure_mismatch`). A receipt
@@ -24,11 +24,11 @@ export type DemoFallbackReason = (typeof DEMO_FALLBACK_REASONS)[number];
  */
 const FALLBACK_SENTENCES: Record<DemoFallbackReason, string> = {
   provider_unconfigured:
-    "No model was set up for this run, so the labelled rules engine answered.",
+    "No model was set up for this run, so the app's backup rules answered.",
   provider_failed:
-    "The model did not answer in time, so the labelled rules engine answered.",
+    "The model did not answer in time, so the app's backup rules answered.",
   structure_mismatch:
-    "The model's answers disagreed with the church's policy for this ask, so the labelled rules engine answered.",
+    "The model's answers disagreed with the church's policy for this ask, so the app's backup rules answered.",
 };
 
 export function isDemoFallbackReason(
@@ -43,7 +43,7 @@ export function isDemoFallbackReason(
 /**
  * The plain sentence for a stored reason, or `null` when nothing fell back.
  *
- * An unrecognised reason is not hidden: the sentence says the rules engine
+ * An unrecognised reason is not hidden: the sentence says the backup rules
  * answered and repeats the recorded reason with its underscores removed, so a
  * future code cannot silently produce a blank line.
  */
@@ -55,5 +55,5 @@ export function demoFallbackSentence(
   if (trimmed === "") return null;
   if (isDemoFallbackReason(trimmed)) return FALLBACK_SENTENCES[trimmed];
 
-  return `The labelled rules engine answered instead of the model. The run recorded the reason as ${trimmed.replaceAll("_", " ")}.`;
+  return `The app's backup rules answered instead of the model. The run recorded the reason as ${trimmed.replaceAll("_", " ")}.`;
 }

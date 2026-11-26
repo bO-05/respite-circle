@@ -19,7 +19,7 @@ describe("demo fallback sentences", () => {
     for (const reason of DEMO_FALLBACK_REASONS) {
       const sentence = demoFallbackSentence(reason);
       expect(sentence, reason).not.toBeNull();
-      expect(sentence, reason).toMatch(/labelled rules engine answered/i);
+      expect(sentence, reason).toMatch(/app's backup rules answered/i);
       expect(sentence, reason).not.toContain("_");
       expect(sentence, reason).not.toMatch(
         /provider_unconfigured|provider_failed|structure_mismatch/i,
@@ -50,7 +50,7 @@ describe("demo fallback sentences", () => {
 
   it("never hides an unrecognised reason behind a blank line", () => {
     expect(demoFallbackSentence("some_future_reason")).toBe(
-      "The labelled rules engine answered instead of the model. The run recorded the reason as some future reason.",
+      "The app's backup rules answered instead of the model. The run recorded the reason as some future reason.",
     );
   });
 

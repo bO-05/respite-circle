@@ -86,7 +86,12 @@ export const RULES_BANNER =
 export const RULES_SENTENCE =
   "The app's fixed rules — not the model — build every proposed time from these nine answers. The model never writes a proposal, a message, or a sentence.";
 
-export const AI_CHIP = "AI: sees fields, writes nothing";
+/**
+ * The receipt's agency chip. The model reads the caregiver's words to answer
+ * the nine questions; what it never does is write a message. A pill, not a
+ * paragraph, so the two-clause form stays.
+ */
+export const AI_CHIP = "AI: reads your words, writes nothing";
 
 export type TrailAnswerInput = {
   questionId: string;

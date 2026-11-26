@@ -8,7 +8,8 @@ import {
 import { seedAccessTokens } from "../../src/db/seed-data";
 
 const STAMP = "Fictional church, fictional families. Sample data.";
-const AI_CHIP = "AI: sees fields, writes nothing";
+const AI_CHIP =
+  "A person decides. No message you read was written by the computer.";
 
 async function signIn(
   browser: Browser,

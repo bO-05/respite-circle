@@ -42,44 +42,11 @@ export default async function DemoPage() {
         lead="Each link signs you in as one fictional person. No password, and nothing here is real."
       >
         <p className="max-w-prose text-base leading-relaxed text-ink-muted">
-          These links are for reviewing the demo. Every person, church, and
-          family in this app is fictional.
+          Each door opens the same church week from a different side: a
+          coordinator&apos;s desk, a family&apos;s own page, or a
+          volunteer&apos;s board. Every name, ask, and time behind it is
+          fictional.
         </p>
-
-        <section
-          aria-labelledby="demo-model-heading"
-          data-testid="demo-model-note"
-          className="rounded-lg border border-line bg-surface p-5"
-        >
-          <h2
-            id="demo-model-heading"
-            className="font-serif text-2xl text-ink"
-          >
-            What this demo really does
-          </h2>
-          <p className="mt-3 max-w-prose text-lg leading-relaxed text-ink">
-            The routing is the live model&apos;s. When the demo is reset, each
-            of the four fictional asks goes through the same model path as a
-            real ask: the same nine typed questions and the same strict answer
-            choices. The model&apos;s answers decide where each ask goes — the
-            ordinary queue, a safety hold, or a personal-care hold.
-          </p>
-          <p className="mt-3 max-w-prose text-base leading-relaxed text-ink">
-            The calendar around it is fixed, so the demonstration repeats:
-            four Respite Mornings on the next four Tuesdays, the same church,
-            the same cast, and the same four asks. The model does not build the
-            board. It answers the nine questions; the app&apos;s fixed rules
-            turn those answers into draft times, and each time on the demo board
-            was approved by a person.
-          </p>
-          <p className="mt-3 max-w-prose text-base leading-relaxed text-ink">
-            When the model&apos;s answers disagree with the church&apos;s
-            policy, that ask falls back to the labelled rules engine, and the
-            reset receipt names the reason in plain words. The same happens
-            when no model answers at all. A disagreement is never hidden to
-            make a run look tidier.
-          </p>
-        </section>
 
         {groups.length === 0 ? (
           <p className="rounded-md border border-line bg-surface px-4 py-3 text-base text-ink">
@@ -114,6 +81,41 @@ export default async function DemoPage() {
             </section>
           ))
         )}
+
+        <section
+          aria-labelledby="demo-model-heading"
+          data-testid="demo-model-note"
+          className="rounded-lg border border-line bg-surface p-5"
+        >
+          <h2
+            id="demo-model-heading"
+            className="font-serif text-2xl text-ink"
+          >
+            What this demo really does
+          </h2>
+          <p className="mt-3 max-w-prose text-lg leading-relaxed text-ink">
+            The routing is the live model&apos;s. When the demo is reset, each
+            of the four fictional asks goes through the same model path as a
+            real ask: the same nine typed questions and the same strict answer
+            choices. The model&apos;s answers decide where each ask goes — the
+            ordinary queue, a safety hold, or a personal-care hold.
+          </p>
+          <p className="mt-3 max-w-prose text-base leading-relaxed text-ink">
+            The calendar around it is fixed, so the demonstration repeats:
+            four Respite Mornings on the next four Tuesdays, the same church,
+            the same cast, and the same four asks. The model does not build the
+            board. It answers the nine questions; the app&apos;s fixed rules
+            turn those answers into draft times, and each time on the demo board
+            was approved by a person.
+          </p>
+          <p className="mt-3 max-w-prose text-base leading-relaxed text-ink">
+            When the model&apos;s answers disagree with the church&apos;s
+            policy, that ask falls back to the app&apos;s backup rules, and the
+            reset receipt names the reason in plain words. The same happens
+            when no model answers at all. A disagreement is never hidden to
+            make a run look tidier.
+          </p>
+        </section>
 
         <p className="max-w-prose text-base leading-relaxed text-ink-muted">
           Between walkthroughs, the demo operator can restore the seeded cast,

@@ -90,7 +90,7 @@ describe("VAL-R2PROM-008 — the demo says what it actually does", () => {
 
   it("says a disagreement falls back to the rules, with the reason shown", () => {
     expect(demoPage).toMatch(
-      /answers disagree with the church's policy, that ask falls back to the labelled rules engine/i,
+      /answers disagree with the church's policy, that ask falls back to the app's backup rules/i,
     );
     expect(demoPage).toMatch(/receipt names the reason in plain words/i);
   });
@@ -110,7 +110,7 @@ describe("VAL-R2PROM-008 — the demo says what it actually does", () => {
     const resetPage = flatten(read(demoResetPath));
     expect(resetPage).toMatch(/routing is the live model's/i);
     expect(resetPage).toMatch(/calendar around it is fixed/i);
-    expect(resetPage).toMatch(/falls back to the labelled rules engine/i);
+    expect(resetPage).toMatch(/falls back to the app's backup rules/i);
     expect(resetPage).toMatch(/reason in plain words/i);
   });
 

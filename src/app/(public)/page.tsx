@@ -86,8 +86,7 @@ export default function HomePage() {
           How a hard week becomes a few hours
         </h2>
         <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
-          Three steps, and a person holds the loop — with one signed exception
-          for a meal.
+          Three short steps. A person at church reads what you write.
         </p>
 
         <ol className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -156,10 +155,6 @@ export default function HomePage() {
           It reads your words into nine short answers — yes or no, and a few
           choices. It does not write a message, rank anyone, or decide who gets
           help.
-        </p>
-        <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
-          The computer sees fields and writes nothing. A person decides, and a
-          person calls.
         </p>
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
           <Link

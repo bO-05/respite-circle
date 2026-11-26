@@ -162,6 +162,8 @@ describe("required copy", () => {
   });
 
   it("keeps the AI chip exact", () => {
-    expect(AI_CHIP_LABEL).toBe("AI: sees fields, writes nothing");
+    expect(AI_CHIP_LABEL).toBe(
+      "A person decides. No message you read was written by the computer.",
+    );
   });
 });

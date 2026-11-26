@@ -65,7 +65,7 @@ const CANNED_RESET = {
 };
 
 const PLAIN_FALLBACK =
-  "The model's answers disagreed with the church's policy for this ask, so the labelled rules engine answered.";
+  "The model's answers disagreed with the church's policy for this ask, so the app's backup rules answered.";
 
 async function signIn(
   browser: Browser,
@@ -165,7 +165,7 @@ test.describe("round 2 — honest desk and demo copy", () => {
     await expect(note).toContainText("so the demonstration repeats");
     await expect(note).toContainText("The model does not build the board");
     await expect(note).toContainText(
-      "falls back to the labelled rules engine",
+      "falls back to the app's backup rules",
     );
     await expect(note).toContainText("names the reason in plain words");
 
@@ -197,7 +197,7 @@ test.describe("round 2 — honest desk and demo copy", () => {
 
     await page.goto("/demo/reset");
     await expect(page.getByTestId("demo-reset-disclosure")).toContainText(
-      "falls back to the labelled rules engine",
+      "falls back to the app's backup rules",
     );
 
     await page.getByLabel("Demo reset token").fill("intercepted-for-the-spec");

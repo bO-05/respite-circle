@@ -100,7 +100,7 @@ describe("DemoResetForm receipt", () => {
     await submitReset();
 
     expect(screen.getByTestId("demo-reset-fallback-ask-waiting")).toHaveTextContent(
-      "The model's answers disagreed with the church's policy for this ask, so the labelled rules engine answered.",
+      "The model's answers disagreed with the church's policy for this ask, so the app's backup rules answered.",
     );
     expect(screen.queryByText(/structure_mismatch/i)).toBeNull();
     expect(screen.queryByTestId("demo-reset-fallback-ask-hero")).toBeNull();
@@ -122,7 +122,7 @@ describe("DemoResetForm receipt", () => {
     await submitReset();
 
     expect(screen.getByTestId("demo-reset-fallback-ask-hero")).toHaveTextContent(
-      "No model was set up for this run, so the labelled rules engine answered.",
+      "No model was set up for this run, so the app's backup rules answered.",
     );
     expect(screen.getByTestId("demo-reset-engines")).toHaveTextContent(
       "rules engine (rule-engine-v1)",

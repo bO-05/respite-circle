@@ -48,7 +48,7 @@ export default function DemoResetPage() {
             through the same model path as a real ask. The calendar around it
             is fixed, so the demonstration repeats. When the model does not
             answer, or its answers disagree with the church&apos;s policy, that
-            ask falls back to the labelled rules engine, and the receipt names
+            ask falls back to the app&apos;s backup rules, and the receipt names
             the reason in plain words.
           </p>
           <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">

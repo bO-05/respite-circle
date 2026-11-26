@@ -50,7 +50,7 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
           className="inline-flex min-h-11 items-center text-lg font-semibold text-ink underline decoration-accent underline-offset-4"
         >
           {item.caregiverFirstName}
-          <span className="sr-only"> â€” read this ask</span>
+          <span className="sr-only"> — read this ask</span>
         </a>
         {item.pinLabel ? (
           <span

@@ -40,8 +40,12 @@ test("VAL-ACCESS-001 — demo access lists only fictional role links and is labe
   await expect(
     page.getByRole("heading", { level: 1, name: /choose a role for the demo/i }),
   ).toBeVisible();
+  // The fictional-data statement now lives in the two-sentence summary above
+  // the role doors; the duplicated paragraph it used to sit in was removed by
+  // the round-3 copy pass (VAL-R3HON-002 keeps the disclosure, not its old
+  // paragraph).
   await expect(
-    page.getByText("Every person, church, and family in this app is fictional."),
+    page.getByText(/Every name, ask, and time behind it is fictional\./),
   ).toBeVisible();
 
   await expect(page.getByTestId("demo-link-caregiver").first()).toBeVisible();

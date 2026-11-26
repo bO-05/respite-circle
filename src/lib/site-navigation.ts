@@ -17,7 +17,8 @@ export const SITE_NAME = "Respite Circle";
 export const SAMPLE_DATA_STAMP =
   "Fictional church, fictional families. Sample data.";
 
-export const AI_CHIP_LABEL = "AI: sees fields, writes nothing";
+export const AI_CHIP_LABEL =
+  "A person decides. No message you read was written by the computer.";
 
 export type NavItem = {
   readonly href: string;
