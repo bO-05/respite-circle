@@ -87,7 +87,7 @@ export function claimCopy(
     case "claimed":
       return `Thank you for saying yes. ${sentenceName} will confirm it with you before the time is covered.`;
     case "taken":
-      return "Someone else just claimed this — thank you for saying yes.";
+      return "Someone else just took this time — thank you for saying yes.";
     case "already_yours":
       return `You already said yes to this time. ${sentenceName} will confirm it with you.`;
     case "locked": {

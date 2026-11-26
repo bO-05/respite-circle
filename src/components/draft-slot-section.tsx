@@ -82,7 +82,7 @@ export function DraftSlotSection({
         </h2>
         <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
           Plain code — not the model — builds every draft here from the nine
-          typed answers. The model never writes a proposal, a label, or a note.
+          answers. The model never writes a proposal, a label, or a note.
         </p>
         <p
           data-testid="draft-not-published"

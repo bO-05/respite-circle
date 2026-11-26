@@ -8,7 +8,7 @@ import { computeDecisionDigest } from "./decision-contract";
 /**
  * Persist one completed decision run.
  *
- * This is the single write path for the nine typed answers: the caregiver
+ * This is the single write path for the nine answers: the caregiver
  * intake calls it through `decideForAsk`, and the demo reset calls it after
  * its own provider run so a seeded ask and a submitted ask are written the
  * same way. One transaction writes one `decision` row per question and exactly

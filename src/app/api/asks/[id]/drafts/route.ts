@@ -15,7 +15,7 @@ import { addDraftSlot } from "@/server/repositories/draft-slots";
  *   400  the kind is not companion, home, drive, or meal
  *   403  the session is not a coordinator or deputy
  *   404  the ask id is malformed or outside this church
- *   409  refused: a held ask, personal care in the typed answers, a missing
+ *   409  refused: a held ask, personal care in the answers, a missing
  *        driver policy, or an incomplete calendar — the body carries the
  *        human sentence and nothing is written
  *
@@ -74,7 +74,7 @@ export async function POST(
     const result = await addDraftSlot(auth.session, { askId: id, kind });
 
     if (!result.ok) {
-      // A held ask, personal care in the typed answers, a missing driver
+      // A held ask, personal care in the answers, a missing driver
       // policy, or an incomplete calendar. One calm sentence, no SQL, nothing
       // written.
       return NextResponse.json(

@@ -54,7 +54,7 @@ export const ROLE_NAV: Record<Role, readonly NavItem[]> = {
   ],
   volunteer: [
     { href: "/circle", label: "Board" },
-    { href: "/my-claims", label: "My claims" },
+    { href: "/my-claims", label: "Your times" },
   ],
   pastor: [{ href: "/desk/metrics", label: "Metrics" }],
 };
@@ -76,15 +76,15 @@ const CAREGIVER_TITLES: readonly TitleRule[] = [
 ];
 
 const VOLUNTEER_TITLES: readonly TitleRule[] = [
-  { match: /^\/my-claims\/[^/]+$/, label: "Your claim" },
-  { match: /^\/my-claims$/, label: "Your claims" },
+  { match: /^\/my-claims\/[^/]+$/, label: "Your time" },
+  { match: /^\/my-claims$/, label: "Your times" },
   { match: /^\/circle$/, label: "Respite Morning board" },
 ];
 
 const DESK_TITLES: readonly TitleRule[] = [
   { match: /^\/desk\/ask\/[^/]+$/, label: "Ask review" },
-  { match: /^\/desk\/slot\/[^/]+$/, label: "Slot review" },
-  { match: /^\/desk\/failures$/, label: "Coverage watch" },
+  { match: /^\/desk\/slot\/[^/]+$/, label: "Review this time" },
+  { match: /^\/desk\/failures$/, label: "Times nobody has taken yet" },
   { match: /^\/desk\/sessions$/, label: "Respite Morning sessions" },
   { match: /^\/desk\/invite$/, label: "Invite a family" },
   { match: /^\/desk\/audit$/, label: "Decision log" },

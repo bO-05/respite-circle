@@ -244,6 +244,9 @@ test.describe("VAL-DESK-001 and VAL-DESK-002 — coordinator desk queue", () => 
 
     const mainText = await grace.page.locator("main").innerText();
     expect(mainText).not.toMatch(/urgent|priority|urgency/i);
+    // VAL-R3LANG-002 — the hold groups lead with the action, not with a
+    // defensive note written for an auditor.
+    expect(mainText).not.toMatch(/pinned as a category/i);
     expect(mainText).toContain("Safety hold");
     expect(mainText).toContain("Personal-care hold");
 

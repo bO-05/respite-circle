@@ -3,7 +3,7 @@ import type { HoldSources } from "./deterministic-screen";
 import type { LanguageDetection } from "./language";
 
 /**
- * Routing rules that sit between the typed answers and slot construction.
+ * Routing rules that sit between the answers and slot construction.
  *
  * They are pure and deliberately conservative:
  * - a Q5 YES or abstention is a safety hold;

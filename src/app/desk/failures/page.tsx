@@ -31,7 +31,7 @@ export default async function CoverageWatchPage() {
     <RolePage
       person={person}
       role={session.role}
-      title="Coverage watch"
+      title="Times nobody has taken yet"
       lead="Times that nobody has taken yet. A person makes the call; the app sends nothing."
     >
       {items.length === 0 ? (
@@ -77,7 +77,7 @@ export default async function CoverageWatchPage() {
           <ul
             data-testid="coverage-list"
             className="flex flex-col gap-4"
-            aria-label="Times in the coverage watch"
+            aria-label="Times nobody has taken yet"
           >
             {items.map((item) => (
               <li key={item.slotId}>

@@ -144,7 +144,7 @@ test("VAL-SHELL-002 — each role sees only its own navigation", async ({ browse
     {
       token: seedAccessTokens.marta,
       labels: ["Ask", "Care", "Promises"],
-      absent: ["Desk", "Sessions", "Decision log", "Board", "Metrics", "My claims"],
+      absent: ["Desk", "Sessions", "Decision log", "Board", "Metrics", "Your times"],
     },
     {
       token: seedAccessTokens.grace,
@@ -156,7 +156,7 @@ test("VAL-SHELL-002 — each role sees only its own navigation", async ({ browse
         "Promises",
         "Metrics",
       ],
-      absent: ["Ask", "Care", "My claims"],
+      absent: ["Ask", "Care", "Your times"],
     },
     {
       token: seedAccessTokens.daniel,
@@ -168,11 +168,11 @@ test("VAL-SHELL-002 — each role sees only its own navigation", async ({ browse
         "Promises",
         "Metrics",
       ],
-      absent: ["Ask", "Care", "My claims"],
+      absent: ["Ask", "Care", "Your times"],
     },
     {
       token: seedAccessTokens.ruth,
-      labels: ["Board", "My claims"],
+      labels: ["Board", "Your times"],
       absent: ["Desk", "Sessions", "Decision log", "Ask", "Care", "Metrics"],
     },
   ];

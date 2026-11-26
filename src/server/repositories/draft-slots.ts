@@ -736,7 +736,7 @@ export async function addDraftSlot(
   }
 
   // A status is not enough. A safety hold converted by an audited override
-  // returns to `waiting_coordinator`, so re-read the typed answers: a Q9
+  // returns to `waiting_coordinator`, so re-read the answers: a Q9
   // personal-care flag still refuses every manual kind. This is the same gate
   // slot construction uses, in front of the only other write path that could
   // create a slot.

@@ -58,7 +58,7 @@ export function ApproveClaimForm({ slotId }: { slotId: string }) {
         disabled={pending}
         className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-accent bg-accent px-5 py-2 text-lg font-semibold text-accent-foreground disabled:opacity-60"
       >
-        {pending ? "Confirming…" : "Confirm this claim"}
+        {pending ? "Confirming…" : "Confirm this time"}
       </button>
       <Feedback state={state} testId="approve-claim-feedback" />
     </form>

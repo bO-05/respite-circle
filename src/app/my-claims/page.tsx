@@ -46,7 +46,7 @@ export default async function MyClaimsPage() {
       person={person}
       role={session.role}
       title="Times you've offered to cover"
-      lead={`Only the times you said yes to. ${sentenceName} confirms a claim before the family's orientation note appears.`}
+      lead={`Only the times you said yes to. ${sentenceName} confirms a time before the family's orientation note appears.`}
     >
       {active.length > 0 ? (
         <section
@@ -68,7 +68,7 @@ export default async function MyClaimsPage() {
           </div>
           <ul
             data-testid="my-claims-list"
-            aria-label="Your claims"
+            aria-label="Your times"
             className="flex flex-col gap-4"
           >
             {active.map((claim) => (

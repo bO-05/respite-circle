@@ -9,7 +9,7 @@ import type { DecisionProvider, EnvLike } from "./providers";
  * Decide one ask and record what happened.
  *
  * A thin wrapper over the two shared pieces: `decide()` produces the nine
- * typed answers, `persistDecisionRun()` writes them in one transaction with an
+ * answers, `persistDecisionRun()` writes them in one transaction with an
  * audit event and the conservative ask status. Keeping the write path separate
  * lets the demo reset replay a seeded ask through the same code without a
  * second, divergent insert.

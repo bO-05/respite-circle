@@ -126,7 +126,7 @@ describe("the claim outcome copy", () => {
   it("never answers a race loss with SQL or a stack-shaped sentence", () => {
     const taken = claimCopy("taken");
     expect(taken).toBe(
-      "Someone else just claimed this — thank you for saying yes.",
+      "Someone else just took this time — thank you for saying yes.",
     );
     expect(taken).not.toMatch(/error|failed|exception|conflict|409/i);
   });

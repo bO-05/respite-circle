@@ -92,7 +92,7 @@ type AnswerRow = {
 };
 
 /**
- * Load the latest revision per ask in one query, then its typed answers in a
+ * Load the latest revision per ask in one query, then its answers in a
  * second. The Neon round trip is ~325 ms from this machine, so the queue must
  * not fan out one query per row.
  */

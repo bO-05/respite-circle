@@ -336,7 +336,7 @@ export const AUTO_PUBLISH_TRUST_NOTE =
  * quietly keep the old claim that only a person ever offers a time.
  */
 export const HOW_IT_WORKS_LEAD =
-  "A computer reads your words into nine typed answers. The app's fixed rules turn those answers into a few possible times. A named person decides what is offered, except that a signed policy may publish a meal by itself. A person calls when a time goes unclaimed. Errands are not available yet.";
+  "A computer reads your words into nine answers. The app's fixed rules turn those answers into a few possible times. A named person decides what is offered, except that a signed policy may publish a meal by itself. A person calls when a time goes unclaimed. Errands are not available yet.";
 
 export const DECIDES_INTRO =
   "Three things happen in order. The model answers. The app follows its fixed rules. A person decides what reaches the board, with one signed exception for a meal.";
@@ -389,5 +389,5 @@ export const TRUST_COPY_STRINGS: readonly string[] = [
   "No automatic time beyond a meal",
   AUTO_PUBLISH_TRUST_NOTE,
   "The low-risk switch on the church policy names its own limit, an automatically published time says so on the board, and every one of them is in the decision log.",
-  "If any of this stops being true, it is a defect rather than a change of policy. Hold us to the page.",
+  "If any of this stops being true, it is a defect rather than a change of policy. The tables behind these refusals are on How it works, and the church's own signed promises are on Our promises. Please tell the church.",
 ];

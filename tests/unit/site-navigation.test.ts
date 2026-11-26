@@ -38,10 +38,10 @@ describe("role navigation", () => {
     ]);
   });
 
-  it("gives the volunteer the board and their own claims", () => {
+  it("gives the volunteer the board and their own times", () => {
     expect(navForRole("volunteer").map((item) => item.label)).toEqual([
       "Board",
-      "My claims",
+      "Your times",
     ]);
   });
 
@@ -101,13 +101,13 @@ describe("document titles", () => {
     { role: "caregiver", path: "/ask/abc", label: "Your ask" },
     { role: "caregiver", path: "/care", label: "What's covered for your family" },
     { role: "volunteer", path: "/circle", label: "Respite Morning board" },
-    { role: "volunteer", path: "/my-claims", label: "Your claims" },
-    { role: "volunteer", path: "/my-claims/abc", label: "Your claim" },
+    { role: "volunteer", path: "/my-claims", label: "Your times" },
+    { role: "volunteer", path: "/my-claims/abc", label: "Your time" },
     { role: "coordinator", path: "/desk", label: "Coordinator desk" },
     { role: "coordinator", path: "/desk/sessions", label: "Respite Morning sessions" },
     { role: "coordinator", path: "/desk/ask/abc", label: "Ask review" },
-    { role: "coordinator", path: "/desk/slot/abc", label: "Slot review" },
-    { role: "coordinator", path: "/desk/failures", label: "Coverage watch" },
+    { role: "coordinator", path: "/desk/slot/abc", label: "Review this time" },
+    { role: "coordinator", path: "/desk/failures", label: "Times nobody has taken yet" },
     { role: "coordinator", path: "/desk/invite", label: "Invite a family" },
     { role: "coordinator", path: "/desk/audit", label: "Decision log" },
     { role: "coordinator", path: "/desk/policy", label: "Church policy" },

@@ -384,6 +384,12 @@ test.describe("VAL-CROSS-006 and VAL-DEMO-001 — demo reset", () => {
       page.getByRole("heading", { level: 1, name: /reset the demo/i }),
     ).toBeVisible();
     await expect(page.getByTestId("demo-reset-form")).toBeVisible();
+    // VAL-R3LANG-003 — plain operator wording, with the twelve-check honesty
+    // line it exists to state.
+    const resetMain = page.locator("main");
+    await expect(resetMain).toContainText("This starts the demo over");
+    await expect(resetMain).toContainText("refuses to report success");
+    await expect(resetMain).toContainText("twelve checks");
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
       "content",
       /noindex/i,

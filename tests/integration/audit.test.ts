@@ -269,10 +269,10 @@ describe("the append-only decision log", () => {
     expect(rendered).not.toContain(HERO_TEXT);
     expect(rendered).not.toMatch(/hymns|morning to myself|since March/i);
     const digestEntry = summarizeAuditDetail(page.rows[0].detail).find(
-      (entry) => entry.label === "Input digest",
+      (entry) => entry.label === "Fingerprint",
     );
     expect(digestEntry).toMatchObject({
-      label: "Input digest",
+      label: "Fingerprint",
       title: run.digest,
     });
   });

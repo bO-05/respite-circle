@@ -86,7 +86,7 @@ export function myClaimNotePendingCopy(
 ): string {
   return `${sentenceName(
     coordinatorFirstName,
-  )} confirms your claim before the family's orientation note appears here. Until then, nothing about the family is on this page, and nothing is expected of you yet.`;
+  )} confirms this time before the family's orientation note appears here. Until then, nothing about the family is on this page, and nothing is expected of you yet.`;
 }
 
 /** A confirmed time with no note written. Names the human to ask. */
@@ -396,7 +396,7 @@ export function myClaimEmptyCopy(
 ): MyClaimEmptyCopy {
   const name = coordinatorDisplayName(coordinatorFirstName);
   return {
-    title: "Nothing claimed yet",
+    title: "You haven't taken a time yet",
     body: `When you take a time from the board, it appears here with one calm status. Open the board to see what is open, or tell ${name} after a Sunday service that you would like to help.`,
     href: "/circle",
     linkLabel: "See the times you can take",

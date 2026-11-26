@@ -4,6 +4,7 @@ import {
   HOLD_REASON,
   NO_TYPED_REASON_SENTENCE,
   QUEUE_CATEGORY_HEADING,
+  QUEUE_CATEGORY_NOTE,
   QUEUE_CATEGORY_ORDER,
   bilingualSummarySentence,
   formatReasonSummary,
@@ -96,6 +97,18 @@ describe("desk queue membership", () => {
 
     const allCopy = Object.values(QUEUE_CATEGORY_HEADING).join(" ");
     expect(allCopy).not.toMatch(/urgent|priority|score|rank/i);
+
+    // The sub-line leads with the action a coordinator takes; the defensive
+    // "Pinned as a category, not a score" sentence is gone.
+    expect(QUEUE_CATEGORY_NOTE.safety).toBe(
+      "Someone calls the family today; no time is offered yet.",
+    );
+    expect(QUEUE_CATEGORY_NOTE.personal_care).toBe(
+      "Someone connects the family with professional help.",
+    );
+    expect(Object.values(QUEUE_CATEGORY_NOTE).join(" ")).not.toMatch(
+      /pinned as a category/i,
+    );
   });
 });
 
@@ -296,9 +309,9 @@ describe("hold reasons", () => {
     expect(holdReasonFor("waiting_coordinator")).toBeNull();
   });
 
-  it("does not offer a time on a safety hold and never builds a personal-care slot", () => {
+  it("does not offer a time on a safety hold and never creates a personal-care time", () => {
     expect(HOLD_REASON.safety_hold).toMatch(/no time is offered/i);
-    expect(HOLD_REASON.care_hold).toMatch(/no personal-care slot/i);
+    expect(HOLD_REASON.care_hold).toMatch(/no personal-care time/i);
   });
 });
 

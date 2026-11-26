@@ -357,7 +357,7 @@ export const ask = pgTable(
       .notNull()
       .defaultNow(),
     /**
-     * Set once, atomically, when plain code turns the typed answers into draft
+     * Set once, atomically, when plain code turns the answers into draft
      * slots. It is the idempotence marker: a coordinator who removes every
      * draft must not see them reappear on the next read.
      */

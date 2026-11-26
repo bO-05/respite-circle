@@ -442,7 +442,7 @@ describe("the atomic claim and its gate", () => {
     if (!loser) throw new Error("expected a loser");
     expect(loser.code).toBe("taken");
     expect(loser.message).toBe(
-      "Someone else just claimed this — thank you for saying yes.",
+      "Someone else just took this time — thank you for saying yes.",
     );
 
     const row = await slotState(t, homeId);

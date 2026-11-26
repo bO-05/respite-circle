@@ -37,10 +37,8 @@ export const QUEUE_CATEGORY_HEADING: Record<QueueCategory, string> = {
 };
 
 export const QUEUE_CATEGORY_NOTE: Record<QueueCategory, string> = {
-  safety:
-    "Pinned as a category, not a score. Someone calls the family today; no time is offered yet.",
-  personal_care:
-    "Pinned as a category, not a score. Someone connects the family with professional help.",
+  safety: "Someone calls the family today; no time is offered yet.",
+  personal_care: "Someone connects the family with professional help.",
   waiting: "Oldest first. Every ask is read by a person.",
 };
 
@@ -76,7 +74,7 @@ export const HOLD_REASON = {
   safety_hold:
     "Safety flag — call the family today. No time is offered until a person has spoken with them.",
   care_hold:
-    "Personal care mentioned — connect the family with professional help. No personal-care slot is ever built.",
+    "Personal care mentioned — connect the family with professional help. No personal-care time is ever created.",
 } as const;
 
 export function holdReasonFor(status: string): string | null {

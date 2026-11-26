@@ -143,7 +143,7 @@ function cardsFor(metrics: ChurchMetrics): MetricCard[] {
     },
     {
       testId: "metric-claims",
-      title: "Claims made",
+      title: "Times neighbours said yes",
       value: countWord(metrics.claims, "claim", "claims"),
       definition:
         "Times a neighbour said yes in this range, whether or not a coordinator confirmed the claim yet.",

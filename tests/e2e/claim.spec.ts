@@ -303,7 +303,7 @@ test.describe.serial("VAL-CLAIM-001…004 — the atomic claim", () => {
     expect(loserBody.ok).toBe(false);
     expect(loserBody.code).toBe("taken");
     expect(loserBody.message).toBe(
-      "Someone else just claimed this — thank you for saying yes.",
+      "Someone else just took this time — thank you for saying yes.",
     );
     expect(JSON.stringify(loserBody)).not.toMatch(
       /SELECT|UPDATE|SQLSTATE|postgres|pg_|constraint|at .*\.ts:\d+/i,

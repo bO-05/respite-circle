@@ -393,6 +393,10 @@ test.describe.serial("VAL-METRICS-001…003 — the church numbers", () => {
       await expect(page.getByTestId("metric-claims-value")).toHaveText(
         `${expected.claims} claims`,
       );
+      // VAL-R3LANG-003 — the gloss "claim" is replaced in the card title.
+      await expect(page.getByTestId("metric-claims")).toContainText(
+        "Times neighbours said yes",
+      );
       await expect(page.getByTestId("metric-covered-value")).toHaveText(
         `${expected.covered} times`,
       );

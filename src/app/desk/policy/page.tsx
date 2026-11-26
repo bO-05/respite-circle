@@ -138,7 +138,7 @@ export default async function DeskPolicyPage() {
                 <dt className="font-semibold text-ink">Auto-publish low-risk</dt>
                 <dd>
                   {current.autoPublishLowRisk
-                    ? "On — meal times only; each one is in the decision log"
+                    ? "On — meals only; each one is in the decision log"
                     : "Off — every time waits for a person"}
                 </dd>
               </div>
@@ -465,8 +465,8 @@ export default async function DeskPolicyPage() {
                   className="min-h-11 w-32 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
                 />
                 <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
-                  The coverage watch begins this many hours before a time
-                  starts. A bigger number means the church sees it earlier; a
+                  Times nobody has taken yet appear on the desk this many
+                  hours before a time starts. A bigger number means the church sees it earlier; a
                   smaller number means later.
                 </p>
               </div>

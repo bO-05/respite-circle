@@ -35,8 +35,8 @@ export const dynamic = "force-dynamic";
  * It is a read-only view by construction. There is no edit or delete control,
  * no server action, and no API route for an audit row; the database's
  * `audit_event_immutable` trigger refuses both from any caller. The AI's row
- * carries the SHA-256 digest of what the model saw and never the family's
- * words, and this view renders only digests, codes, counts, and ids.
+ * carries a short fingerprint of the answers and never the family's
+ * words, and this view renders only fingerprints, codes, counts, and ids.
  */
 export default async function DeskAuditPage({
   searchParams,
@@ -80,10 +80,10 @@ export default async function DeskAuditPage({
             Nothing has been decided yet
           </h2>
           <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
-            When a family sends an ask, the AI&apos;s nine typed answers and
+            When a family sends an ask, the AI&apos;s nine answers and
             every person&apos;s decision appear here. Each entry names the
-            actor, the action, and the time, and keeps a digest instead of the
-            family&apos;s words.
+            actor, the action, and the time, and keeps a fingerprint instead of
+            the family&apos;s words.
           </p>
           <div className="mt-4 flex flex-wrap gap-4">
             <Link
@@ -150,9 +150,9 @@ export default async function DeskAuditPage({
           <AuditLogSection
             kind="ai"
             title="What the AI decided"
-            note="Typed answers only. The log keeps a SHA-256 digest of what the model saw, never the family's words."
+            note="The log keeps a short fingerprint of the answers, never the family's words."
             emptyLine="No AI decision matches these filters."
-            defaultEmptyLine="The AI has not answered anything yet. When a family sends an ask, the nine typed answers appear here."
+            defaultEmptyLine="The AI has not answered anything yet. When a family sends an ask, the nine answers appear here."
             filtering={filtering}
             rows={groups.ai}
             timeZone={options.timeZone}
@@ -203,7 +203,7 @@ export default async function DeskAuditPage({
         </h2>
         <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
           The rule has two halves. A person approves what the rules flag: the
-          nine typed answers become draft times, and a person reads them,
+          nine answers become draft times, and a person reads them,
           changes the wording, and publishes or holds each one before a
           neighbour sees it.
         </p>

@@ -96,7 +96,7 @@ describe("what to expect before the note arrives", () => {
   it("tells the volunteer the note comes after confirmation and nothing comes before", () => {
     const pending = myClaimNotePendingCopy("Grace");
     expect(pending).toMatch(/Grace/);
-    expect(pending).toMatch(/confirm/i);
+    expect(pending).toMatch(/confirms this time/i);
     expect(pending).toMatch(/orientation note/i);
     expect(pending).toMatch(/nothing about the family/i);
     expectCalmCopy(pending);
@@ -282,7 +282,7 @@ describe("marking a claim done", () => {
 describe("the empty claims list", () => {
   it("names the next human action and links to the board", () => {
     const empty = myClaimEmptyCopy("Grace");
-    expect(empty.title).toMatch(/nothing claimed/i);
+    expect(empty.title).toMatch(/you haven't taken a time yet/i);
     expect(empty.body).toMatch(/Grace/);
     expect(empty.body).toMatch(/tell|ask|speak/i);
     expect(empty.href).toBe("/circle");

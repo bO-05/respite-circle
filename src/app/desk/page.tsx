@@ -67,7 +67,7 @@ export default async function DeskPage() {
               id="desk-coverage-watch-heading"
               className="font-serif text-2xl text-ink"
             >
-              Coverage watch
+              Times nobody has taken yet
             </h2>
             <p className="mt-1 max-w-prose text-base leading-relaxed text-ink-muted">
               No neighbour has taken these times yet. A person calls; the app
@@ -124,7 +124,7 @@ export default async function DeskPage() {
             href="/desk/failures"
             className="inline-flex min-h-11 w-fit items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink underline decoration-accent underline-offset-4"
           >
-            Open the coverage watch
+            See every time nobody has taken yet
           </Link>
         </section>
       ) : null}

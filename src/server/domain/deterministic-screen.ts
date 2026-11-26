@@ -24,7 +24,7 @@ import {
  *   - a settled model NO plus a settled rule NO changes nothing.
  *
  * Only Q5 (immediate safety) and Q9 (personal care) are screened. The other
- * seven typed answers stay exactly as the model gave them, and a rule hold is
+ * seven answers stay exactly as the model gave them, and a rule hold is
  * recorded with its source so the receipt never credits the model for it.
  */
 

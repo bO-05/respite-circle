@@ -102,7 +102,7 @@ describe("the decision log's row scan order", () => {
     expect(entity.textContent).not.toContain("d5000000");
 
     const detail = within(row).getByTestId("audit-detail");
-    expect(detail).toHaveTextContent("Input digest");
+    expect(detail).toHaveTextContent("Fingerprint");
     expect(detail).toHaveTextContent("Policy version id");
     expect(detail).toHaveTextContent("Revision id");
     expect(detail).toHaveTextContent("d5000000…");

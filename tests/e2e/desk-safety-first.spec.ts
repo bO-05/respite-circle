@@ -228,6 +228,11 @@ test.describe("VAL-R2UI-001 — safety asks come first on the desk", () => {
         await expect(safety).toBeVisible({ timeout: 30_000 });
         await expect(coverage).toBeVisible();
         await expect(calendar).toBeVisible();
+        // VAL-R3LANG-002 — the second group is named for the work, not for an
+        // internal category, and the testid above is the ordering anchor.
+        await expect(coverage.getByRole("heading", { level: 2 })).toHaveText(
+          "Times nobody has taken yet",
+        );
 
         // DOM order, not only pixels: the safety group is the first of the
         // three, so a screen reader meets it first too.

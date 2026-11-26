@@ -458,7 +458,7 @@ function verifyFacts(
     );
   }
 
-  // 8. At least one ask waiting for a person, with typed answers.
+  // 8. At least one ask waiting for a person, with answers.
   const waitingAsks = facts.asks.filter(
     (row) => row.status === "waiting_coordinator",
   );
@@ -475,7 +475,7 @@ function verifyFacts(
   if (waitingAsks.length < 1 || !waitingHasAnswers) {
     fail(
       "ask_waiting",
-      `expected at least one waiting ask with typed answers, found ${waitingAsks.length} waiting ask(s)`,
+      `expected at least one waiting ask with answers, found ${waitingAsks.length} waiting ask(s)`,
     );
   }
 

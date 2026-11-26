@@ -518,7 +518,7 @@ test.describe.serial("VAL-CLAIM-005, VAL-CLAIM-006, VAL-ACCESS-004 and VAL-CROSS
 
     const empty = ben.page.getByTestId("my-claims-empty");
     await expect(empty).toBeVisible();
-    await expect(empty).toContainText(/nothing claimed yet/i);
+    await expect(empty).toContainText(/taken a time yet/i);
     await expect(empty).toContainText(/Grace/);
     const link = empty.getByRole("link", { name: /see the times you can take/i });
     await expect(link).toBeVisible();

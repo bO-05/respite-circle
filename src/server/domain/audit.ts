@@ -239,9 +239,9 @@ type DetailRule = {
  * first and ids last.
  */
 const DETAIL_RULES: Record<string, DetailRule> = {
-  inputDigest: { label: "Input digest", kind: "digest" },
+  inputDigest: { label: "Fingerprint", kind: "digest" },
   digest: { label: "Digest", kind: "digest" },
-  noteDigest: { label: "Note digest", kind: "digest" },
+  noteDigest: { label: "Note fingerprint", kind: "digest" },
   provider: { label: "Provider", kind: "code" },
   model: { label: "Model", kind: "code" },
   engine: { label: "Engine", kind: "code" },

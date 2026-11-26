@@ -38,6 +38,11 @@ test("VAL-TRUST-001 — how it works carries the AI table and the who-decides ta
     }),
   ).toBeVisible();
 
+  // VAL-R3LANG-003 — "typed" is the machine's word. The nine-answer count,
+  // which makes the narrowness claim checkable, survives the reword.
+  await expect(page.locator("main")).toContainText("nine answers");
+  await expect(page.locator("main")).not.toContainText("typed answers");
+
   const aiTable = page.getByRole("table", {
     name: /what the ai sees, and what it never sees/i,
   });
@@ -182,6 +187,10 @@ test("VAL-TRUST-004 and VAL-TRUST-006 — never lists all nine commitments with 
   await expect(page.getByTestId("commitment")).toHaveCount(8);
   await expect(page.getByTestId("never-auto-publish")).toHaveCount(1);
   await expect(page.locator("main")).toContainText("Nine commitments");
+
+  // VAL-R3LANG-003 — the page closes with a plain instruction, and the count
+  // sentence it replaces the defensive closer with is still there.
+  await expect(page.locator("main")).toContainText("Please tell the church.");
 
   for (const title of [
     "No AI sentences about a person",

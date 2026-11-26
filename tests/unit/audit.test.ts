@@ -210,7 +210,7 @@ describe("the public-safe detail", () => {
     });
 
     expect(entries.map((entry) => entry.label)).toEqual([
-      "Input digest",
+      "Fingerprint",
       "Provider",
       "Latency (ms)",
       "Questions",
@@ -222,6 +222,12 @@ describe("the public-safe detail", () => {
     expect(digestEntry.title).toBe(digest);
     expect(entries[1].value).toBe("mistral");
     expect(entries[2].value).toBe("812");
+  });
+
+  it("names the note's fingerprint in plain words too", () => {
+    const entries = summarizeAuditDetail({ noteDigest: "b".repeat(64) });
+
+    expect(entries.map((entry) => entry.label)).toEqual(["Note fingerprint"]);
   });
 
   it("never renders the family's words or a human note, even when the row holds them", () => {

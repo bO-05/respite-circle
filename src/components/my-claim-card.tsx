@@ -82,7 +82,7 @@ export function MyClaimCard({
         href={`/my-claims/${claim.id}`}
         className="mt-4 inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-accent bg-accent px-5 py-2 text-lg font-semibold text-accent-foreground"
       >
-        View this claim
+        View this time
       </Link>
     </li>
   );

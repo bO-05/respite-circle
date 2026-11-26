@@ -68,7 +68,7 @@ export default function NeverPage() {
 
       <p className="max-w-prose text-lg leading-relaxed text-ink">
         If any of this stops being true, it is a defect rather than a change of
-        policy. Hold us to the page. The tables behind these refusals are on{" "}
+        policy. The tables behind these refusals are on{" "}
         <Link
           href="/how-it-works"
           className="font-semibold text-ink underline decoration-accent underline-offset-4"
@@ -82,7 +82,7 @@ export default function NeverPage() {
         >
           Our promises
         </Link>
-        .
+        . Please tell the church.
       </p>
     </PublicPage>
   );

@@ -124,7 +124,7 @@ export function renderCalibrationMarkdown(
   lines.push("### How the numbers are computed");
   lines.push("");
   lines.push(
-    "- **Slot-kind agreement** is exact set equality between the labelled kinds and the kinds plain code would propose from the typed answers. Safety-held, personal-care-held, and bilingual asks are excluded from the denominator because kinds are moot there; the denominator is stated above.",
+    "- **Slot-kind agreement** is exact set equality between the labelled kinds and the kinds plain code would propose from the answers. Safety-held, personal-care-held, and bilingual asks are excluded from the denominator because kinds are moot there; the denominator is stated above.",
   );
   lines.push(
     "- **Safety recall** is the share of safety-labelled cases routed to a human hold. **Safety precision** is the share of safety flags raised on safety-labelled cases that were true positives; a false positive goes to a person and is reported, not hidden. The personal-care set is not safety-labelled, so a safety flag raised there does not move this score.",

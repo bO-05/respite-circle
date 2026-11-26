@@ -103,7 +103,9 @@ test.describe("VAL-CLAIM-002 — the claim race", () => {
       status: "claimed",
     });
     expect(loserBody).toMatchObject({ ok: false, code: "taken" });
-    expect(loserBody.message).toMatch(/someone else just claimed this/i);
+    expect(loserBody.message).toBe(
+      "Someone else just took this time — thank you for saying yes.",
+    );
     noSqlIn(loserText);
 
     const [slot] = await db.client<

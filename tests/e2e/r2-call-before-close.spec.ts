@@ -328,7 +328,7 @@ test.describe.serial(
 
       if ((await slotStatus(db, NOT_DUE_SLOT)) === "open") {
         await expect(card.getByTestId("coverage-due")).toContainText(
-          "This time enters the coverage watch on",
+          "A call becomes due on",
         );
         await expect(card.getByTestId("coverage-due")).not.toHaveText(
           "This time needs a call now.",

@@ -22,8 +22,8 @@ export const dynamic = "force-dynamic";
 const STATUS_LABEL: Record<string, string> = {
   draft: "Not submitted yet",
   waiting_coordinator: "Waiting for a person",
-  safety_hold: "Safety hold — a person will call",
-  care_hold: "Personal-care hold — a person will call",
+  safety_hold: "Safety hold — call today",
+  care_hold: "Personal care — connect the family with help",
   approved: "Approved — published to the board",
   sent_back: "Sent back to the family",
   closed: "Closed",

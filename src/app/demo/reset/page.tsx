@@ -28,7 +28,7 @@ export default function DemoResetPage() {
       <PublicPage
         eyebrow="Demo operations — fictional data"
         title="Reset the demo"
-        lead="One reset wipes the demo tables, reseeds the fictional church, and leaves a board a judge can walk into. It refuses to report success if any of twelve seed assertions fails."
+        lead="This starts the demo over: the same fictional church, the same people, and a board you can walk into. It refuses to report success if any of its twelve checks fails."
       >
         <DemoResetForm />
 
@@ -77,21 +77,22 @@ export default function DemoResetPage() {
               the signed policy, and four Tuesday Respite Mornings.
             </li>
             <li>
-              Marta&apos;s hero ask approved, with a companion place published
-              on the next Respite Morning — so the congregation board is never
-              empty.
+              Marta&apos;s request, already approved, with a companion place
+              published on the next Respite Morning — so the congregation board
+              is never empty.
             </li>
             <li>
               A waiting ask for the desk, and a safety hold that shows the human
               refusal rather than a time offer.
             </li>
             <li>
-              One published meal time that nobody has taken and no message was
-              ever sent about — the failure path stays visible.
+              One meal time that nobody has taken, with no message sent about
+              it, so you can see what that looks like.
             </li>
             <li>
               Seeded wording edited since it was first inserted comes back with
-              the current text: the reset truncates, it does not upsert.
+              the current text: the reset clears the tables and writes them
+              again, rather than updating the old rows in place.
             </li>
           </ul>
         </section>

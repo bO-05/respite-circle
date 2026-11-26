@@ -221,7 +221,7 @@ test.describe.serial("VAL-AUDIT-001…004 — the decision log", () => {
       );
       await expect(aiRow.getByTestId("audit-entity")).toContainText("Ask");
       await expect(aiRow.getByTestId("audit-detail")).toContainText(
-        "Input digest",
+        "Fingerprint",
       );
       await expect(aiRow.getByTestId("audit-detail")).toContainText("sha256:");
       await expect(aiRow.getByTestId("audit-time")).toContainText(

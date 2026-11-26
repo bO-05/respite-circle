@@ -169,7 +169,7 @@ test.describe("VAL-DESK-003, VAL-DESK-006, VAL-DESK-007 and VAL-AUDITFIX-003 —
     await expect(companion.getByTestId("draft-window")).toContainText(
       "10:00–14:00",
     );
-    await expect(companion.getByTestId("draft-gated")).toHaveText("Not gated");
+    await expect(companion.getByTestId("draft-gated")).toHaveText("No extra checks");
     await expect(companion.getByTestId("draft-rule-ref")).toContainText(
       "Rule Q1 — a sitting or companionship need",
     );
@@ -184,7 +184,9 @@ test.describe("VAL-DESK-003, VAL-DESK-006, VAL-DESK-007 and VAL-AUDITFIX-003 —
       '[data-testid="draft-slot"][data-kind="home"]',
     );
     await expect(home).toHaveAttribute("data-gated", "true");
-    await expect(home.getByTestId("draft-gated")).toContainText("Gated");
+    await expect(home.getByTestId("draft-gated")).toContainText(
+      "Needs the in-home or driver checks",
+    );
     await expect(home.getByTestId("draft-label")).toHaveValue(
       /^Home visit — Saturday$/,
     );
@@ -545,7 +547,7 @@ test.describe("VAL-DESK-003, VAL-DESK-006, VAL-DESK-007 and VAL-AUDITFIX-003 —
       /no need to go inside/i,
     );
     await expect(meal.getByTestId("draft-rule-ref")).toContainText("Rule Q3");
-    await expect(meal.getByTestId("draft-gated")).toHaveText("Not gated");
+    await expect(meal.getByTestId("draft-gated")).toHaveText("No extra checks");
 
     const cardText = await meal.innerText();
     expect(cardText).not.toMatch(

@@ -39,7 +39,7 @@ export const dynamic = "force-dynamic";
  * next" list opens with. The sentence below qualifies itself only while the
  * ask's signed policy has the low-risk switch on, because a meal time can then
  * reach the congregation board before a person approves it. Below them the
- * page shows the nine typed answers for the *latest* revision only, plus the
+ * page shows the nine answers for the *latest* revision only, plus the
  * model metadata, the policy version, and the digest. There is no model prose
  * anywhere on this page, no edit control for the words, and no control that
  * accepts or declines a time — the "What happens next" list says so in words.

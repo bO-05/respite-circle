@@ -37,7 +37,7 @@ import type { AppDatabase } from "@/server/repositories/coordinator";
 import { evaluateCandidatesForSlots } from "@/server/services/candidate-evaluation";
 
 /**
- * Turn the nine typed answers into draft slots, once per ask.
+ * Turn the nine answers into draft slots, once per ask.
  *
  * This is plain code: it reads only closed decision values and writes only
  * draft rows. The model is never called, and the caregiver's words are never
@@ -149,7 +149,7 @@ export async function constructDraftSlots(
       blocked: {
         reason: "not_reviewable",
         message:
-          "No words or typed answers are recorded for this ask yet, so plain code has nothing to read.",
+          "No words or answers are recorded for this ask yet, so plain code has nothing to read.",
       },
     });
   }
@@ -174,7 +174,7 @@ export async function constructDraftSlots(
       blocked: {
         reason: "not_reviewable",
         message:
-          "The nine typed answers are not recorded yet, so plain code has nothing to read. A person will read the words first.",
+          "The nine answers are not recorded yet, so plain code has nothing to read. A person will read the words first.",
       },
     });
   }

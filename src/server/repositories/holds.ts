@@ -37,7 +37,7 @@ import type { AppDatabase } from "./coordinator";
  * The coordinator's read and writes for the two human-only routes.
  *
  * A safety or personal-care ask never becomes a volunteer time: slot
- * construction refuses the held status, the typed answers are re-checked, and
+ * construction refuses the held status, the answers are re-checked, and
  * the manual add path is refused here too. A safety hold may be converted only
  * by an explicit, reasoned action that writes its actor to the append-only
  * audit log; a personal-care hold never converts. The close keeps the
@@ -128,7 +128,7 @@ export async function getHeldAskCard(
 }
 
 /**
- * The latest revision's typed answers. Slot construction and the manual add
+ * The latest revision's answers. Slot construction and the manual add
  * path both read this so a personal-care flag is enforced from the words the
  * family is reading today, not from an earlier revision.
  */
@@ -280,7 +280,7 @@ export async function closeHeldAsk(
  * Two human acts are required: the explicit confirmation that the call
  * happened, and the reason in the coordinator's own words. Both are recorded;
  * the reason and the actor go into the append-only audit log. Personal care is
- * refused outright, including a safety hold whose typed answers also name
+ * refused outright, including a safety hold whose answers also name
  * personal care. No slot is created by the conversion — plain code still has
  * to propose one, and the Q9 gate still refuses.
  */

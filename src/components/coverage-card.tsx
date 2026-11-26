@@ -152,7 +152,7 @@ export function CoverageCard({
               ? "A call is on record — offer this time again or close it."
               : item.isDue
                 ? "This time needs a call now."
-                : `This time enters the coverage watch on ${formatWindowLabel(
+                : `A call becomes due on ${formatWindowLabel(
                     item.dueAt,
                     null,
                     timeZone,
@@ -324,7 +324,7 @@ export function CoverageSection({
           id="desk-coverage-heading"
           className="font-serif text-2xl text-ink"
         >
-          The coverage watch
+          Times nobody has taken yet
         </h2>
         <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
           If no neighbour takes this time, the family is sent nothing. A person

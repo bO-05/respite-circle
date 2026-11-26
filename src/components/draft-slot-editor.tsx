@@ -111,7 +111,7 @@ export function DraftSlotCard({
           data-testid="draft-gated"
           className="inline-flex min-h-7 items-center rounded-full border border-line bg-paper px-3 text-base font-semibold text-ink"
         >
-          {slot.gated ? "Gated — needs the in-home or driver checks" : "Not gated"}
+          {slot.gated ? "Needs the in-home or driver checks" : "No extra checks"}
         </p>
       </div>
 
@@ -506,7 +506,7 @@ export function ProposeTimesForm({ askId }: { askId: string }) {
     >
       <input type="hidden" name="askId" value={askId} />
       <p className="max-w-prose text-base leading-relaxed text-ink">
-        Plain code can read the nine typed answers and propose draft times. It
+        Plain code can read the nine answers and propose draft times. It
         runs once per ask; it never overwrites a draft you have edited.
       </p>
       <Feedback state={state} testId="draft-propose-feedback" />

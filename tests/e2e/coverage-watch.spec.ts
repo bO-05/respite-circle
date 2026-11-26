@@ -645,7 +645,7 @@ test.describe.serial("VAL-FAILURE-001…006 and VAL-CROSS-002 — the coverage w
       "A call is on record — offer this time again or close it.",
     );
     await expect(due).not.toContainText(/needs a call now/i);
-    await expect(due).not.toContainText(/enters the coverage watch/i);
+    await expect(due).not.toContainText(/a call becomes due/i);
 
     const [row] = await db.client<
       {

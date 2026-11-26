@@ -192,7 +192,7 @@ export function combineCalibrationCases(
 }
 
 /**
- * Turn the nine typed answers into the care kinds plain code would propose.
+ * Turn the nine answers into the care kinds plain code would propose.
  *
  * `home` is deliberately not predicted here: the labelled sets say "sit" for a
  * companionship need, and the in-home tier is a gated variant a coordinator
