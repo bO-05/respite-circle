@@ -300,8 +300,8 @@ export function DraftSlotCard({
             className="mt-1 size-11 rounded border border-line"
           />
           <label htmlFor={`${slot.id}-gated`} className="text-base text-ink">
-            Gated — a neighbour needs the in-home checks or the driver policy
-            before claiming this time.
+            Needs the in-home checks or the driver policy before anyone can take
+            this time.
           </label>
         </div>
 
