@@ -90,7 +90,7 @@ const RULE_REFERENCE_TEXT: Record<SlotRuleRef, string> = {
   q1_companion:
     "Rule Q1 — a sitting or companionship need. A companion place at the next Respite Morning with room.",
   q6_home:
-    "Rule Q1 + Q6 — a sitting need, and they are most comfortable with people they already know. A gated home visit.",
+    "Rule Q1 + Q6 — a sitting need, and they are most comfortable with people they already know. A home visit that needs the in-home checks.",
   q2_drive:
     "Rule Q2 — transport that is not already arranged, with the church's volunteer-driver policy signed. A drive.",
   q3_meal:
@@ -220,7 +220,7 @@ const PERSONAL_CARE_BLOCK: ConstructionBlock = {
 const NOT_REVIEWABLE_BLOCK: ConstructionBlock = {
   reason: "not_reviewable",
   message:
-    "This ask is not waiting for a coordinator. Plain code will not add or change times for it.",
+    "This ask is not waiting for a coordinator. The rules will not add or change times for it.",
 };
 
 export function constructionBlockedForStatus(

@@ -148,7 +148,7 @@ test.describe("VAL-DESK-003, VAL-DESK-006, VAL-DESK-007 and VAL-AUDITFIX-003 —
     await openDeskAsk(grace.page, askId);
 
     await expect(
-      grace.page.getByRole("heading", { name: "Times plain code proposes" }),
+      grace.page.getByRole("heading", { name: "Times the rules propose" }),
     ).toBeVisible();
     await expect(grace.page.getByTestId("draft-not-published")).toContainText(
       "cannot see any of them",

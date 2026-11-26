@@ -1,10 +1,10 @@
 /**
  * The coordinator desk queue.
  *
- * A queue is a category list, not a ranking. Safety-held and personal-care-held
- * asks are pinned as their own categories at the top; every other waiting ask
- * is ordered oldest first. There is no urgency number anywhere, and this module
- * has no way to produce one.
+ * A queue is a category list, not a ranking. A call today and a need for
+ * professional help are pinned as their own groups at the top; every other
+ * waiting ask is ordered oldest first. There is no urgency number anywhere,
+ * and this module has no way to produce one.
  *
  * The reason summary is built only from the closed values the typed decision
  * service stores. An unrecognised value becomes "uncertain", never text on
@@ -31,8 +31,8 @@ export const QUEUE_CATEGORY_ORDER = [
 ] as const satisfies readonly QueueCategory[];
 
 export const QUEUE_CATEGORY_HEADING: Record<QueueCategory, string> = {
-  safety: "Safety hold",
-  personal_care: "Personal-care hold",
+  safety: "Call today",
+  personal_care: "Needs professional help",
   waiting: "Waiting for a person",
 };
 
@@ -67,8 +67,22 @@ export function pinLabelFor(status: string): string | null {
 }
 
 /**
- * What a coordinator does next on a held ask. A safety hold is a phone call,
- * not a time offer; a personal-care hold is a referral, never a slot.
+ * The first visible line of a safety row: the action, not the category.
+ *
+ * A safety ask is a call today, so the row says so before it gives the reason.
+ * A missing first name falls back to the family rather than to a blank line;
+ * the ordinary queue and the personal-care group keep the family's name link.
+ */
+export function safetyRowTitle(
+  caregiverFirstName: string | null | undefined,
+): string {
+  const name = caregiverFirstName?.trim();
+  return name ? `Call ${name} today` : "Call the family today";
+}
+
+/**
+ * What a coordinator does next on a held ask. A safety ask is a phone call,
+ * not a time offer; a personal-care ask is a referral, never a slot.
  */
 export const HOLD_REASON = {
   safety_hold:

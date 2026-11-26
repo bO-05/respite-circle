@@ -250,7 +250,7 @@ describe("coordinator desk queue", () => {
     expect(item.caregiverFirstName).toBe("Marta");
     expect(item.careRecipientFirstName).toBe("Elena");
     expect(item.reasonSummary).toBe("Companionship · A Saturday");
-    expect(item.pinLabel).toBe("Safety hold");
+    expect(item.pinLabel).toBe("Call today");
     expect(item.holdReason).toMatch(/call the family today/i);
     expect(item.holdReason).toMatch(/no time is offered/i);
     expect(item.answers.map((entry) => entry.questionId)).toEqual([

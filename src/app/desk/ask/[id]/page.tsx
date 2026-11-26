@@ -22,8 +22,8 @@ export const dynamic = "force-dynamic";
 const STATUS_LABEL: Record<string, string> = {
   draft: "Not submitted yet",
   waiting_coordinator: "Waiting for a person",
-  safety_hold: "Safety hold — call today",
-  care_hold: "Personal care — connect the family with help",
+  safety_hold: "Call today — no time is offered yet",
+  care_hold: "Needs professional help — no volunteer time",
   approved: "Approved — published to the board",
   sent_back: "Sent back to the family",
   closed: "Closed",
@@ -146,7 +146,7 @@ export default async function DeskAskPage({
             id="desk-override-record-heading"
             className="font-serif text-2xl text-ink"
           >
-            Safety hold converted by a person
+            A person called the family and recorded why
           </h2>
           <p className="max-w-prose text-base leading-relaxed text-ink">
             {review.safetyOverrideByName ?? "A coordinator"} confirmed a call

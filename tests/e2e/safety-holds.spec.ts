@@ -153,7 +153,7 @@ test.describe("VAL-SAFETY-001…006 — safety and personal-care routing", () =>
       safetySection.locator(`[data-ask-id="${askId}"]`).getByTestId(
         "desk-pin-label",
       ),
-    ).toHaveText("Safety hold");
+    ).toHaveText("Call today");
 
     await grace.page.goto(`/desk/ask/${askId}`);
     const card = grace.page.getByTestId("hold-card");

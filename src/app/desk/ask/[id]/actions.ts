@@ -256,14 +256,14 @@ export async function proposeDraftsAction(
       const times = result.proposals === 1 ? "time" : "times";
       return successState(
         result.proposals === 0
-          ? "Plain code found no practical need in the nine answers. Nothing was added. A person can still add a time."
-          : `Plain code proposed ${result.proposals} draft ${times}. They are not published.`,
+          ? "The rules found no practical need in the nine answers. Nothing was added. A person can still add a time."
+          : `The rules proposed ${result.proposals} draft ${times}. They are not published.`,
       );
     }
 
     if (result.reason === "already_constructed") {
       return errorState(
-        "Plain code has already proposed times for this ask. Nothing was added again.",
+        "The rules have already proposed times for this ask. Nothing was added again.",
       );
     }
     if (result.reason === "blocked" || result.reason === "no_answers") {

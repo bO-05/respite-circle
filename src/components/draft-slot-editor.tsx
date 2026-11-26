@@ -506,8 +506,8 @@ export function ProposeTimesForm({ askId }: { askId: string }) {
     >
       <input type="hidden" name="askId" value={askId} />
       <p className="max-w-prose text-base leading-relaxed text-ink">
-        Plain code can read the nine answers and propose draft times. It
-        runs once per ask; it never overwrites a draft you have edited.
+        The rules can read the nine answers and propose draft times. They run
+        once per ask; they never overwrite a draft you have edited.
       </p>
       <Feedback state={state} testId="draft-propose-feedback" />
       <button

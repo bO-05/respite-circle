@@ -20,11 +20,11 @@ export const dynamic = "force-dynamic";
 /**
  * The coordinator desk.
  *
- * The order on the screen is the order of the promise: a safety hold first,
+ * The order on the screen is the order of the promise: a call today first,
  * because someone calls the family today; then the coverage watch, because a
  * time nobody has taken is a call, not a message; then the Respite Morning
- * calendar; then claims waiting for confirmation; then the personal-care hold
- * and the ordinary queue.
+ * calendar; then claims waiting for confirmation; then professional help for
+ * the personal-care group and the ordinary queue.
  *
  * A zero on the coverage watch is the product working. Its sentence is
  * ordinary text, never an amber warning block.

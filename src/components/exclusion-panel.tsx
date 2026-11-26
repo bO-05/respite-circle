@@ -37,7 +37,7 @@ function Legend() {
         Every rule that can stop a proposal
       </h3>
       <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
-        These are the only reasons plain code can give. Each one names who can
+        These are the only reasons the rules can give. Each one names who can
         clear it. None of them is a judgement about a person&apos;s worth.
       </p>
       <dl className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -91,8 +91,8 @@ export function ExclusionPanelSection({
           Why a volunteer was not proposed
         </h2>
         <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
-          Plain code checked every active volunteer in this church against every
-          draft time below. For each person it records one rule: either they
+          The rules checked every active volunteer in this church against every
+          draft time below. For each person they record one rule: either they
           could be asked, or a named rule stopped the proposal and names what
           would change it.
         </p>
@@ -121,7 +121,7 @@ export function ExclusionPanelSection({
             No draft times to check yet
           </h3>
           <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
-            When plain code proposes a time — or when you add one — every active
+            When the rules propose a time — or when you add one — every active
             volunteer is checked here. Nothing is published by that check.
           </p>
         </div>
@@ -161,7 +161,7 @@ export function ExclusionPanelSection({
                 slot.windowEnd,
                 context.timeZone,
               )}
-              {slot.gated ? " · Gated" : " · Not gated"}
+              {slot.gated ? " · Needs checks" : " · No extra checks"}
             </p>
           </div>
 

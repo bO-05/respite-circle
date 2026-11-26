@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   QUEUE_CATEGORY_HEADING,
   QUEUE_CATEGORY_NOTE,
+  safetyRowTitle,
   waitingLabel,
   type QueueCategory,
 } from "@/server/domain/desk-queue";
@@ -11,12 +12,13 @@ import type { DeskQueueItem } from "@/server/repositories/coordinator";
  * One group of the coordinator desk queue.
  *
  * The safety group is the first thing the page renders and the only group
- * drawn as an urgent panel with a larger heading: a safety hold is the first
+ * drawn as an urgent panel with a larger heading: a call today is the first
  * thing a coordinator meets, not a twin of routine coverage. Personal care is
- * the second hold and carries its own tint; the ordinary queue stays plain.
+ * the second group and carries its own tint; the ordinary queue stays plain.
  *
- * Every held card carries a labelled action of its own beside the person's
- * name, so the name link is never the only way into the ask.
+ * Every held card carries a labelled action of its own beside the name link,
+ * so the name link is never the only way into the ask. A safety row leads with
+ * the call itself — "Call Priya today" — before it gives the reason.
  */
 
 const PANEL: Record<QueueCategory, string> = {
@@ -33,6 +35,12 @@ const HEADING: Record<QueueCategory, string> = {
 
 function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
   const held = item.category !== "waiting";
+  // The safety row's first visible line is the action, not the category. The
+  // ordinary queue and the personal-care group keep the family's name link.
+  const title =
+    item.category === "safety"
+      ? safetyRowTitle(item.caregiverFirstName)
+      : item.caregiverFirstName;
 
   return (
     <li
@@ -47,9 +55,10 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <a
           href={`/desk/ask/${item.id}`}
+          data-testid="desk-row-title"
           className="inline-flex min-h-11 items-center text-lg font-semibold text-ink underline decoration-accent underline-offset-4"
         >
-          {item.caregiverFirstName}
+          {title}
           <span className="sr-only"> — read this ask</span>
         </a>
         {item.pinLabel ? (

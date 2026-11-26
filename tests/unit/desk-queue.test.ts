@@ -15,6 +15,7 @@ import {
   orderDeskQueue,
   pinLabelFor,
   queueCategoryFor,
+  safetyRowTitle,
   summariseTypedReasons,
   waitingLabel,
   type DeskQueueStatus,
@@ -84,19 +85,21 @@ describe("desk queue membership", () => {
     ]);
   });
 
-  it("labels the pinned categories as categories, not scores", () => {
-    expect(pinLabelFor("safety_hold")).toBe("Safety hold");
-    expect(pinLabelFor("care_hold")).toBe("Personal-care hold");
+  it("names the action each group leads with, not a category or a score", () => {
+    expect(pinLabelFor("safety_hold")).toBe("Call today");
+    expect(pinLabelFor("care_hold")).toBe("Needs professional help");
     expect(pinLabelFor("waiting_coordinator")).toBeNull();
 
-    expect(QUEUE_CATEGORY_HEADING.safety).toBe("Safety hold");
+    expect(QUEUE_CATEGORY_HEADING.safety).toBe("Call today");
     expect(QUEUE_CATEGORY_HEADING.personal_care).toBe(
-      "Personal-care hold",
+      "Needs professional help",
     );
     expect(QUEUE_CATEGORY_HEADING.waiting).toBe("Waiting for a person");
 
     const allCopy = Object.values(QUEUE_CATEGORY_HEADING).join(" ");
     expect(allCopy).not.toMatch(/urgent|priority|score|rank/i);
+    // The retired category names are gone from every heading and pin label.
+    expect(allCopy).not.toMatch(/safety hold|personal-care hold|coverage watch/i);
 
     // The sub-line leads with the action a coordinator takes; the defensive
     // "Pinned as a category, not a score" sentence is gone.
@@ -109,6 +112,26 @@ describe("desk queue membership", () => {
     expect(Object.values(QUEUE_CATEGORY_NOTE).join(" ")).not.toMatch(
       /pinned as a category/i,
     );
+  });
+});
+
+describe("safety row title", () => {
+  it("leads with the call and the family's first name", () => {
+    expect(safetyRowTitle("Priya")).toBe("Call Priya today");
+    expect(safetyRowTitle("  Priya ")).toBe("Call Priya today");
+  });
+
+  it("falls back to the family when no name can be used", () => {
+    expect(safetyRowTitle("")).toBe("Call the family today");
+    expect(safetyRowTitle("   ")).toBe("Call the family today");
+    expect(safetyRowTitle(null)).toBe("Call the family today");
+    expect(safetyRowTitle(undefined)).toBe("Call the family today");
+  });
+
+  it("never puts a hold category or a severity in the row title", () => {
+    const title = safetyRowTitle("Priya");
+    expect(title.startsWith("Call Priya today")).toBe(true);
+    expect(title).not.toMatch(/hold|urgent|priority|score|rank/i);
   });
 });
 

@@ -149,7 +149,7 @@ export async function constructDraftSlots(
       blocked: {
         reason: "not_reviewable",
         message:
-          "No words or answers are recorded for this ask yet, so plain code has nothing to read.",
+          "No words or answers are recorded for this ask yet, so the rules have nothing to read.",
       },
     });
   }
@@ -174,7 +174,7 @@ export async function constructDraftSlots(
       blocked: {
         reason: "not_reviewable",
         message:
-          "The nine answers are not recorded yet, so plain code has nothing to read. A person will read the words first.",
+          "The nine answers are not recorded yet, so the rules have nothing to read. A person will read the words first.",
       },
     });
   }

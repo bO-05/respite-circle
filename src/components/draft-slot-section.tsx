@@ -78,10 +78,10 @@ export function DraftSlotSection({
     >
       <div>
         <h2 id="draft-editor-heading" className="font-serif text-2xl text-ink">
-          Times plain code proposes
+          Times the rules propose
         </h2>
         <p className="mt-2 max-w-prose text-lg leading-relaxed text-ink">
-          Plain code — not the model — builds every draft here from the nine
+          The rules — not the model — build every draft here from the nine
           answers. The model never writes a proposal, a label, or a note.
         </p>
         <p
@@ -188,12 +188,12 @@ export function DraftSlotSection({
               className="rounded-lg border border-line bg-surface p-5"
             >
               <h3 className="font-serif text-xl text-ink">
-                Plain code has not proposed times yet
+                The rules have not proposed times yet
               </h3>
               <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
                 {context.hasDecisions
-                  ? "The nine answers are recorded. You can let plain code propose times, or add one yourself."
-                  : "The nine answers are not recorded yet, so plain code has nothing to read. A person can still add a time."}
+                  ? "The nine answers are recorded. You can let the rules propose times, or add one yourself."
+                  : "The nine answers are not recorded yet, so the rules have nothing to read. A person can still add a time."}
               </p>
             </div>
           ) : null}

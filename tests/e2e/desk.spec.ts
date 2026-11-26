@@ -210,7 +210,7 @@ test.describe("VAL-DESK-001 and VAL-DESK-002 — coordinator desk queue", () => 
     await expect(waitingRow.getByTestId("desk-hold-reason")).toHaveCount(0);
 
     await expect(safetyRow.getByTestId("desk-pin-label")).toHaveText(
-      "Safety hold",
+      "Call today",
     );
     await expect(safetyRow.getByTestId("desk-waiting-time")).toHaveText(
       "Waiting 2 days",
@@ -223,7 +223,7 @@ test.describe("VAL-DESK-001 and VAL-DESK-002 — coordinator desk queue", () => 
     );
 
     await expect(careRow.getByTestId("desk-pin-label")).toHaveText(
-      "Personal-care hold",
+      "Needs professional help",
     );
     await expect(careRow.getByTestId("desk-hold-reason")).toContainText(
       "professional help",
@@ -247,8 +247,8 @@ test.describe("VAL-DESK-001 and VAL-DESK-002 — coordinator desk queue", () => 
     // VAL-R3LANG-002 — the hold groups lead with the action, not with a
     // defensive note written for an auditor.
     expect(mainText).not.toMatch(/pinned as a category/i);
-    expect(mainText).toContain("Safety hold");
-    expect(mainText).toContain("Personal-care hold");
+    expect(mainText).toContain("Call today");
+    expect(mainText).toContain("Needs professional help");
 
     await shot(grace.page, "desk-queue-desktop");
     await grace.page.setViewportSize({ width: 360, height: 740 });
