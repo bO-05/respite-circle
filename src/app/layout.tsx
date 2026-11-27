@@ -3,6 +3,9 @@ import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { BRAND_DESCRIPTION, BRAND_OG_ALT, BRAND_OG_TITLE } from "@/lib/brand";
+import { SITE_NAME } from "@/lib/site-navigation";
+import { deploymentUrl } from "@/lib/site-url";
 import "./globals.css";
 
 /*
@@ -42,11 +45,49 @@ const sourceSans = localFont({
  * metadata API; every guarded route gets its title from the area shell after
  * auth. A page-level `metadata` export would be resolved before its guard and
  * leak the hidden route's name into a refused caregiver's tab.
+ *
+ * `metadataBase` turns the app's own asset routes into the absolute URLs a
+ * share card needs. Only the site's name, a description, and its own icon and
+ * share routes are declared: no page-specific information leaks through the
+ * root segment.
  */
 export const metadata: Metadata = {
-  description: "A church-run break for a family that cares for someone.",
+  metadataBase: deploymentUrl(),
+  description: BRAND_DESCRIPTION,
   // Access links carry a bearer token in the path; never leak it in a Referer.
   referrer: "no-referrer",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon", type: "image/png", sizes: "180x180" }],
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: SITE_NAME,
+    title: BRAND_OG_TITLE,
+    description: BRAND_DESCRIPTION,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: BRAND_OG_ALT,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: BRAND_DESCRIPTION,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: BRAND_OG_ALT,
+      },
+    ],
+  },
 };
 
 export default function RootLayout({

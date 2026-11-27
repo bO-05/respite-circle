@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ROLE_LABEL, roleHome } from "@/server/auth/policy";
 import { readSession } from "@/server/auth/read-session";
-import { SITE_NAME } from "@/lib/site-navigation";
+import { BrandMark } from "./brand-mark";
 import { RoleNav } from "./role-nav";
 
 /**
@@ -11,6 +11,10 @@ import { RoleNav } from "./role-nav";
  * desk links in their HTML, so hiding a control is not the only thing standing
  * between roles. The header reads no private data and does not query a name;
  * the page's own guard loads that.
+ *
+ * The mark is decorative (`aria-hidden`, no role, no title), so the home
+ * link's accessible name stays exactly "Respite Circle". It sits outside
+ * `main`, where every icon is a lucide import.
  */
 export async function SiteHeader() {
   const session = await readSession();
@@ -22,9 +26,13 @@ export async function SiteHeader() {
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <Link
             href={home}
-            className="inline-flex min-h-11 items-center font-serif text-2xl font-semibold text-ink"
+            className="inline-flex min-h-11 items-center gap-2.5 font-serif text-2xl font-semibold text-ink"
           >
-            {SITE_NAME}
+            <BrandMark className="h-7 w-7 shrink-0 text-accent" />
+            <span>
+              Respite{" "}
+              <em className="font-medium italic text-accent">Circle</em>
+            </span>
           </Link>
           {session ? (
             <p className="text-base text-ink-muted">
