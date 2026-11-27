@@ -67,7 +67,7 @@ export default async function CalibrationPage() {
 
       <section
         aria-labelledby="calibration-how-to-read"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2
           id="calibration-how-to-read"
@@ -106,7 +106,7 @@ export default async function CalibrationPage() {
         <section
           data-testid="calibration-history-error"
           aria-label="Earlier published runs"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h2 className="font-serif text-2xl leading-snug text-ink">
             Earlier published runs
@@ -123,7 +123,7 @@ export default async function CalibrationPage() {
 
       <section
         aria-labelledby="calibration-method"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2
           id="calibration-method"
@@ -177,7 +177,7 @@ export default async function CalibrationPage() {
 
       <section
         aria-labelledby="calibration-reproduce"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2
           id="calibration-reproduce"

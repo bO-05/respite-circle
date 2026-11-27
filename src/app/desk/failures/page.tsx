@@ -38,7 +38,7 @@ export default async function CoverageWatchPage() {
         <section
           data-testid="coverage-empty"
           aria-labelledby="coverage-empty-heading"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h2
             id="coverage-empty-heading"

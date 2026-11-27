@@ -60,7 +60,7 @@ export function CaregiverInviteList({
     <section
       data-testid="care-invites"
       aria-labelledby="care-invites-heading"
-      className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
     >
       <div>
         <h2 id="care-invites-heading" className="font-serif text-2xl text-ink">

@@ -101,7 +101,7 @@ export function DraftSlotCard({
       data-kind={slot.kind}
       data-gated={slot.gated ? "true" : "false"}
       data-held={held ? "true" : "false"}
-      className="rounded-lg border border-line bg-surface p-5"
+      className="rounded-md border-t border-line bg-surface p-5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-serif text-2xl text-ink">
@@ -443,7 +443,7 @@ export function AddDraftForm({
     <form
       action={formAction}
       data-testid="draft-add"
-      className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-3 rounded-md border-t border-line bg-surface p-5"
     >
       <input type="hidden" name="askId" value={askId} />
       <div className="flex flex-col gap-1">
@@ -502,7 +502,7 @@ export function ProposeTimesForm({ askId }: { askId: string }) {
     <form
       action={formAction}
       data-testid="draft-propose"
-      className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-3 rounded-md border-t border-line bg-surface p-5"
     >
       <input type="hidden" name="askId" value={askId} />
       <p className="max-w-prose text-base leading-relaxed text-ink">

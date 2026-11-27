@@ -30,7 +30,7 @@ export function SessionCalendarStrip({ overview }: { overview: SessionOverview }
     <section
       data-testid="desk-session-strip"
       aria-labelledby="desk-session-strip-heading"
-      className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2

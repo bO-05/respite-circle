@@ -32,6 +32,12 @@
   --color-red-soft: #f3e6e2;
   --color-line: #c9c3b4;
   --color-boundary: #7d776a;
+  /*
+    Gold is decoration at full opacity: a day band, the receipt's lifecycle
+    rail, the hairline above a family's own words. It never carries text
+    (3.86:1), and it is never the only boundary of a control.
+  */
+  --color-gold: #8a7340;
   --color-focus: #2f5d45;
 
   /*

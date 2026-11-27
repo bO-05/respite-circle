@@ -88,7 +88,7 @@ export default async function DeskAskPage({
       title="Ask review"
       lead="A person reads every word. A time reaches a neighbour only after that person approves it, unless the signed low-risk policy has published a meal by itself."
     >
-      <dl className="grid gap-4 rounded-lg border border-line bg-surface p-5 sm:grid-cols-2">
+      <dl className="grid gap-4 rounded-md border-t border-line bg-surface p-5 sm:grid-cols-2">
         <div>
           <dt className="text-base font-semibold text-ink">Family</dt>
           <dd className="mt-1 text-base text-ink-muted">
@@ -118,7 +118,7 @@ export default async function DeskAskPage({
       {holdReason ? (
         <p
           data-testid="desk-detail-hold"
-          className="rounded-md border border-accent-soft bg-accent-soft px-4 py-3 text-lg leading-relaxed text-ink"
+          className="rounded-md border-t border-accent bg-accent-soft px-4 py-3 text-lg leading-relaxed text-ink"
         >
           {holdReason}
         </p>
@@ -128,7 +128,7 @@ export default async function DeskAskPage({
         <p
           data-testid="desk-detail-bilingual"
           role="status"
-          className="max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-3 text-lg leading-relaxed text-ink"
+          className="max-w-prose rounded-md border-t border-amber bg-amber-soft px-4 py-3 text-lg leading-relaxed text-ink"
         >
           {bilingualSummarySentence(review.language)}
         </p>
@@ -140,7 +140,7 @@ export default async function DeskAskPage({
         <section
           data-testid="desk-override-record"
           aria-labelledby="desk-override-record-heading"
-          className="flex flex-col gap-2 rounded-lg border border-amber bg-amber-soft p-5"
+          className="flex flex-col gap-2 rounded-md border-t border-amber bg-amber-soft p-5"
         >
           <h2
             id="desk-override-record-heading"
@@ -162,7 +162,7 @@ export default async function DeskAskPage({
           {review.safetyOverrideReason ? (
             <blockquote
               data-testid="desk-override-reason"
-              className="max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
+              className="max-w-prose whitespace-pre-wrap break-words rounded-md border-t border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
             >
               {review.safetyOverrideReason}
             </blockquote>
@@ -172,7 +172,7 @@ export default async function DeskAskPage({
 
       <section
         aria-labelledby="caregiver-words"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="caregiver-words" className="font-serif text-2xl text-ink">
           The family&apos;s own words
@@ -188,7 +188,7 @@ export default async function DeskAskPage({
         </p>
         <blockquote
           data-testid="desk-verbatim"
-          className="mt-4 max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-accent-soft px-5 py-4 text-xl leading-relaxed text-ink"
+          className="mt-4 max-w-prose whitespace-pre-wrap break-words rounded-md border-t border-gold bg-accent-soft px-5 py-4 font-serif text-xl italic leading-relaxed text-ink"
         >
           {review.text}
         </blockquote>

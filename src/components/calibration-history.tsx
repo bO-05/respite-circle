@@ -19,7 +19,7 @@ export function CalibrationHistory({
     <section
       data-testid="calibration-history"
       aria-labelledby="calibration-history-heading"
-      className="rounded-xl border border-line bg-surface p-5 sm:p-6"
+      className="rounded-md border-t border-line bg-surface p-5 sm:p-6"
     >
       <h2
         id="calibration-history-heading"
@@ -40,7 +40,7 @@ export function CalibrationHistory({
           <li
             key={entry.key}
             data-testid={`history-${entry.source}-${entry.date}`}
-            className="rounded-lg border border-line bg-paper p-4"
+            className="rounded-md border-t border-line bg-paper p-4"
           >
             <div className="flex flex-wrap items-baseline gap-3">
               <h3 className="font-serif text-2xl leading-tight text-ink">
@@ -57,7 +57,7 @@ export function CalibrationHistory({
             {entry.notLiveNote ? (
               <p
                 data-testid="history-not-live"
-                className="mt-2 w-fit max-w-prose rounded-md border border-amber bg-amber-soft px-3 py-1 text-base font-semibold text-ink"
+                className="mt-2 w-fit max-w-prose rounded-md border-t border-amber bg-amber-soft px-3 py-1 text-base font-semibold text-ink"
               >
                 {entry.notLiveNote}
               </p>

@@ -110,7 +110,7 @@ export default async function MyClaimDetailPage({
         data-kind={claim.kind}
         data-status={claim.status}
         aria-labelledby="claim-heading"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p
@@ -187,7 +187,7 @@ export default async function MyClaimDetailPage({
       <section
         data-testid="claim-expect"
         aria-labelledby="expect-heading"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="expect-heading" className="font-serif text-2xl text-ink">
           What to expect
@@ -208,7 +208,7 @@ export default async function MyClaimDetailPage({
       <section
         data-testid="claim-note-section"
         aria-labelledby="note-heading"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="note-heading" className="font-serif text-2xl text-ink">
           The family&apos;s orientation note

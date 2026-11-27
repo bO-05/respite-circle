@@ -16,6 +16,12 @@ import { cn } from "@/lib/utils";
 /**
  * One time, on the board and on "Your times".
  *
+ * Round 5 draws a time as a notice row, not a card: the time in tabular
+ * figures on the left, the kind of help with its small decorative mark, the
+ * place, and — for an open time — one action at the right. The row carries a
+ * single hairline side (its top) and a surface fill; it is never a four-sided
+ * box.
+ *
  * One part, two states: an open time a neighbour can take carries its one
  * primary action and one hint; a taken time carries one status pill instead.
  * The card is never both, so no card offers two answers to the same question.
@@ -153,9 +159,9 @@ export function TimeCard({
     <li
       data-testid={testId}
       {...dataAttributes}
-      className="rounded-md border-t border-line bg-surface p-4 sm:p-5"
+      className="border-t border-line bg-surface px-4 py-4 first:border-t-0 sm:px-5"
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:gap-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
         <div className={cn("shrink-0", dayLine ? "sm:w-24" : "sm:w-20")}>
           {/*
             A time is a number a person has to read and compare across rows,
@@ -191,12 +197,12 @@ export function TimeCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <p
               data-testid={kindTestId}
-              className="inline-flex min-h-7 items-center gap-1.5 rounded-full border border-line bg-paper px-3 text-base font-semibold text-ink"
+              className="inline-flex items-center gap-1.5 text-base font-semibold text-ink"
             >
-              <Icon aria-hidden="true" className="size-4 text-accent" />
+              <Icon aria-hidden="true" className="size-4 shrink-0 text-accent" />
               {kindWord}
             </p>
             {pill ? (
@@ -212,11 +218,11 @@ export function TimeCard({
             ) : null}
           </div>
 
-          <Heading className="mt-3 font-serif text-2xl leading-snug text-ink">
+          <Heading className="mt-2 font-serif text-2xl leading-snug text-ink">
             {label}
           </Heading>
 
-          <div className="mt-3 flex flex-col gap-1">
+          <div className="mt-2 flex flex-col gap-1">
             <p
               data-testid={locationTestId}
               className="max-w-prose text-base leading-relaxed text-ink"
@@ -235,7 +241,6 @@ export function TimeCard({
 
           {details ? <div className="mt-3">{details}</div> : null}
           {extra ? <div className="mt-4">{extra}</div> : null}
-          {action ? <div className="mt-4">{action}</div> : null}
           {footer ? <div className="mt-3">{footer}</div> : null}
 
           {hint ? (
@@ -248,6 +253,10 @@ export function TimeCard({
             </p>
           ) : null}
         </div>
+
+        {action ? (
+          <div className="mt-1 sm:mt-0 sm:self-center">{action}</div>
+        ) : null}
       </div>
     </li>
   );

@@ -106,7 +106,7 @@ export function DraftSlotSection({
       {blocked ? (
         <div
           data-testid="draft-construction-refused"
-          className="rounded-lg border border-amber bg-amber-soft p-5 text-lg leading-relaxed text-ink"
+          className="rounded-md border-t border-amber bg-amber-soft p-5 text-lg leading-relaxed text-ink"
         >
           <p className="font-semibold">No times are proposed for this ask.</p>
           <p className="mt-2">{blocked.message}</p>
@@ -118,7 +118,7 @@ export function DraftSlotSection({
       ) : null}
 
       {!blocked && !waiting ? (
-        <div className="rounded-lg border border-line bg-surface p-5 text-base leading-relaxed text-ink">
+        <div className="rounded-md border-t border-line bg-surface p-5 text-base leading-relaxed text-ink">
           This ask is no longer waiting for a coordinator, so its drafts are
           read-only here. Its published times are managed from the desk.
         </div>
@@ -129,7 +129,7 @@ export function DraftSlotSection({
           {skipped.length > 0 ? (
             <div
               data-testid="draft-skipped"
-              className="rounded-lg border border-line bg-surface p-5"
+              className="rounded-md border-t border-line bg-surface p-5"
             >
               <h3 className="font-serif text-xl text-ink">
                 Asked for, but not proposed
@@ -169,7 +169,7 @@ export function DraftSlotSection({
           {cards.length === 0 && constructedWithoutContent ? (
             <div
               data-testid="draft-empty"
-              className="rounded-lg border border-line bg-surface p-5"
+              className="rounded-md border-t border-line bg-surface p-5"
             >
               <h3 className="font-serif text-xl text-ink">
                 No practical need was named
@@ -185,7 +185,7 @@ export function DraftSlotSection({
           {context.slotsConstructedAt === null ? (
             <div
               data-testid="draft-none-yet"
-              className="rounded-lg border border-line bg-surface p-5"
+              className="rounded-md border-t border-line bg-surface p-5"
             >
               <h3 className="font-serif text-xl text-ink">
                 The rules have not proposed times yet

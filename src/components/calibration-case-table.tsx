@@ -116,14 +116,14 @@ export function CalibrationCaseTable({
         </table>
       </div>
 
-      <ul className="flex flex-col gap-4 lg:hidden">
+      <ul className="flex flex-col lg:hidden">
         {rows.map((entry) => (
           <li
             key={entry.id}
             data-testid={
               failures ? `failure-card-${entry.id}` : `case-card-${entry.id}`
             }
-            className="rounded-lg border border-line bg-paper p-4"
+            className="border-t border-line bg-paper px-4 py-4 first:border-t-0"
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h4 className="font-serif text-xl leading-snug text-ink">

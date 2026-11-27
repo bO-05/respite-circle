@@ -4,14 +4,20 @@ import type { ChurchDay } from "@/server/domain/day-groups";
 /**
  * One day on the board or on "Your times".
  *
- * On a phone the day reads as a heading above its cards. From `md` up the same
- * heading becomes the date rail at the left, with a rule between the date and
- * the times, so a week with several days reads as a week rather than a queue.
+ * Round 5 draws the day as a notice band rather than a card rail: the weekday
+ * in Fraunces, the date in Source Sans 3 with tabular figures, and a gold
+ * hairline under the band. The times below it are hairline-separated rows, one
+ * per time, so a week reads like a parish notice sheet and not a stack of
+ * boxes.
  *
  * The heading is one element, not a desktop copy and a mobile copy: a screen
  * reader hears "Tuesday 1 December" once, and the section is labelled by it.
  * Nothing here counts the times in the group — a number of places would turn a
  * neighbour's yes into a race.
+ *
+ * The weekday span keeps the Hall Light kicker class exactly; the numerals of
+ * the date stay in the sans with tabular figures, because a date a person
+ * compares down a column must not shift.
  */
 export function DateGroup({
   day,
@@ -27,25 +33,21 @@ export function DateGroup({
       data-testid="date-group"
       data-date={day.key}
       aria-labelledby={headingId}
-      className="grid gap-3 border-t border-line pt-5 first:border-t-0 first:pt-0 md:grid-cols-[6.5rem_minmax(0,1fr)] md:gap-6"
+      className="border-t border-line pt-5 first:border-t-0 first:pt-0"
     >
-      <div className="md:border-r md:border-line md:pr-4 md:pt-1">
-        <h3 id={headingId} className="text-ink">
-          <time
-            dateTime={day.key}
-            className="flex flex-wrap items-baseline gap-x-2 font-sans tabular-nums md:flex-col md:items-start"
-          >
-            <span className="font-serif italic font-medium text-[17px] text-accent">
-              {day.weekday}
-            </span>{" "}
-            <span className="text-2xl leading-none md:text-3xl">
-              {day.day}
-            </span>{" "}
-            <span className="text-base text-ink-muted">{day.month}</span>
-          </time>
-        </h3>
-      </div>
-      <ul className="flex min-w-0 flex-col gap-4">{children}</ul>
+      <h3 id={headingId} className="text-ink">
+        <time
+          dateTime={day.key}
+          className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-gold pb-2 font-sans tabular-nums"
+        >
+          <span className="font-serif italic font-medium text-[17px] text-accent">
+            {day.weekday}
+          </span>{" "}
+          <span className="text-2xl leading-none md:text-3xl">{day.day}</span>{" "}
+          <span className="text-base text-ink-muted">{day.month}</span>
+        </time>
+      </h3>
+      <ul className="flex min-w-0 flex-col">{children}</ul>
     </section>
   );
 }

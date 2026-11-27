@@ -30,7 +30,7 @@ export function CalibrationReportCard({
     <section
       data-testid={cardTestId}
       aria-labelledby={headingId}
-      className="rounded-xl border border-line bg-surface p-5 sm:p-6"
+      className="rounded-md border-t border-line bg-surface p-5 sm:p-6"
     >
       <div className="flex flex-wrap items-baseline gap-3">
         <h2
@@ -59,7 +59,7 @@ export function CalibrationReportCard({
           <div
             key={item.key}
             data-testid={`headline-${item.key}`}
-            className="rounded-lg border border-line bg-paper p-3"
+            className="rounded-md border-t border-line bg-paper p-3"
           >
             <dt className="text-base font-semibold leading-snug text-ink">
               {item.label}
@@ -114,7 +114,7 @@ export function CalibrationReportCard({
       {!view.isLive ? (
         <p
           data-testid="baseline-not-live"
-          className="mt-3 max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-2 text-base font-semibold text-ink"
+          className="mt-3 max-w-prose rounded-md border-t border-amber bg-amber-soft px-4 py-2 text-base font-semibold text-ink"
         >
           This is not live-model performance.
         </p>
@@ -125,7 +125,7 @@ export function CalibrationReportCard({
           key={warning}
           data-testid="calibration-warning"
           role="status"
-          className="mt-3 max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-2 text-base leading-relaxed text-ink"
+          className="mt-3 max-w-prose rounded-md border-t border-amber bg-amber-soft px-4 py-2 text-base leading-relaxed text-ink"
         >
           {warning}
         </p>
@@ -136,7 +136,7 @@ export function CalibrationReportCard({
           key={warning.key}
           data-testid={`${warning.key}-below-target`}
           role="status"
-          className="mt-3 max-w-prose rounded-md border border-red bg-red-soft px-4 py-2 text-base leading-relaxed text-ink"
+          className="mt-3 max-w-prose rounded-md border-t border-red bg-red-soft px-4 py-2 text-base leading-relaxed text-ink"
         >
           {warning.message}
         </p>
@@ -158,7 +158,7 @@ export function CalibrationReportCard({
             <li
               key={group.key}
               data-testid={`case-group-${group.key}`}
-              className="rounded-lg border border-line bg-paper p-3"
+              className="rounded-md border-t border-line bg-paper p-3"
             >
               <p className="font-serif text-2xl leading-tight text-ink">
                 {group.value}
@@ -214,7 +214,7 @@ export function CalibrationReportCard({
         </div>
       </dl>
 
-      <div className="mt-6 rounded-lg border border-line bg-paper p-4">
+      <div className="mt-6 rounded-md border-t border-line bg-paper p-4">
         <h3 className="font-serif text-xl leading-snug text-ink">
           Exact command
         </h3>
@@ -256,7 +256,7 @@ export function CalibrationReportCard({
             <div
               key={metric.key}
               data-testid={`metric-${metric.key}`}
-              className="rounded-lg border border-line bg-paper p-4"
+              className="rounded-md border-t border-line bg-paper p-4"
             >
               <dt className="text-base font-semibold leading-snug text-ink">
                 {metric.label}
@@ -304,7 +304,7 @@ export function CalibrationReportCard({
       {showCaseTable ? (
         <details
           data-testid="all-cases"
-          className="mt-8 rounded-lg border border-line bg-paper"
+          className="mt-8 rounded-md border-t border-line bg-paper"
         >
           <summary
             data-testid="all-cases-summary"

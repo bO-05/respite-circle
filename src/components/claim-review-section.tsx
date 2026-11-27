@@ -239,7 +239,7 @@ export function ClaimReviewSection({
       data-started={started ? "true" : "false"}
       data-slot-id={review.slotId}
       aria-labelledby="claim-review-heading"
-      className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
     >
       {content}
     </section>

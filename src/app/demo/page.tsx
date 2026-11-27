@@ -43,40 +43,35 @@ const ROLE_ICON: Record<Role, LucideIcon> = {
 
 /**
  * The doors the demo lists, in role-precedence order. The deputy shares the
- * coordinator's desk, so the two roles read as one group while each card still
- * names the role the person holds. Each group picks the column count its
- * seeded cast fills: two coordinators, three family members, four volunteers.
- * A read-only pastor is listed only if a demo church has one.
+ * coordinator's desk, so the two roles read as one group while each row still
+ * names the role the person holds. A read-only pastor is listed only if a demo
+ * church has one. Round 5 draws each group as one typographic list: the group
+ * is a heading and a hairline-separated set of rows, never a card grid.
  */
 const DEMO_ROLE_GROUPS: ReadonlyArray<{
   key: string;
   label: string;
   roles: readonly Role[];
-  columns: string;
 }> = [
   {
     key: "coordinator",
     label: "Coordinator",
     roles: ["coordinator", "deputy"],
-    columns: "sm:grid-cols-2",
   },
   {
     key: "family",
     label: "Family member",
     roles: ["caregiver"],
-    columns: "sm:grid-cols-2 lg:grid-cols-3",
   },
   {
     key: "volunteer",
     label: "Volunteer",
     roles: ["volunteer"],
-    columns: "sm:grid-cols-2 lg:grid-cols-4",
   },
   {
     key: "pastor",
     label: "Pastor (read-only)",
     roles: ["pastor"],
-    columns: "sm:grid-cols-2",
   },
 ];
 
@@ -140,7 +135,7 @@ export default async function DemoPage() {
         width="wide"
       >
         {groups.length === 0 ? (
-          <p className="rounded-md border border-line bg-surface px-4 py-3 text-base text-ink">
+          <p className="rounded-md border-t border-line bg-surface px-4 py-3 text-base text-ink">
             No demo links are seeded yet. Run <code>npm run db:seed</code> first.
           </p>
         ) : (
@@ -158,7 +153,7 @@ export default async function DemoPage() {
               >
                 {group.label}
               </h2>
-              <ul className={`grid gap-4 ${group.columns}`}>
+              <ul className="flex flex-col divide-y divide-line">
                 {group.people.map((person) => (
                   <RoleCard
                     key={person.personId}
@@ -186,7 +181,7 @@ export default async function DemoPage() {
         <section
           aria-labelledby="demo-model-heading"
           data-testid="demo-model-note"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h2
             id="demo-model-heading"

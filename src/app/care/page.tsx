@@ -106,7 +106,7 @@ export default async function CarePage({
       {working ? (
         <section
           data-testid="care-coordinator-working"
-          className="flex flex-col gap-2 rounded-lg border border-line bg-surface px-5 py-4"
+          className="flex flex-col gap-2 rounded-md border-t border-line bg-surface px-5 py-4"
         >
           <p className="max-w-prose whitespace-pre-wrap text-xl leading-relaxed text-ink">
             {working.sentence}
@@ -149,7 +149,7 @@ export default async function CarePage({
         <section
           data-testid="care-confirmations"
           aria-labelledby="care-covered-heading"
-          className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+          className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
         >
           <div>
             <h2
@@ -164,7 +164,7 @@ export default async function CarePage({
             </p>
           </div>
 
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col">
             {confirmations.map((confirmation) => (
               <li
                 key={confirmation.id}
@@ -172,7 +172,7 @@ export default async function CarePage({
                 data-slot-id={confirmation.slotId}
                 data-kind={confirmation.kind}
                 data-slot-status={confirmation.slotStatus}
-                className="rounded-md border border-line bg-paper p-4"
+                className="border-t border-line py-4 first:border-t-0 first:pt-0"
               >
                 <p
                   data-testid="care-confirmation-when"
@@ -187,7 +187,7 @@ export default async function CarePage({
                 <p className="mt-1 text-base text-ink-muted">
                   {confirmation.label}
                   {confirmation.volunteerFirstName
-                    ? ` · ${confirmation.volunteerFirstName}`
+                    ? ` Â· ${confirmation.volunteerFirstName}`
                     : ""}
                 </p>
                 <blockquote
@@ -230,7 +230,7 @@ export default async function CarePage({
         <section
           data-testid="care-covered-empty"
           aria-labelledby="care-empty"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h2 id="care-empty" className="font-serif text-2xl text-ink">
             No time is covered yet
@@ -256,7 +256,7 @@ export default async function CarePage({
         <section
           data-testid="care-reminders"
           aria-labelledby="care-reminders-heading"
-          className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+          className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
         >
           <div>
             <h2
@@ -272,14 +272,14 @@ export default async function CarePage({
             </p>
           </div>
 
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col">
             {reminders.map((reminder) => (
               <li
                 key={reminder.id}
                 data-testid="care-reminder"
                 data-slot-id={reminder.slotId}
                 data-kind={reminder.kind}
-                className="rounded-md border border-line bg-paper p-4"
+                className="border-t border-line py-4 first:border-t-0 first:pt-0"
               >
                 <p
                   data-testid="care-reminder-when"
@@ -318,7 +318,7 @@ export default async function CarePage({
       {notes.length > 0 ? (
         <section
           aria-labelledby="care-notes-heading"
-          className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+          className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
         >
           <div>
             <h2 id="care-notes-heading" className="font-serif text-2xl text-ink">
@@ -330,14 +330,14 @@ export default async function CarePage({
             </p>
           </div>
 
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col">
             {notes.map((note) => (
               <li
                 key={note.askId}
                 data-testid="care-note"
                 data-ask-id={note.askId}
                 data-kind={note.kind}
-                className="rounded-md border border-line bg-paper p-4"
+                className="border-t border-line py-4 first:border-t-0 first:pt-0"
               >
                 <p className="text-base font-semibold text-ink">
                   From {note.notedByName ?? "your coordinator"}
@@ -368,7 +368,7 @@ export default async function CarePage({
       <section
         data-testid="care-another-week"
         aria-labelledby="care-another-week-heading"
-        className="flex flex-col gap-2 rounded-lg border border-line bg-surface p-5"
+        className="flex flex-col gap-2 rounded-md border-t border-line bg-surface p-5"
       >
         <h2
           id="care-another-week-heading"

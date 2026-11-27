@@ -26,7 +26,7 @@ function CrisisEntry({ entry }: { entry: HoldCardEntry }) {
   return (
     <li
       data-testid={testId}
-      className="rounded-md border border-line bg-surface px-4 py-3"
+      className="rounded-md border-t border-line bg-surface px-4 py-3"
     >
       <p className="text-lg font-semibold text-ink">{entry.name}</p>
       <p className="mt-1 max-w-prose text-lg leading-relaxed text-ink">
@@ -41,7 +41,7 @@ function ReferralEntry({ entry }: { entry: HoldCardEntry }) {
     <li
       data-testid="hold-referral"
       data-name={entry.name}
-      className="rounded-md border border-line bg-surface px-4 py-3"
+      className="rounded-md border-t border-line bg-surface px-4 py-3"
     >
       <p className="text-lg font-semibold text-ink">{entry.name}</p>
       <p className="mt-1 max-w-prose text-base leading-relaxed text-ink">
@@ -66,7 +66,7 @@ export function HoldCardSection({ held }: { held: HeldAskCard }) {
       data-testid="hold-card"
       data-kind={card.kind}
       aria-labelledby="hold-card-heading"
-      className={`flex flex-col gap-5 rounded-lg border p-5 ${
+      className={`flex flex-col gap-5 rounded-md border-t p-5 ${
         safety ? "border-amber bg-amber-soft" : "border-accent bg-accent-soft"
       }`}
     >
@@ -119,7 +119,7 @@ export function HoldCardSection({ held }: { held: HeldAskCard }) {
           </ul>
           <p
             data-testid="hold-crisis-script"
-            className="mt-3 max-w-prose rounded-md border border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
+            className="mt-3 max-w-prose rounded-md border-t border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
           >
             {card.crisisScript}
           </p>
@@ -144,7 +144,7 @@ export function HoldCardSection({ held }: { held: HeldAskCard }) {
 
       <p
         data-testid="hold-no-slots"
-        className="max-w-prose rounded-md border border-line bg-surface px-4 py-3 text-lg leading-relaxed text-ink"
+        className="max-w-prose rounded-md border-t border-line bg-surface px-4 py-3 text-lg leading-relaxed text-ink"
       >
         {card.noSlotsSentence}
       </p>
@@ -152,7 +152,7 @@ export function HoldCardSection({ held }: { held: HeldAskCard }) {
       {card.noReportSentence ? (
         <p
           data-testid="hold-no-report"
-          className="max-w-prose rounded-md border border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
+          className="max-w-prose rounded-md border-t border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
         >
           {card.noReportSentence}
         </p>
@@ -176,7 +176,7 @@ export function HoldCardSection({ held }: { held: HeldAskCard }) {
       ) : (
         <p
           data-testid="hold-override-refused"
-          className="max-w-prose rounded-md border border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
+          className="max-w-prose rounded-md border-t border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
         >
           Personal care is never converted here. There is no control on this
           screen that could turn it into a volunteer time.

@@ -62,7 +62,7 @@ export function MyClaimVisitPanel({
     <section
       data-testid="claim-visit"
       aria-labelledby="visit-heading"
-      className="rounded-lg border border-line bg-surface p-5"
+      className="rounded-md border-t border-line bg-surface p-5"
     >
       <h2 id="visit-heading" className="font-serif text-2xl text-ink">
         Check in and out
@@ -141,7 +141,7 @@ export function MyClaimDonePanel({
       <section
         data-testid="claim-closed"
         aria-labelledby="closed-heading"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="closed-heading" className="font-serif text-2xl text-ink">
           This time is closed
@@ -169,7 +169,7 @@ export function MyClaimDonePanel({
     <section
       data-testid="claim-done"
       aria-labelledby="done-heading"
-      className="rounded-lg border border-line bg-surface p-5"
+      className="rounded-md border-t border-line bg-surface p-5"
     >
       <h2 id="done-heading" className="font-serif text-2xl text-ink">
         When the time has passed

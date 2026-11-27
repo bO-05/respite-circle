@@ -28,7 +28,7 @@ export function CalibrationMissingReport({
         isLive ? "calibration-live-missing" : "calibration-baseline-missing"
       }
       aria-label={title}
-      className="rounded-xl border border-line bg-surface p-5 sm:p-6"
+      className="rounded-md border-t border-line bg-surface p-5 sm:p-6"
     >
       <h2 className="font-serif text-3xl leading-tight text-ink">{title}</h2>
 

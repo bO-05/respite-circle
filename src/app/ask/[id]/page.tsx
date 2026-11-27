@@ -141,7 +141,7 @@ export default async function AskReceiptPage({
         <section
           data-testid="ask-closed"
           aria-labelledby="ask-closed-heading"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h2
             id="ask-closed-heading"
@@ -157,7 +157,7 @@ export default async function AskReceiptPage({
               </p>
               <blockquote
                 data-testid="ask-close-note"
-                className="mt-3 max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-accent-soft px-5 py-4 text-xl leading-relaxed text-ink"
+                className="mt-3 max-w-prose whitespace-pre-wrap break-words rounded-md border-t border-gold bg-accent-soft px-5 py-4 font-serif text-xl italic leading-relaxed text-ink"
               >
                 {receipt.closeNote}
               </blockquote>
@@ -193,7 +193,7 @@ export default async function AskReceiptPage({
         <section
           data-testid="send-back-note"
           aria-labelledby="send-back-note-heading"
-          className="flex flex-col gap-3 rounded-lg border border-amber bg-amber-soft p-5"
+          className="flex flex-col gap-3 rounded-md border-t border-amber bg-amber-soft p-5"
         >
           <h2
             id="send-back-note-heading"
@@ -209,7 +209,7 @@ export default async function AskReceiptPage({
           </p>
           <blockquote
             data-testid="send-back-note-body"
-            className="max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-surface px-5 py-4 text-xl leading-relaxed text-ink"
+            className="max-w-prose whitespace-pre-wrap break-words rounded-md border-t border-gold bg-surface px-5 py-4 font-serif text-xl italic leading-relaxed text-ink"
           >
             {receipt.sendBackNote}
           </blockquote>
@@ -218,7 +218,7 @@ export default async function AskReceiptPage({
 
       <section
         aria-labelledby="your-words"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="your-words" className="font-serif text-2xl text-ink">
           Your words, exactly as you wrote them
@@ -248,7 +248,7 @@ export default async function AskReceiptPage({
         </p>
         <blockquote
           data-testid="caregiver-verbatim"
-          className="mt-4 max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-accent-soft px-5 py-4 text-xl leading-relaxed text-ink"
+          className="mt-4 max-w-prose whitespace-pre-wrap break-words rounded-md border-t border-gold bg-accent-soft px-5 py-4 font-serif text-xl italic leading-relaxed text-ink"
         >
           {receipt.text}
         </blockquote>
@@ -262,7 +262,7 @@ export default async function AskReceiptPage({
 
       <section
         aria-labelledby="what-happens-next"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="what-happens-next" className="font-serif text-2xl text-ink">
           What happens next

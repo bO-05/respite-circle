@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ClipboardList, HeartHandshake, Phone } from "lucide-react";
-import { IconWell } from "@/components/visual-primitives";
 import {
   QUEUE_CATEGORY_HEADING,
   QUEUE_CATEGORY_NOTE,
@@ -10,23 +9,28 @@ import {
   type QueueCategory,
 } from "@/server/domain/desk-queue";
 import type { DeskQueueItem } from "@/server/repositories/coordinator";
+import { cn } from "@/lib/utils";
 
 /**
  * One group of the coordinator desk queue.
  *
  * The safety group is the first thing the page renders and the only group
- * drawn as an urgent panel with a larger heading: a call today is the first
+ * drawn with the amber tone and a larger heading: a call today is the first
  * thing a coordinator meets, not a twin of routine coverage. Personal care is
  * the second group and carries its own tint; the ordinary queue stays plain.
  *
- * Every held card carries a labelled action of its own beside the name link,
- * so the name link is never the only way into the ask. A safety row leads with
- * the call itself — "Call Priya today" — before it gives the reason.
+ * Round 5 draws each row as an action-first notice row. A safety row leads with
+ * the call itself — "Call Priya today" — as a brick text link into the ask,
+ * because the app never telephones anyone and a call-shaped filled button would
+ * imply that it does. A personal-care row keeps its name as the way in, and its
+ * own "Open this ask" link is forest rather than brick. Every held row still
+ * carries a labelled action of its own beside the name link, so the name link
+ * is never the only way into the ask.
  *
- * Each group carries one decorative icon well beside its heading: a phone for
+ * Each group carries one small decorative mark beside its heading: a phone for
  * the call, joined hands for professional help, a clipboard for the desk's
- * ordinary queue. The icon says nothing the heading does not, so it is
- * `aria-hidden` and never a control.
+ * ordinary queue. The mark says nothing the heading does not, so it is
+ * `aria-hidden` and never a control, and it is not set in a filled circle.
  */
 
 const PANEL: Record<QueueCategory, string> = {
@@ -48,13 +52,12 @@ const CATEGORY_ICON: Record<QueueCategory, LucideIcon> = {
 };
 
 function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
-  const held = item.category !== "waiting";
+  const safety = item.category === "safety";
   // The safety row's first visible line is the action, not the category. The
   // ordinary queue and the personal-care group keep the family's name link.
-  const title =
-    item.category === "safety"
-      ? safetyRowTitle(item.caregiverFirstName)
-      : item.caregiverFirstName;
+  const title = safety
+    ? safetyRowTitle(item.caregiverFirstName)
+    : item.caregiverFirstName;
 
   return (
     <li
@@ -64,13 +67,16 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
       data-category={item.category}
       data-bilingual={item.bilingualNeeded ? "true" : "false"}
       data-created-at={item.createdAt.toISOString()}
-      className="rounded-md border-t border-line bg-surface p-4"
+      className="border-t border-line bg-surface px-4 py-4"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <a
           href={`/desk/ask/${item.id}`}
           data-testid="desk-row-title"
-          className="inline-flex min-h-11 items-center text-lg font-semibold text-ink underline decoration-accent underline-offset-4"
+          className={cn(
+            "inline-flex min-h-11 items-center text-lg font-semibold underline decoration-2 underline-offset-4",
+            safety ? "text-red decoration-red" : "text-ink decoration-accent",
+          )}
         >
           {title}
           <span className="sr-only"> — read this ask</span>
@@ -114,11 +120,16 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
         </p>
       ) : null}
 
-      {held ? (
+      {item.category !== "waiting" ? (
         <Link
           href={`/desk/ask/${item.id}`}
           data-testid="desk-hold-open"
-          className="mt-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-accent bg-accent px-5 py-2 text-base font-semibold text-paper"
+          className={cn(
+            "mt-2 inline-flex min-h-11 min-w-11 items-center text-base font-semibold underline underline-offset-4",
+            safety
+              ? "text-red decoration-red"
+              : "text-accent decoration-accent",
+          )}
         >
           Open this ask
           <span className="sr-only"> for {item.caregiverFirstName}</span>
@@ -140,6 +151,7 @@ export function DeskQueueSection({
   if (rows.length === 0) return null;
 
   const safety = category === "safety";
+  const Icon = CATEGORY_ICON[category];
 
   return (
     <section
@@ -149,9 +161,12 @@ export function DeskQueueSection({
       className={`flex flex-col gap-3 ${PANEL[category]}`}
     >
       <div className="flex items-start gap-3">
-        <IconWell
-          icon={CATEGORY_ICON[category]}
-          tone={safety ? "amber" : "accent"}
+        <Icon
+          aria-hidden="true"
+          className={cn(
+            "mt-1 size-6 shrink-0",
+            safety ? "text-red" : "text-accent",
+          )}
         />
         <div>
           {safety ? (
@@ -171,7 +186,7 @@ export function DeskQueueSection({
         </div>
       </div>
 
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col">
         {rows.map((item) => (
           <QueueRow key={item.id} item={item} now={now} />
         ))}

@@ -16,11 +16,11 @@ import { openE2eDatabase, type E2eDatabase } from "./helpers/database";
  *
  * The board groups open times under a weekday-and-date heading when the week
  * holds more than one day, in calendar order, with every time under exactly one
- * day. An open card has one time block, one kind pill, one primary action and
- * one hint; a taken card has one status pill instead of the action, naming the
- * coordinator the church resolved. The verb is "take": "Claim this time",
- * "My claims" and "Nothing claimed yet" are gone from every volunteer surface,
- * and no viewer, decline or volunteer-needed count appears.
+ * day. An open time is one notice row with its clock, its kind, one primary
+ * action and one hint; a taken time carries one status pill instead of the
+ * action, naming the coordinator the church resolved. The verb is "take":
+ * "Claim this time", "My claims" and "Nothing claimed yet" are gone from every
+ * volunteer surface, and no viewer, decline or volunteer-needed count appears.
  *
  * The fixture is this spec's own ask, so the assertions do not depend on
  * whatever the earlier specs left on the seeded board.
@@ -217,7 +217,9 @@ test.describe("VAL-R4VIS-003 — the board groups by day and speaks one verb", (
       const group = groups.nth(index);
       const heading = group.getByRole("heading", { level: 3 });
       await expect(heading).toBeVisible();
-      // textContent, not innerText: the weekday is upper-cased by CSS only.
+      // textContent, not innerText: the heading is one `<time>` holding a
+      // Fraunces weekday and a tabular sans date, and the whitespace between
+      // its spans is layout, not words.
       const text = ((await heading.textContent()) ?? "")
         .replace(/\s+/g, " ")
         .trim();

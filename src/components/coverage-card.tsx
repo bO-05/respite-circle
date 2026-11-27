@@ -89,7 +89,7 @@ export function CoverageCard({
       data-messages={count}
       data-due={item.isDue ? "true" : "false"}
       data-open-hours={(item.openForMs / 3_600_000).toFixed(2)}
-      className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
     >
       <div>
         {item.status === "open" ? (
@@ -164,7 +164,7 @@ export function CoverageCard({
       <div
         data-testid="coverage-message-block"
         data-count={count}
-        className="rounded-md border border-line bg-paper px-4 py-3"
+        className="rounded-md border-t border-line bg-paper px-4 py-3"
       >
         <p
           data-testid="coverage-message-count"
@@ -203,7 +203,7 @@ export function CoverageCard({
                 key={call.id}
                 data-testid="coverage-call"
                 data-outcome={call.outcome}
-                className="rounded-md border border-line bg-paper p-4"
+                className="rounded-md border-t border-line bg-paper p-4"
               >
                 <p className="text-base font-semibold text-ink">
                   {coverageOutcomeLabel(call.outcome)}
@@ -244,7 +244,7 @@ export function CoverageCard({
           data-testid="absence-proof"
           data-count={proof.caregiverOutboxCount}
           aria-labelledby={`absence-proof-heading-${item.slotId}`}
-          className="flex flex-col gap-2 rounded-md border border-green bg-green-soft px-4 py-4"
+          className="flex flex-col gap-2 rounded-md border-t border-green bg-green-soft px-4 py-4"
         >
           <h3
             id={`absence-proof-heading-${item.slotId}`}
@@ -273,7 +273,7 @@ export function CoverageCard({
           </p>
           <pre
             data-testid="absence-proof-query"
-            className="overflow-x-auto rounded-md border border-line bg-paper p-3 text-sm leading-relaxed text-ink"
+            className="overflow-x-auto rounded-md border-t border-line bg-paper p-3 text-sm leading-relaxed text-ink"
           >
             <code>{proof.queryText}</code>
           </pre>
@@ -317,7 +317,7 @@ export function CoverageSection({
     <section
       data-testid="desk-coverage"
       aria-labelledby="desk-coverage-heading"
-      className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
     >
       <div>
         <h2

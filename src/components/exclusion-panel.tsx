@@ -31,7 +31,7 @@ function Legend() {
     <section
       data-testid="exclusion-legend"
       aria-labelledby="exclusion-legend-heading"
-      className="rounded-lg border border-line bg-paper p-5"
+      className="rounded-md border-t border-line bg-paper p-5"
     >
       <h3 id="exclusion-legend-heading" className="font-serif text-xl text-ink">
         Every rule that can stop a proposal
@@ -48,7 +48,7 @@ function Legend() {
               key={code}
               data-testid="exclusion-legend-item"
               data-rule-code={code}
-              className="rounded-md border border-line bg-surface p-4"
+              className="rounded-md border-t border-line bg-surface p-4"
             >
               <dt className="text-base font-semibold text-ink">
                 <code className="rounded-sm bg-paper px-2 py-0.5 text-sm text-ink-muted">
@@ -115,7 +115,7 @@ export function ExclusionPanelSection({
       {context.slots.length === 0 ? (
         <div
           data-testid="exclusion-empty"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h3 className="font-serif text-xl text-ink">
             No draft times to check yet
@@ -130,7 +130,7 @@ export function ExclusionPanelSection({
       {context.slots.length > 0 && context.activeVolunteerCount === 0 ? (
         <div
           data-testid="exclusion-no-volunteers"
-          className="rounded-lg border border-amber bg-amber-soft p-5"
+          className="rounded-md border-t border-amber bg-amber-soft p-5"
         >
           <h3 className="font-serif text-xl text-ink">
             No active volunteers are recorded
@@ -148,7 +148,7 @@ export function ExclusionPanelSection({
           data-testid="exclusion-slot"
           data-slot-id={slot.slotId}
           data-kind={slot.kind}
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="font-serif text-xl text-ink">{slot.label}</h3>
@@ -181,7 +181,7 @@ export function ExclusionPanelSection({
           {slot.holdReason ? (
             <p
               data-testid="exclusion-held"
-              className="mt-2 max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
+              className="mt-2 max-w-prose rounded-md border-t border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
             >
               This draft is held: {slot.holdReason}
             </p>
@@ -280,7 +280,7 @@ export function ExclusionPanelSection({
       {context.staleSlotCount > 0 ? (
         <p
           data-testid="exclusion-stale"
-          className="max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
+          className="max-w-prose rounded-md border-t border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
         >
           A volunteer has joined, left, or changed since this check, so at least
           one draft time is missing an explanation. Check again to refresh these

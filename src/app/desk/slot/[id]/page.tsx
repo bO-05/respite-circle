@@ -106,7 +106,7 @@ export default async function DeskSlotPage({
       lead={deskSlotLead(review.status, { started })}
       leadTestId="slot-lead"
     >
-      <dl className="grid gap-4 rounded-lg border border-line bg-surface p-5 sm:grid-cols-2">
+      <dl className="grid gap-4 rounded-md border-t border-line bg-surface p-5 sm:grid-cols-2">
         <div>
           <dt className="text-base font-semibold text-ink">Kind</dt>
           <dd className="mt-1 text-base text-ink-muted">
@@ -160,7 +160,7 @@ export default async function DeskSlotPage({
 
       <section
         aria-labelledby="publication-heading"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="publication-heading" className="font-serif text-2xl text-ink">
           {autoPublished

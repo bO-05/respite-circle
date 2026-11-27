@@ -43,7 +43,7 @@ export function CaregiverAskLinks({
     <section
       data-testid={testId}
       aria-labelledby={headingId}
-      className="rounded-lg border border-line bg-surface p-5"
+      className="rounded-md border-t border-line bg-surface p-5"
     >
       <h2 id={headingId} className="font-serif text-2xl text-ink">
         {heading}
@@ -52,7 +52,7 @@ export function CaregiverAskLinks({
         {lead}
       </p>
 
-      <ul className="mt-4 flex flex-col gap-4">
+      <ul className="mt-4 flex flex-col">
         {asks.map((ask) => {
           const steps = lifecycleSteps?.[ask.id] ?? [];
 
@@ -60,7 +60,7 @@ export function CaregiverAskLinks({
             <li
               key={ask.id}
               data-testid="care-ask-link-row"
-              className="rounded-md border border-line bg-paper p-4"
+              className="border-t border-line py-4 first:border-t-0 first:pt-0"
             >
               <p className="break-words text-base leading-relaxed tabular-nums text-ink-muted">
                 For {ask.careRecipientFirstName} · ask sent{" "}

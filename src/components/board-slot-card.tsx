@@ -40,12 +40,12 @@ function ClaimAction({
       action={`/api/slots/${slot.id}/claim`}
       method="post"
       data-testid="board-claim"
-      className="flex w-fit"
+      className="flex w-full sm:w-fit"
     >
       <button
         type="submit"
         aria-describedby={hintId}
-        className="inline-flex min-h-11 min-w-11 touch-manipulation items-center justify-center rounded-md border border-accent bg-accent px-5 py-2 text-lg font-semibold text-accent-foreground"
+        className="inline-flex min-h-11 min-w-11 w-full touch-manipulation items-center justify-center rounded-md bg-accent px-5 py-2 text-lg font-semibold text-accent-foreground sm:w-auto"
       >
         {BOARD_ACTION_LABEL}
       </button>
@@ -67,7 +67,7 @@ function LockBlock({
     <div
       data-testid="board-lock"
       data-rule-code={slot.claim.ruleCode}
-      className="max-w-prose rounded-md border border-line bg-paper p-4"
+      className="max-w-prose rounded-md border-t border-line bg-paper p-4"
     >
       <p
         data-testid="board-lock-title"

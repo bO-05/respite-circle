@@ -3,7 +3,6 @@ import { CalendarOff } from "lucide-react";
 import { DateGroup } from "@/components/date-group";
 import { MyClaimCard } from "@/components/my-claim-card";
 import { RolePage } from "@/components/role-page";
-import { IconWell } from "@/components/visual-primitives";
 import { CLAIMS_ROLES } from "@/server/auth/policy";
 import { requirePage } from "@/server/auth/guards";
 import { coordinatorDisplayName } from "@/server/domain/board";
@@ -111,7 +110,7 @@ export default async function MyClaimsPage() {
                 ) : null}
               </>
             ) : (
-              <ul aria-label="Your times" className="flex flex-col gap-4">
+              <ul aria-label="Your times" className="flex flex-col">
                 {active.map((claim) => claimCard(claim, 3, true))}
               </ul>
             )}
@@ -137,7 +136,7 @@ export default async function MyClaimsPage() {
               gave.
             </p>
           </div>
-          <ul aria-label="Finished times" className="flex flex-col gap-4">
+          <ul aria-label="Finished times" className="flex flex-col">
             {finished.map((claim) => (
               <MyClaimCard
                 key={claim.id}
@@ -155,9 +154,9 @@ export default async function MyClaimsPage() {
         <section
           data-testid="my-claims-empty"
           aria-labelledby="claims-empty-heading"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
-          <IconWell icon={CalendarOff} tone="accent" />
+          <CalendarOff aria-hidden="true" className="size-6 text-accent" />
           <h2
             id="claims-empty-heading"
             className="mt-3 font-serif text-2xl text-ink"

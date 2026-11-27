@@ -59,7 +59,7 @@ function PublishedTimes({
             data-kind={entry.kind}
             data-status={entry.status}
             data-published-via={entry.publishedVia}
-            className="rounded-md border border-line bg-paper p-4"
+            className="rounded-md border-t border-line bg-paper p-4"
           >
             <h3 className="font-serif text-xl text-ink">{entry.label}</h3>
             <p className="mt-1 text-base text-ink-muted">
@@ -121,7 +121,7 @@ export function AskReviewSection({
         data-testid="ask-review"
         data-status={status}
         aria-labelledby="ask-review-heading"
-        className="flex flex-col gap-5 rounded-lg border border-line bg-surface p-5"
+        className="flex flex-col gap-5 rounded-md border-t border-line bg-surface p-5"
       >
         <div>
           <h2 id="ask-review-heading" className="font-serif text-2xl text-ink">
@@ -198,7 +198,7 @@ export function AskReviewSection({
         data-testid="ask-review"
         data-status={status}
         aria-labelledby="ask-review-heading"
-        className="flex flex-col gap-5 rounded-lg border border-line bg-surface p-5"
+        className="flex flex-col gap-5 rounded-md border-t border-line bg-surface p-5"
       >
         <div>
           <h2 id="ask-review-heading" className="font-serif text-2xl text-ink">
@@ -236,7 +236,7 @@ export function AskReviewSection({
         {held.length > 0 ? (
           <div
             data-testid="held-drafts"
-            className="rounded-md border border-amber bg-amber-soft p-4"
+            className="rounded-md border-t border-amber bg-amber-soft p-4"
           >
             <h3 className="font-serif text-xl text-ink">
               Held times, not published
@@ -251,7 +251,7 @@ export function AskReviewSection({
                   key={draft.id}
                   data-testid="held-draft"
                   data-slot-id={draft.id}
-                  className="rounded-md border border-line bg-surface p-4"
+                  className="rounded-md border-t border-line bg-surface p-4"
                 >
                   <p className="text-lg font-semibold text-ink">
                     {draft.label}
@@ -294,7 +294,7 @@ export function AskReviewSection({
         data-testid="ask-review"
         data-status={status}
         aria-labelledby="ask-review-heading"
-        className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+        className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
       >
         <div>
           <h2 id="ask-review-heading" className="font-serif text-2xl text-ink">
@@ -319,7 +319,7 @@ export function AskReviewSection({
         {note ? (
           <blockquote
             data-testid="send-back-copy"
-            className="max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-accent-soft px-5 py-4 text-lg leading-relaxed text-ink"
+            className="max-w-prose whitespace-pre-wrap break-words rounded-md border-t border-gold bg-accent-soft px-5 py-4 text-lg leading-relaxed text-ink"
           >
             {note}
           </blockquote>
@@ -341,7 +341,7 @@ export function AskReviewSection({
         data-testid="ask-review"
         data-status={status}
         aria-labelledby="ask-review-heading"
-        className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+        className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
       >
         <div>
           <h2 id="ask-review-heading" className="font-serif text-2xl text-ink">
@@ -365,7 +365,7 @@ export function AskReviewSection({
               </p>
               <blockquote
                 data-testid="close-copy"
-                className="mt-3 max-w-prose whitespace-pre-wrap break-words rounded-md border border-line bg-accent-soft px-5 py-4 text-lg leading-relaxed text-ink"
+                className="mt-3 max-w-prose whitespace-pre-wrap break-words rounded-md border-t border-gold bg-accent-soft px-5 py-4 text-lg leading-relaxed text-ink"
               >
                 {note}
               </blockquote>

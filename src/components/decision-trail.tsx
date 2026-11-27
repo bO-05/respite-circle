@@ -68,7 +68,7 @@ export function DecisionTrail({
     <section
       aria-labelledby="decision-trail-heading"
       data-testid="decision-trail"
-      className="rounded-lg border border-line bg-surface p-5"
+      className="rounded-md border-t border-line bg-surface p-5"
     >
       <div className="flex flex-wrap items-baseline gap-3">
         <h2 id="decision-trail-heading" className="font-serif text-2xl text-ink">
@@ -120,13 +120,13 @@ export function DecisionTrail({
       ) : (
         <ol
           data-testid="decision-list"
-          className="mt-4 flex flex-col gap-4"
+          className="mt-4 flex flex-col"
         >
           {rows.map((row) => (
             <li
               key={row.questionId}
               data-testid={`decision-${row.questionId}`}
-              className="rounded-md border border-line bg-paper px-4 py-3"
+              className="border-t border-line px-1 py-3 first:border-t-0"
             >
               <p className="text-base leading-relaxed text-ink">
                 <span className="font-semibold">{row.questionId}</span>{" "}
@@ -152,7 +152,7 @@ export function DecisionTrail({
               {row.holdSource === "rule" && row.ruleNote ? (
                 <p
                   data-testid="decision-rule-source"
-                  className="mt-2 max-w-prose rounded-md border border-line bg-accent-soft px-3 py-2 text-base leading-relaxed text-ink"
+                  className="mt-2 max-w-prose rounded-md border-t border-line bg-accent-soft px-3 py-2 text-base leading-relaxed text-ink"
                 >
                   {row.ruleNote}
                 </p>
@@ -276,7 +276,7 @@ export function AskHoldBanner({
         aria-labelledby="safety-banner-heading"
         data-testid="safety-banner"
         role="status"
-        className="rounded-lg border border-amber bg-amber-soft p-5 text-ink"
+        className="rounded-md border-t border-amber bg-amber-soft p-5 text-ink"
       >
         <h2 id="safety-banner-heading" className="font-serif text-2xl">
           Safety comes first.
@@ -311,7 +311,7 @@ export function AskHoldBanner({
       aria-labelledby="care-banner-heading"
       data-testid="care-banner"
       role="status"
-      className="rounded-lg border border-amber bg-amber-soft p-5 text-ink"
+      className="rounded-md border-t border-amber bg-amber-soft p-5 text-ink"
     >
       <h2 id="care-banner-heading" className="font-serif text-2xl">
         Personal care is not arranged here.

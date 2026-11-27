@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CalendarOff } from "lucide-react";
 import { boardEmptyCopy } from "@/server/domain/board";
-import { IconWell } from "./visual-primitives";
 
 /**
  * The calm empty board.
@@ -24,9 +23,9 @@ export function BoardEmpty({
     <section
       data-testid="board-empty"
       aria-labelledby="board-empty-heading"
-      className="rounded-lg border border-line bg-surface p-5"
+      className="rounded-md border-t border-line bg-surface p-5"
     >
-      <IconWell icon={CalendarOff} tone="accent" />
+      <CalendarOff aria-hidden="true" className="size-6 text-accent" />
       <h2
         id="board-empty-heading"
         className="mt-3 font-serif text-2xl text-ink"
