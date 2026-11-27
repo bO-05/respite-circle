@@ -24,7 +24,7 @@ export function CaregiverInviteBanner({
       data-testid="ask-invite"
       data-invite-id={invite.id}
       aria-labelledby="ask-invite-heading"
-      className="rounded-lg border border-accent-soft bg-accent-soft p-5"
+      className="rounded-md border-t border-accent-soft bg-accent-soft p-5"
     >
       <h2
         id="ask-invite-heading"

@@ -59,7 +59,7 @@ export default async function DeskMetricsPage({
         <p
           role="status"
           data-testid="metrics-range-notice"
-          className="rounded-md border border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
+          className="rounded-md border-t-2 border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
         >
           {range.notice}
         </p>

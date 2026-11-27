@@ -43,7 +43,7 @@ export function AuditFilterForm({
       action="/desk/audit"
       data-testid="audit-filter-form"
       aria-labelledby="audit-filter-heading"
-      className="rounded-lg border border-line bg-surface p-5"
+      className="rounded-md border-t border-line bg-surface p-5"
     >
       <h2 id="audit-filter-heading" className="font-serif text-2xl text-ink">
         Narrow the log
@@ -167,7 +167,7 @@ function AuditRow({ row, timeZone }: { row: AuditEventRow; timeZone: string }) {
       data-actor-type={row.actorType}
       data-action={row.action}
       data-entity={row.entity}
-      className="rounded-lg border border-line bg-surface p-4"
+      className="border-t border-line bg-surface px-4 py-4"
     >
       <dl className="grid gap-x-6 gap-y-2 text-base leading-relaxed sm:grid-cols-[9rem_1fr]">
         <dt className="font-semibold text-ink-muted">When</dt>
@@ -244,12 +244,12 @@ export function AuditLogSection({
       {rows.length === 0 ? (
         <p
           data-testid={`audit-empty-${kind}`}
-          className="rounded-lg border border-line bg-surface p-4 text-base leading-relaxed text-ink"
+          className="border-t border-line bg-surface px-4 py-4 text-base leading-relaxed text-ink"
         >
           {filtering ? emptyLine : defaultEmptyLine}
         </p>
       ) : (
-        <ul className="flex flex-col gap-3" aria-label={title}>
+        <ul className="flex flex-col" aria-label={title}>
           {rows.map((row) => (
             <AuditRow key={row.id} row={row} timeZone={timeZone} />
           ))}

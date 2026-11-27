@@ -59,7 +59,7 @@ export default async function DeskInvitePage() {
         <section
           data-testid="invite-empty"
           aria-labelledby="invite-empty-heading"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h2 id="invite-empty-heading" className="font-serif text-2xl text-ink">
             No family is ready to invite yet
@@ -88,7 +88,7 @@ export default async function DeskInvitePage() {
       <section
         aria-labelledby="invite-recent-heading"
         data-testid="invite-recent"
-        className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+        className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
       >
         <div>
           <h2
@@ -112,14 +112,14 @@ export default async function DeskInvitePage() {
             person writes and sends it.
           </p>
         ) : (
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col">
             {recent.map((sent) => (
               <li
                 key={sent.id}
                 data-testid="invite-sent-row"
                 data-invite-id={sent.id}
                 data-seen={sent.seenAt ? "true" : "false"}
-                className="rounded-md border border-line bg-paper p-4"
+                className="border-t border-line bg-paper px-4 py-4"
               >
                 <p className="text-lg font-semibold leading-snug text-ink">
                   {sent.caregiverFirstName} {sent.caregiverLastName}
@@ -167,7 +167,7 @@ export default async function DeskInvitePage() {
       <section
         aria-labelledby="invite-delivery-heading"
         data-testid="invite-delivery"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2
           id="invite-delivery-heading"

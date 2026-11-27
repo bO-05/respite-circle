@@ -34,14 +34,14 @@ export function AccessLinkList({
     <section
       aria-labelledby="access-links-heading"
       data-testid="access-links"
-      className="rounded-lg border border-line bg-surface p-5"
+      className="rounded-md border-t border-line bg-surface p-5"
     >
       <h2 id="access-links-heading" className="font-serif text-2xl text-ink">
         Sign-in links for the families you invite
       </h2>
       <p
         data-testid="access-links-warning"
-        className="mt-3 max-w-prose rounded-md border border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
+        className="mt-3 max-w-prose rounded-md border-t-2 border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
       >
         {ACCESS_LINK_DEMO_WARNING}
       </p>
@@ -61,7 +61,7 @@ export function AccessLinkList({
           family record, and the link appears here.
         </p>
       ) : (
-        <ul className="mt-4 flex flex-col gap-4">
+        <ul className="mt-4 flex flex-col">
           {links.map((link) => {
             const url = accessLinkUrl(origin, link.accessToken);
             if (!url) return null;
@@ -74,7 +74,7 @@ export function AccessLinkList({
                 data-testid="access-link-row"
                 data-person-id={link.personId}
                 data-role={link.role}
-                className="rounded-md border border-line bg-paper p-4"
+                className="border-t border-line bg-paper px-4 py-4"
               >
                 <p className="text-lg font-semibold leading-snug text-ink">
                   {name}

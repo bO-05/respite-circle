@@ -59,7 +59,7 @@ function SessionCard({
       data-status={entry.status}
       data-capacity={entry.capacity}
       data-remaining={entry.remainingCompanionPlaces}
-      className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-3 border-t border-line bg-surface px-5 py-5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3
@@ -137,7 +137,7 @@ export default async function DeskSessionsPage() {
       <section
         data-testid="session-template"
         aria-labelledby="session-template-heading"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="session-template-heading" className="font-serif text-2xl text-ink">
           The weekly morning
@@ -182,7 +182,7 @@ export default async function DeskSessionsPage() {
         {overview.calendars.flatMap((calendar) => calendar.planned).length === 0 ? (
           <div
             data-testid="sessions-empty"
-            className="rounded-lg border border-line bg-surface p-5"
+            className="rounded-md border-t border-line bg-surface p-5"
           >
             <p className="max-w-prose text-lg leading-relaxed text-ink">
               No Tuesday is planned yet. {paused
@@ -191,7 +191,7 @@ export default async function DeskSessionsPage() {
             </p>
           </div>
         ) : (
-          <ul className="flex flex-col gap-4" aria-label="Respite Morning sessions">
+          <ul className="flex flex-col" aria-label="Respite Morning sessions">
             {overview.calendars.flatMap((calendar) =>
               calendar.planned.map((entry) => (
                 <SessionCard
@@ -208,7 +208,7 @@ export default async function DeskSessionsPage() {
       <section
         data-testid="call-tasks"
         aria-labelledby="call-tasks-heading"
-        className="flex flex-col gap-4 rounded-lg border border-line bg-surface p-5"
+        className="flex flex-col gap-4 rounded-md border-t border-line bg-surface p-5"
       >
         <div>
           <h2 id="call-tasks-heading" className="font-serif text-2xl text-ink">

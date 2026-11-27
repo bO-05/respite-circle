@@ -32,7 +32,7 @@ export function SessionCalendarBanner({
       data-scheduled-count={overview.scheduledCount}
       data-target-count={overview.targetCount}
       aria-labelledby="session-banner-heading"
-      className="rounded-lg border border-amber bg-amber-soft p-5"
+      className="rounded-md border-t-2 border-amber bg-amber-soft p-5"
     >
       <h2
         id="session-banner-heading"

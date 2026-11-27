@@ -45,7 +45,7 @@ function Feedback({ state }: { state: InviteActionState }) {
     <p
       data-testid="invite-feedback"
       role={isError ? "alert" : "status"}
-      className={`max-w-prose rounded-md border px-4 py-3 text-base leading-relaxed ${
+      className={`max-w-prose rounded-md border-t-2 px-4 py-3 text-base leading-relaxed ${
         isError
           ? "border-red bg-red-soft text-ink"
           : "border-green bg-green-soft text-ink"
@@ -119,7 +119,7 @@ export function InviteComposer({
     <form
       action={formAction}
       data-testid="invite-composer"
-      className="flex flex-col gap-6 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-6 rounded-md border-t border-line bg-surface p-5"
     >
       <div className="flex flex-col gap-2">
         <label

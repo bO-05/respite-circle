@@ -96,7 +96,7 @@ export default async function DeskPolicyPage() {
         <>
           <section
             aria-labelledby="policy-current"
-            className="rounded-lg border border-line bg-surface p-5"
+            className="rounded-md border-t border-line bg-surface p-5"
           >
             <h2
               id="policy-current"
@@ -337,7 +337,7 @@ export default async function DeskPolicyPage() {
               {referralRows.map((resource, index) => (
                 <fieldset
                   key={`policy-referral-${index}`}
-                  className="rounded-md border border-line bg-paper px-4 py-3"
+                  className="rounded-md border-t border-line bg-paper px-4 py-3"
                 >
                   <legend className="px-1 text-base font-semibold text-ink">
                     Referral {index + 1}
@@ -495,7 +495,7 @@ export default async function DeskPolicyPage() {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-1 rounded-md border border-amber bg-amber-soft px-4 py-3">
+              <div className="flex flex-col gap-1 rounded-md border-t-2 border-amber bg-amber-soft px-4 py-3">
                 <label
                   htmlFor="policy-loosen-confirmation"
                   className="text-base font-semibold text-ink"
@@ -524,7 +524,7 @@ export default async function DeskPolicyPage() {
 
             <section
               aria-labelledby="editor-auto-publish"
-              className="flex flex-col gap-3 rounded-md border border-amber bg-amber-soft px-4 py-3"
+              className="flex flex-col gap-3 rounded-md border-t-2 border-amber bg-amber-soft px-4 py-3"
             >
               <h3
                 id="editor-auto-publish"
@@ -570,7 +570,7 @@ export default async function DeskPolicyPage() {
 
             <section
               aria-labelledby="editor-signoff"
-              className="flex flex-col gap-2 rounded-md border border-line bg-paper px-4 py-3"
+              className="flex flex-col gap-2 rounded-md border-t border-line bg-paper px-4 py-3"
             >
               <h3 id="editor-signoff" className="font-serif text-xl text-ink">
                 Sign-off
@@ -604,7 +604,7 @@ export default async function DeskPolicyPage() {
 
           <section
             aria-labelledby="policy-history"
-            className="rounded-lg border border-line bg-surface p-5"
+            className="rounded-md border-t border-line bg-surface p-5"
           >
             <h2 id="policy-history" className="font-serif text-2xl text-ink">
               Version history
@@ -673,7 +673,7 @@ export default async function DeskPolicyPage() {
       ) : (
         <section
           aria-labelledby="policy-empty"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h2 id="policy-empty" className="font-serif text-2xl text-ink">
             No policy version is saved yet

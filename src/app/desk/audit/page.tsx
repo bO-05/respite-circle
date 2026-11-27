@@ -71,7 +71,7 @@ export default async function DeskAuditPage({
         <section
           data-testid="audit-empty"
           aria-labelledby="audit-empty-heading"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h2
             id="audit-empty-heading"
@@ -108,7 +108,7 @@ export default async function DeskAuditPage({
             <p
               role="status"
               data-testid="audit-filter-notice"
-              className="rounded-md border border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
+              className="rounded-md border-t-2 border-amber bg-amber-soft px-4 py-3 text-base leading-relaxed text-ink"
             >
               {filter.notice}
             </p>
@@ -128,7 +128,7 @@ export default async function DeskAuditPage({
             <p
               data-testid="audit-no-matches"
               role="status"
-              className="rounded-lg border border-line bg-surface p-5 text-lg leading-relaxed text-ink"
+              className="rounded-md border-t border-line bg-surface p-5 text-lg leading-relaxed text-ink"
             >
               {filtering ? (
                 <>
@@ -196,7 +196,7 @@ export default async function DeskAuditPage({
       <section
         aria-labelledby="audit-who-decides"
         data-testid="audit-who-decides"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="audit-who-decides" className="font-serif text-2xl text-ink">
           Who decides, and the one exception
@@ -229,7 +229,7 @@ export default async function DeskAuditPage({
 
       <section
         aria-labelledby="audit-append-only"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2 id="audit-append-only" className="font-serif text-2xl text-ink">
           Append-only, and safe to show

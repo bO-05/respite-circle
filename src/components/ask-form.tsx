@@ -427,14 +427,14 @@ export function AskForm({
             id={TEXT_ERROR_ID}
             role="alert"
             data-testid="ask-error"
-            className="rounded-md border border-red-soft bg-red-soft px-4 py-3 text-base font-semibold text-ink"
+            className="rounded-md border-t border-red-soft bg-red-soft px-4 py-3 text-base font-semibold text-ink"
           >
             {textError.message}
           </p>
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-5">
+      <div className="flex flex-col gap-3 rounded-md border-t border-line bg-surface p-5">
         <h2 className="font-serif text-2xl text-ink">Or speak it aloud</h2>
         <button
           type="button"
@@ -500,7 +500,7 @@ export function AskForm({
         </ul>
       </section>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-5">
+      <div className="flex flex-col gap-3 rounded-md border-t border-line bg-surface p-5">
         <label htmlFor="ask-consent" className="flex items-start gap-3 text-base leading-relaxed text-ink">
           <input
             ref={consentRef}
@@ -534,7 +534,7 @@ export function AskForm({
             id={CONSENT_ERROR_ID}
             role="alert"
             data-testid="ask-error"
-            className="rounded-md border border-red-soft bg-red-soft px-4 py-3 text-base font-semibold text-ink"
+            className="rounded-md border-t border-red-soft bg-red-soft px-4 py-3 text-base font-semibold text-ink"
           >
             {consentError.message}
           </p>
@@ -546,7 +546,7 @@ export function AskForm({
           id={FORM_ERROR_ID}
           role="alert"
           data-testid="ask-error"
-          className="rounded-md border border-red-soft bg-red-soft px-4 py-3 text-base font-semibold text-ink"
+          className="rounded-md border-t border-red-soft bg-red-soft px-4 py-3 text-base font-semibold text-ink"
         >
           {formError.message}
         </p>

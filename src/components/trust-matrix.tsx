@@ -77,12 +77,12 @@ export function TrustMatrix({
 
       <ul
         data-testid={`${id}-cards`}
-        className="flex flex-col gap-4 sm:hidden"
+        className="flex flex-col sm:hidden"
       >
         {rows.map((row) => (
           <li
             key={row.key}
-            className="rounded-lg border border-line bg-surface p-5"
+            className="border-t border-line bg-surface px-5 py-4"
           >
             <h3 className="font-serif text-xl leading-snug text-ink">
               {row.header}

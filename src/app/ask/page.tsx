@@ -69,7 +69,7 @@ export default async function AskPage({
       {again ? (
         <p
           data-testid="ask-again-note"
-          className="max-w-prose rounded-lg border border-line bg-surface p-5 text-base leading-relaxed text-ink-muted"
+          className="max-w-prose rounded-md border-t border-line bg-surface p-5 text-base leading-relaxed text-ink-muted"
         >
           {askAgainHint()}
         </p>

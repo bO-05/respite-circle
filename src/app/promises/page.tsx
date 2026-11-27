@@ -46,11 +46,11 @@ export default async function PromisesPage() {
             </time>
             .
           </p>
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col">
             {published.safeguardingPromises.map((promise, index) => (
               <li
                 key={`${published.version}-${index}`}
-                className="rounded-lg border border-line bg-surface p-5"
+                className="border-t border-line bg-surface px-5 py-4"
               >
                 <p className="max-w-prose text-base leading-relaxed text-ink">
                   {promise}
@@ -68,7 +68,7 @@ export default async function PromisesPage() {
 
       <section
         aria-labelledby="kept-heading"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2
           id="kept-heading"

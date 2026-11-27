@@ -24,7 +24,7 @@ export function MetricsRangeForm({ range }: { range: MetricsRange }) {
       action="/desk/metrics"
       data-testid="metrics-range-form"
       aria-labelledby="metrics-range-heading"
-      className="rounded-lg border border-line bg-surface p-5"
+      className="rounded-md border-t border-line bg-surface p-5"
     >
       <h2 id="metrics-range-heading" className="font-serif text-2xl text-ink">
         Choose a range
@@ -184,25 +184,25 @@ export function MetricsList({ metrics }: { metrics: ChurchMetrics }) {
   return (
     <dl
       data-testid="metrics-list"
-      className="grid gap-4 sm:grid-cols-2"
+      className="flex flex-col"
       aria-label="Church numbers for this range"
     >
       {cards.map((card) => (
         <div
           key={card.testId}
           data-testid={card.testId}
-          className="rounded-lg border border-line bg-surface p-5"
+          className="grid gap-x-6 border-t border-line bg-surface px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline"
         >
           <dt className="font-serif text-xl leading-tight text-ink">
             {card.title}
           </dt>
           <dd
             data-testid={`${card.testId}-value`}
-            className="mt-2 text-3xl font-semibold tabular-nums text-ink"
+            className="mt-1 text-3xl font-semibold tabular-nums text-ink sm:mt-0 sm:justify-self-end sm:text-right"
           >
             {card.value}
           </dd>
-          <dd className="mt-2 text-base leading-relaxed text-ink-muted">
+          <dd className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted sm:col-start-1">
             {card.definition}
           </dd>
         </div>

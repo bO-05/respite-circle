@@ -38,7 +38,7 @@ function Feedback({ state }: { state: PolicyActionState }) {
       data-testid="policy-feedback"
       role={isError ? "alert" : "status"}
       aria-live={isError ? "assertive" : "polite"}
-      className={`rounded-md border px-4 py-3 text-base leading-relaxed ${
+      className={`rounded-md border-t-2 px-4 py-3 text-base leading-relaxed ${
         isError
           ? "border-red bg-red-soft text-ink"
           : "border-green bg-green-soft text-ink"
@@ -83,7 +83,7 @@ export function PolicyEditorForm({
       onSubmit={handleSubmit}
       data-testid="policy-editor"
       aria-labelledby="policy-editor-heading"
-      className="flex flex-col gap-8 rounded-lg border border-line bg-surface p-5"
+      className="flex flex-col gap-8 rounded-md border-t border-line bg-surface p-5"
     >
       <div>
         <h2

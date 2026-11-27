@@ -26,7 +26,7 @@ export default function NeverPage() {
           key={commitment.id}
           data-testid="commitment"
           aria-labelledby={`${commitment.id}-heading`}
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <h2
             id={`${commitment.id}-heading`}
@@ -47,7 +47,7 @@ export default function NeverPage() {
       <section
         data-testid="never-auto-publish"
         aria-labelledby="never-auto-publish-heading"
-        className="rounded-lg border border-line bg-surface p-5"
+        className="rounded-md border-t border-line bg-surface p-5"
       >
         <h2
           id="never-auto-publish-heading"
