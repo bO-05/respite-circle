@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   ASK_SAMPLES,
@@ -40,6 +42,25 @@ describe("the home page's sample receipt", () => {
   it("marks the sample fictional and keeps the nine-answer record honest", () => {
     expect(SAMPLE_RECEIPT_NOTE).toMatch(/fictional example/i);
     expect(SAMPLE_RECEIPT_NOTE).toMatch(/nine answers/i);
+  });
+
+  it("quotes the seeded demo ask word for word", () => {
+    // VAL-R5DES-006: the quote on the page is the same string a tester finds
+    // in the seeded demo data. The first two sentences of the demo reset's
+    // hero ask appear in demo-state.ts and in the calibration data.
+    const seededDemo = readFileSync(
+      path.join(process.cwd(), "src", "db", "demo-state.ts"),
+      "utf8",
+    );
+    const calibration = readFileSync(
+      path.join(process.cwd(), "data", "calibration.json"),
+      "utf8",
+    );
+    expect(seededDemo).toContain(SAMPLE_RECEIPT.words);
+    expect(calibration).toContain(SAMPLE_RECEIPT.words);
+    expect(SAMPLE_RECEIPT.words).toBe(
+      "I haven't had a Saturday morning to myself since March. Mum is fine with people she knows, she just can't be alone.",
+    );
   });
 
   it("leaves the five ask examples the ask screen offers intact", () => {

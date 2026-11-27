@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Phone } from "lucide-react";
 import { PageMain } from "@/components/page-main";
 import { ProcessStrip, type ProcessStep } from "@/components/process-strip";
-import { IconWell } from "@/components/visual-primitives";
 import {
   SAMPLE_RECEIPT,
   SAMPLE_RECEIPT_LABEL,
 } from "@/lib/ask-samples";
+import { HALL_PHOTO } from "@/lib/photos";
 import { isDemoModeEnabled } from "@/server/auth/policy";
 
 export const metadata: Metadata = {
@@ -49,92 +50,114 @@ export default function HomePage() {
   const demoMode = isDemoModeEnabled();
 
   return (
-    <PageMain className="max-w-4xl py-8 sm:py-14">
+    <PageMain className="max-w-4xl py-8 sm:py-10">
       <section aria-labelledby="landing-heading">
-        <p className="font-serif italic font-medium text-[17px] text-accent">
-          A church-run break
-        </p>
-        <h1
-          id="landing-heading"
-          className="mt-3 max-w-3xl break-words font-serif text-4xl leading-tight text-ink sm:text-5xl"
-        >
-          A break for the person who does the caring.
-        </h1>
-        <p className="mt-4 max-w-prose text-xl leading-relaxed text-ink sm:mt-5">
-          Your church arranges a few hours. A named person reads what you write,
-          a neighbour takes a time, and nobody has to explain their week to a
-          crowd.
-        </p>
-        <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
-          No password. The link from your coordinator signs you in.
-        </p>
-
-        {/*
-          A stranger without an access link cannot use the link path, so the
-          demo is the filled action and it is met first. Both paths stay inside
-          the 360x800 first screen; tests/e2e/r2-first-screen.spec.ts measures
-          the boxes rather than trusting this comment. Nothing new may be
-          inserted above this row: the process strip starts below it so the
-          demo call to action keeps its measured bottom edge.
-        */}
-        <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
-          {demoMode ? (
-            <Link
-              href="/demo"
-              data-primary-action
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-5 py-2 text-base font-semibold text-accent-foreground sm:w-auto"
+        <div className="grid gap-8 md:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] md:items-center md:gap-10">
+          <div className="min-w-0">
+            <p className="font-serif italic font-medium text-[17px] text-accent">
+              A church-run break
+            </p>
+            <h1
+              id="landing-heading"
+              className="mt-3 break-words font-serif text-4xl leading-tight text-ink sm:text-5xl"
             >
-              Look around the demo
-            </Link>
-          ) : null}
-          <Link
-            href="/enter"
-            data-primary-action
-            className={
-              demoMode
-                ? "inline-flex min-h-11 w-full items-center justify-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink sm:w-auto"
-                : "inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-5 py-2 text-base font-semibold text-accent-foreground sm:w-auto"
-            }
-          >
-            Enter with your link
-          </Link>
+              A break for the person who does the caring.
+            </h1>
+            <p className="mt-4 max-w-prose text-xl leading-relaxed text-ink sm:mt-5">
+              Your church arranges a few hours. A named person reads what you
+              write, a neighbour takes a time, and nobody has to explain their
+              week to a crowd.
+            </p>
+            <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted">
+              No password. The link from your coordinator signs you in.
+            </p>
+
+            {/*
+              A stranger without an access link cannot use the link path, so the
+              demo is the filled action and it is met first. Both paths stay
+              inside the 360x800 first screen; tests/e2e/r2-first-screen.spec.ts
+              measures the boxes rather than trusting this comment. At 360 the
+              photograph follows this row, never sits between the two paths, so
+              neither call to action moves.
+            */}
+            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
+              {demoMode ? (
+                <Link
+                  href="/demo"
+                  data-primary-action
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-5 py-2 text-base font-semibold text-accent-foreground sm:w-auto"
+                >
+                  Look around the demo
+                </Link>
+              ) : null}
+              <Link
+                href="/enter"
+                data-primary-action
+                className={
+                  demoMode
+                    ? "inline-flex min-h-11 w-full items-center justify-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink sm:w-auto"
+                    : "inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-5 py-2 text-base font-semibold text-accent-foreground sm:w-auto"
+                }
+              >
+                Enter with your link
+              </Link>
+            </div>
+          </div>
+
+          {/*
+            The hall still-life sits inside the hero section so the process
+            strip stays its next sibling. The visible caption repeats what the
+            alt text says: a stock photograph of an empty hall is not this
+            church and shows nobody in the demo. At 360 the figure follows both
+            call-to-action links and its height is capped so it cannot push a
+            promise out of the first screen.
+          */}
+          <figure data-testid="home-hero-figure" className="m-0 min-w-0">
+            <Image
+              src={HALL_PHOTO.src}
+              alt={HALL_PHOTO.alt}
+              width={HALL_PHOTO.width}
+              height={HALL_PHOTO.height}
+              loading="eager"
+              sizes="(min-width: 768px) 380px, 100vw"
+              className="h-[180px] w-full rounded-md object-cover object-center md:h-[340px]"
+            />
+            <figcaption
+              data-testid="home-hero-caption"
+              className="mt-2 font-serif text-sm italic leading-snug text-ink-muted"
+            >
+              {HALL_PHOTO.caption}
+            </figcaption>
+          </figure>
         </div>
       </section>
 
       {/*
-        The strip comes before the "How a hard week becomes a few hours" heading
-        on purpose: at 1280x800 the CTA row ends near y=502, so a heading and a
-        note above the cards would push the three steps most of the way out of
-        the first screen. The heading sits directly below the cards as the
-        caption for the rest of the loop.
+        The loop heading sits above the rail, as the mockup does. The strip's
+        own first paragraph is still "Step 1": the heading is an h2 and the lead
+        sentence follows the three steps, so nothing is inserted between the
+        call to action and the first step card.
       */}
       <section
         aria-label="Three steps from an ask to a time"
-        className="mt-10 border-t border-line pt-8 sm:mt-14 sm:pt-10"
+        className="mt-10 border-t border-line pt-8 sm:mt-12"
       >
-        <ProcessStrip steps={STEPS} />
-      </section>
-
-      <section
-        aria-labelledby="loop-heading"
-        className="mt-10 border-t border-line pt-8"
-      >
-        <h2
-          id="loop-heading"
-          className="font-serif text-2xl leading-tight text-ink"
-        >
+        <h2 className="font-serif text-2xl leading-tight text-ink">
           How a hard week becomes a few hours
         </h2>
-        <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+        <div className="mt-6">
+          <ProcessStrip steps={STEPS} />
+        </div>
+        <p className="mt-6 max-w-prose text-base leading-relaxed text-ink-muted">
           Three short steps. A person at church reads what you write.
         </p>
         <p
           data-testid="landing-auto-publish-note"
           className="mt-3 max-w-prose text-base leading-relaxed text-ink-muted"
         >
-          One signed exception: a church policy can put a meal on the
-          congregation board without a person approving that time first.
-          Errands are not available yet.{" "}
+          One signed exception: under the church&apos;s signed low-risk policy,
+          a meal on the congregation board can be published without a person
+          approving that time first. Errands are not available yet.{" "}
           <Link href="/how-it-works" className={TEXT_LINK}>
             Read how the exception works
           </Link>
@@ -150,10 +173,18 @@ export default function HomePage() {
       <section
         aria-labelledby="call-heading"
         data-testid="landing-call-request"
-        className="mt-8 rounded-md border-t border-line bg-amber-soft p-5 sm:p-6"
+        className="mt-8 rounded-md border-t border-line bg-red-soft p-5 sm:p-6"
       >
         <div className="flex items-start gap-4">
-          <IconWell icon={Phone} tone="amber" />
+          {/*
+            A plain brick telephone, not an icon inside a filled circle: the
+            well is the round-4 pattern Hall Light removes. The icon is
+            decoration; the heading and the sentence carry the meaning.
+          */}
+          <Phone
+            aria-hidden="true"
+            className="mt-1 size-6 shrink-0 text-red"
+          />
           <div className="min-w-0">
             <h2
               id="call-heading"
@@ -162,8 +193,8 @@ export default function HomePage() {
               If nobody takes it, a person calls.
             </h2>
             <p className="mt-2 max-w-prose text-base leading-relaxed text-ink">
-              The app sends nothing — no email and no text. Your coordinator is
-              asked to call you and work out the week with you.
+              A person calls; the app sends nothing. No email and no text. Your
+              coordinator is asked to call you and work out the week with you.
             </p>
           </div>
         </div>
@@ -171,9 +202,10 @@ export default function HomePage() {
 
       {/*
         One sample receipt instead of a "what the computer does" paragraph: the
-        three yes/no lines are what the coordinator actually reads. The label
-        names the role, never a person, because the home page has no church to
-        resolve a coordinator's name from.
+        family's own words from the seeded demo ask, then three of the nine
+        yes/no answers the coordinator actually reads. The label names the role,
+        never a person, because the home page has no church to resolve a
+        coordinator's name from.
       */}
       <section
         aria-labelledby="sample-heading"

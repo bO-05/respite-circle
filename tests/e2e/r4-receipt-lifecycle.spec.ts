@@ -530,6 +530,7 @@ test.describe("VAL-R4VIS-001 — one decorative icon pack across the five surfac
   async function expectSurfaceIcon(
     page: Page,
     surface: string,
+    options: { heroPhoto?: boolean } = {},
   ): Promise<void> {
     const facts = await iconFacts(page);
     expect(facts.count, `${surface} renders at least one icon`).toBeGreaterThan(
@@ -539,10 +540,36 @@ test.describe("VAL-R4VIS-001 — one decorative icon pack across the five surfac
       true,
     );
     expect(facts.allDecorative, `${surface} icons are decorative`).toBe(true);
-    await expect(
-      page.locator("main img"),
-      `${surface} has no photograph`,
-    ).toHaveCount(0);
+    if (options.heroPhoto) {
+      // Round 5 superseded this helper's blanket "no photograph" clause on the
+      // home hero (VAL-R4VIS-001 is scoped to `5a41898..3d76358`; VAL-R5DES-005
+      // describes the new image contract). The hero carries exactly one
+      // still-life, same-origin, eagerly loaded, with alt text naming both
+      // limits.
+      const images = page.locator("main img");
+      await expect(images, `${surface} carries the one hero photograph`).toHaveCount(1);
+      const image = images.first();
+      const alt = (await image.getAttribute("alt")) ?? "";
+      expect(alt, `${surface} photo alt names what is pictured`).toMatch(
+        /pews/i,
+      );
+      expect(alt, `${surface} photo alt says it is not this church`).toMatch(
+        /not a photograph of this church/i,
+      );
+      expect(alt, `${surface} photo alt says no one in the demo`).toMatch(
+        /anyone in the demo/i,
+      );
+      expect(
+        (await image.getAttribute("src")) ?? "",
+        `${surface} photo is served same-origin`,
+      ).toMatch(/^\/(?:_next\/image\?url=%2Fimages%2F|images\/)/);
+      await expect(image).toHaveAttribute("loading", "eager");
+    } else {
+      await expect(
+        page.locator("main img"),
+        `${surface} has no photograph`,
+      ).toHaveCount(0);
+    }
   }
 
   async function iconsAtBothWidths(
@@ -550,15 +577,16 @@ test.describe("VAL-R4VIS-001 — one decorative icon pack across the five surfac
     surface: string,
     name: string,
     url: string,
+    options: { heroPhoto?: boolean } = {},
   ): Promise<void> {
     await page.setViewportSize({ width: 1280, height: FOLD });
     await page.goto(url);
-    await expectSurfaceIcon(page, surface);
+    await expectSurfaceIcon(page, surface, options);
     await shot(page, `icons-${name}-1280x800`);
 
     await page.setViewportSize({ width: 360, height: FOLD });
     await page.reload();
-    await expectSurfaceIcon(page, `${surface} at 360`);
+    await expectSurfaceIcon(page, `${surface} at 360`, options);
     await expectNoHorizontalScroll(page, `${surface} at 360`);
     await shot(page, `icons-${name}-360x800`);
   }
@@ -571,7 +599,9 @@ test.describe("VAL-R4VIS-001 — one decorative icon pack across the five surfac
 
     const publicContext = await browser.newContext();
     const publicPage = await publicContext.newPage();
-    await iconsAtBothWidths(publicPage, "home", "home", "/");
+    await iconsAtBothWidths(publicPage, "home", "home", "/", {
+      heroPhoto: true,
+    });
     await iconsAtBothWidths(publicPage, "demo", "demo", "/demo");
     await publicContext.close();
 

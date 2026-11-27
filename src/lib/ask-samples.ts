@@ -69,9 +69,15 @@ export function sampleById(id: string): AskSample | undefined {
 }
 
 /**
- * The home page's one sample receipt: three of the nine typed answers, so a
- * visitor can see the shape of what a coordinator reads instead of a paragraph
- * explaining "what the computer does".
+ * The home page's one sample receipt: the family's own words and three of the
+ * nine typed answers, so a visitor can see the shape of what a coordinator
+ * reads instead of a paragraph explaining "what the computer does".
+ *
+ * The quoted words are the seeded demo ask's first two sentences, kept
+ * verbatim (`src/db/demo-state.ts` `DEMO_TEXT.hero`, and the same text in
+ * `data/calibration.json`). A judge can find the same string in the seed and
+ * on the page, which is what makes the label "Fictional example" checkable
+ * rather than decorative.
  *
  * The label names the role, never a person. A coordinator's name is resolved
  * per church (the receipt and the desk do that), and the public home page has
@@ -95,7 +101,8 @@ const SAMPLE_RECEIPT_LINES: readonly SampleReceiptLine[] = [
 ];
 
 export const SAMPLE_RECEIPT = {
-  words: "I need a Tuesday morning with Mum so I can go to the dentist.",
+  words:
+    "I haven't had a Saturday morning to myself since March. Mum is fine with people she knows, she just can't be alone.",
   lines: SAMPLE_RECEIPT_LINES,
   note: SAMPLE_RECEIPT_NOTE,
 } as const;

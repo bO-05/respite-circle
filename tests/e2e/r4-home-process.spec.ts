@@ -5,9 +5,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  *
  * The home page shows the loop as a three-step numbered rail, says the
  * meal exception once, shows the failure path as a call request that sends the
- * family nothing, and shows one sample receipt with three yes/no lines under a
- * neutral label. Nothing is added above the demo call to action, so the
- * first-screen budgets in `r2-first-screen.spec.ts` still hold.
+ * family nothing, and shows one sample receipt under a neutral label. Round 5
+ * added the hall still-life inside the hero and moved the loop heading above
+ * the rail; both changes are recorded where they are asserted below. Nothing
+ * is added above the demo call to action, so the first-screen budgets in
+ * `r2-first-screen.spec.ts` still hold.
  */
 
 const FOLD = 800;
@@ -83,16 +85,18 @@ test("VAL-R4VIS-002 — at 1280x800 the demo action and the top of the strip sha
   );
   expect(new Set(heights).size, `step heights ${heights.join("/")}`).toBe(1);
 
-  // The "How a hard week becomes a few hours" heading was moved below the
-  // strip so the cards start immediately after the calls to action.
+  // Round 5 moved "How a hard week becomes a few hours" above the rail, as the
+  // Hall Light mockup does. VAL-R4VIS-002 is scoped to `5a41898..3d76358` and
+  // its order clause was superseded by the owner-approved re-skin, so this
+  // pin changes from "heading below the last card" (old: heading.top >=
+  // lastCard.bottom) to "heading above the first card".
   const loopHeading = await boxOf(
     page.getByRole("heading", { name: "How a hard week becomes a few hours" }),
   );
-  const lastCard = await boxOf(cards.nth(2));
   expect(
-    loopHeading.top,
-    "the loop heading sits below the three cards",
-  ).toBeGreaterThanOrEqual(lastCard.bottom);
+    loopHeading.bottom,
+    "the loop heading sits above the rail",
+  ).toBeLessThanOrEqual(firstCard.top);
 
   // Nothing was inserted between the hero's calls to action and the strip: the
   // section after the hero is the strip, and it has no paragraph of its own.
@@ -227,10 +231,19 @@ test("VAL-R4VIS-001 and VAL-R4VIS-002 — the process strip is a numbered rail, 
   });
   expect(firstParagraph).toBe("Step 1");
 
-  // Photographs belong to the round-5 photography feature. Until they ship no
-  // image renders on this surface; VAL-R5DES-005 replaces this with the image
-  // contract rather than a weaker claim.
-  await expect(page.locator("main img")).toHaveCount(0);
+  // Photographs ship in round 5. VAL-R4VIS-001's "no <Image> element"
+  // clause is scoped to `5a41898..3d76358`; VAL-R5DES-005 and VAL-R5DES-006
+  // replace it with the image contract, so this pin now asserts the one hero
+  // photograph and its limits rather than a blanket zero.
+  const heroPhoto = page
+    .getByTestId("home-hero-figure")
+    .locator("img");
+  await expect(page.locator("main img"), "one hall photograph").toHaveCount(1);
+  await expect(heroPhoto).toHaveAttribute("loading", "eager");
+  await expect(heroPhoto).toHaveAttribute(
+    "alt",
+    /not a photograph of this church or of anyone in the demo/i,
+  );
 });
 
 test("VAL-R4VIS-002 — one meal exception, a call row that sends nothing, and a neutral sample receipt", async ({
