@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PHOTO_CREDIT_LINE } from "@/lib/photos";
 import { AI_CHIP_LABEL, SAMPLE_DATA_STAMP } from "@/lib/site-navigation";
 
 const TRUST_LINKS = [
@@ -52,6 +53,19 @@ export function SiteFooter() {
           {AI_CHIP_LABEL}
         </p>
         <p className="text-base text-ink-muted">{SAMPLE_DATA_STAMP}</p>
+        {/*
+          The credit line lives in the footer rather than on one page, so a
+          reader can reach it from every surface, including 403, 404 and 500.
+          It names the two confirmed photographers, says the other three names
+          are unrecorded, names the license, and repeats what the photographs
+          are not.
+        */}
+        <p
+          data-testid="photo-credit"
+          className="max-w-prose text-base leading-relaxed text-ink-muted"
+        >
+          {PHOTO_CREDIT_LINE}
+        </p>
       </div>
     </footer>
   );

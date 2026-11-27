@@ -8,11 +8,25 @@ import {
   boardGatedLine,
   boardKindCopy,
   boardLockCopy,
+  type BoardKind,
 } from "@/server/domain/board";
+import { STILL_LIFE, type StillLifePhoto } from "@/lib/photos";
 import type { BoardSlot } from "@/server/repositories/board";
 import { TimeCard } from "./time-card";
 
 export type BoardViewerRole = "volunteer" | "coordinator" | "deputy";
+
+/**
+ * One still life per kind of help, and none where the set has no honest
+ * match. A ride and an errand keep the kind's written word and its decorative
+ * mark; inventing a photograph for them would say more than the app knows.
+ * None of these photographs shows a person or a particular family.
+ */
+const BOARD_STILL_LIFE: Partial<Record<BoardKind, StillLifePhoto>> = {
+  companion: STILL_LIFE.tea,
+  home: STILL_LIFE.chair,
+  meal: STILL_LIFE.soup,
+};
 
 /**
  * One published time on the congregation board.
@@ -188,6 +202,8 @@ export function BoardSlotCard({
       kind={slot.kind}
       kindWord={kind.word}
       kindTestId="board-kind"
+      photo={BOARD_STILL_LIFE[slot.kind] ?? null}
+      photoTestId="board-still-life"
       label={slot.label}
       windowStart={slot.windowStart}
       windowEnd={slot.windowEnd}

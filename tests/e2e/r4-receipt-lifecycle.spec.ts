@@ -527,10 +527,86 @@ test.describe("VAL-R4VIS-001 — one decorative icon pack across the five surfac
     });
   }
 
+  /**
+   * The round-5 image contract replaces this file's old blanket "no
+   * photograph" clause (VAL-R4VIS-001 is scoped to `5a41898..3d76358`).
+   * `home` carries the hero and the three process still lifes, `demo` one
+   * still life with a caption, `board` one per open time that has a matching
+   * picture, and `none` still means no photograph at all.
+   */
+  type PhotoMode = "home" | "demo" | "board" | "none";
+
+  async function expectPhotoContract(
+    page: Page,
+    surface: string,
+    mode: PhotoMode,
+  ): Promise<void> {
+    const images = page.locator("main img");
+    if (mode === "none") {
+      await expect(
+        images,
+        `${surface} has no photograph`,
+      ).toHaveCount(0);
+      return;
+    }
+
+    const count = await images.count();
+    if (mode === "home") {
+      expect(count, `${surface} carries the hero and three rail still lifes`).toBe(4);
+    }
+    if (mode === "demo") {
+      expect(count, `${surface} carries one still life`).toBe(1);
+    }
+    if (mode === "board") {
+      expect(count, `${surface} shows a still life in its time rows`).toBeGreaterThan(0);
+      expect(
+        await page.getByTestId("board-still-life").count(),
+        `${surface} every picture sits in a time row`,
+      ).toBe(count);
+    }
+
+    for (let index = 0; index < count; index += 1) {
+      const image = images.nth(index);
+      const alt = (await image.getAttribute("alt")) ?? "";
+      expect(alt, `${surface} image ${index + 1} says what it is`).not.toBe("");
+      expect(alt, `${surface} image ${index + 1} is not this church`).toMatch(
+        /not a photograph of this church/i,
+      );
+      expect(alt, `${surface} image ${index + 1} is not anyone in the demo`).toMatch(
+        /anyone in the demo/i,
+      );
+      expect(
+        (await image.getAttribute("src")) ?? "",
+        `${surface} image ${index + 1} is served same-origin`,
+      ).toMatch(/^\/(?:_next\/image\?url=%2Fimages%2F|images\/)/);
+      // Intrinsic size lets the browser reserve the box, so nothing shifts.
+      await expect(image).toHaveAttribute("width", /^\d+$/);
+      await expect(image).toHaveAttribute("height", /^\d+$/);
+    }
+
+    if (mode === "home") {
+      const hero = page.getByTestId("home-hero-figure").locator("img");
+      await expect(hero).toHaveAttribute("loading", "eager");
+      expect((await hero.getAttribute("alt")) ?? "").toMatch(/pews/i);
+      await expect(page.getByTestId("home-hero-caption")).toContainText(
+        /not a photograph of this church/i,
+      );
+    }
+
+    if (mode === "demo") {
+      expect((await images.first().getAttribute("alt")) ?? "").toMatch(
+        /chair|teapot/i,
+      );
+      await expect(page.getByTestId("demo-still-life-caption")).toContainText(
+        /not a photograph of this church/i,
+      );
+    }
+  }
+
   async function expectSurfaceIcon(
     page: Page,
     surface: string,
-    options: { heroPhoto?: boolean } = {},
+    options: { photos?: PhotoMode } = {},
   ): Promise<void> {
     const facts = await iconFacts(page);
     expect(facts.count, `${surface} renders at least one icon`).toBeGreaterThan(
@@ -540,36 +616,7 @@ test.describe("VAL-R4VIS-001 — one decorative icon pack across the five surfac
       true,
     );
     expect(facts.allDecorative, `${surface} icons are decorative`).toBe(true);
-    if (options.heroPhoto) {
-      // Round 5 superseded this helper's blanket "no photograph" clause on the
-      // home hero (VAL-R4VIS-001 is scoped to `5a41898..3d76358`; VAL-R5DES-005
-      // describes the new image contract). The hero carries exactly one
-      // still-life, same-origin, eagerly loaded, with alt text naming both
-      // limits.
-      const images = page.locator("main img");
-      await expect(images, `${surface} carries the one hero photograph`).toHaveCount(1);
-      const image = images.first();
-      const alt = (await image.getAttribute("alt")) ?? "";
-      expect(alt, `${surface} photo alt names what is pictured`).toMatch(
-        /pews/i,
-      );
-      expect(alt, `${surface} photo alt says it is not this church`).toMatch(
-        /not a photograph of this church/i,
-      );
-      expect(alt, `${surface} photo alt says no one in the demo`).toMatch(
-        /anyone in the demo/i,
-      );
-      expect(
-        (await image.getAttribute("src")) ?? "",
-        `${surface} photo is served same-origin`,
-      ).toMatch(/^\/(?:_next\/image\?url=%2Fimages%2F|images\/)/);
-      await expect(image).toHaveAttribute("loading", "eager");
-    } else {
-      await expect(
-        page.locator("main img"),
-        `${surface} has no photograph`,
-      ).toHaveCount(0);
-    }
+    await expectPhotoContract(page, surface, options.photos ?? "none");
   }
 
   async function iconsAtBothWidths(
@@ -577,7 +624,7 @@ test.describe("VAL-R4VIS-001 — one decorative icon pack across the five surfac
     surface: string,
     name: string,
     url: string,
-    options: { heroPhoto?: boolean } = {},
+    options: { photos?: PhotoMode } = {},
   ): Promise<void> {
     await page.setViewportSize({ width: 1280, height: FOLD });
     await page.goto(url);
@@ -600,21 +647,29 @@ test.describe("VAL-R4VIS-001 — one decorative icon pack across the five surfac
     const publicContext = await browser.newContext();
     const publicPage = await publicContext.newPage();
     await iconsAtBothWidths(publicPage, "home", "home", "/", {
-      heroPhoto: true,
+      photos: "home",
     });
-    await iconsAtBothWidths(publicPage, "demo", "demo", "/demo");
+    await iconsAtBothWidths(publicPage, "demo", "demo", "/demo", {
+      photos: "demo",
+    });
     await publicContext.close();
 
     const ruth = await signIn(browser, seedAccessTokens.ruth);
-    await iconsAtBothWidths(ruth.page, "/circle", "circle", "/circle");
+    await iconsAtBothWidths(ruth.page, "/circle", "circle", "/circle", {
+      photos: "board",
+    });
     await ruth.context.close();
 
     const grace = await signIn(browser, seedAccessTokens.grace);
-    await iconsAtBothWidths(grace.page, "/desk", "desk", "/desk");
+    await iconsAtBothWidths(grace.page, "/desk", "desk", "/desk", {
+      photos: "none",
+    });
     await grace.context.close();
 
     const marta = await signIn(browser, seedAccessTokens.marta);
-    await iconsAtBothWidths(marta.page, "receipt", "receipt", HERO_RECEIPT);
+    await iconsAtBothWidths(marta.page, "receipt", "receipt", HERO_RECEIPT, {
+      photos: "none",
+    });
     await marta.context.close();
 
     // No second icon package is installed. The list is by name rather than a

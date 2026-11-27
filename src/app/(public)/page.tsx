@@ -8,7 +8,7 @@ import {
   SAMPLE_RECEIPT,
   SAMPLE_RECEIPT_LABEL,
 } from "@/lib/ask-samples";
-import { HALL_PHOTO } from "@/lib/photos";
+import { HALL_PHOTO, STILL_LIFE } from "@/lib/photos";
 import { isDemoModeEnabled } from "@/server/auth/policy";
 
 export const metadata: Metadata = {
@@ -26,14 +26,17 @@ const STEPS: readonly ProcessStep[] = [
   {
     title: "You write it in your own words",
     body: "Type it or say it. Your words are kept exactly as you wrote them, and they stay with the person who reads them.",
+    photo: STILL_LIFE.tea,
   },
   {
     title: "A person approves what is offered",
     body: "A named coordinator reads every word and decides what, if anything, is offered.",
+    photo: STILL_LIFE.pews,
   },
   {
     title: "A neighbour takes a time",
     body: "They see a time and what it needs. They never see your words, your family's name, or the reason you asked.",
+    photo: STILL_LIFE.bread,
   },
 ];
 

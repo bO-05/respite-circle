@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import {
   Car,
   House,
@@ -7,6 +8,7 @@ import {
   Utensils,
   type LucideIcon,
 } from "lucide-react";
+import type { StillLifePhoto } from "@/lib/photos";
 import { formatSessionClock } from "@/server/domain/session-calendar";
 import { churchDayFor } from "@/server/domain/day-groups";
 import { formatWindowLabel } from "@/server/domain/slots";
@@ -63,6 +65,12 @@ export type TimeCardProps = {
   kind: string;
   kindWord: string;
   kindTestId: string;
+  /**
+   * A still life that illustrates the kind of help, never a person and never a
+   * particular family. Omitted on surfaces that do not carry one.
+   */
+  photo?: StillLifePhoto | null;
+  photoTestId?: string;
   label: string;
   windowStart: Date | null;
   windowEnd: Date | null;
@@ -114,6 +122,8 @@ export function TimeCard({
   kind,
   kindWord,
   kindTestId,
+  photo,
+  photoTestId,
   label,
   windowStart,
   windowEnd,
@@ -198,6 +208,22 @@ export function TimeCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {photo ? (
+              <span
+                data-testid={photoTestId ?? "time-still-life"}
+                data-photo-kind={kind}
+                className="inline-flex shrink-0 overflow-hidden rounded-sm bg-muted"
+              >
+                <Image
+                  src={photo.src}
+                  alt={photo.alt}
+                  width={photo.width}
+                  height={photo.height}
+                  sizes="64px"
+                  className="size-16 object-cover object-center"
+                />
+              </span>
+            ) : null}
             <p
               data-testid={kindTestId}
               className="inline-flex items-center gap-1.5 text-base font-semibold text-ink"

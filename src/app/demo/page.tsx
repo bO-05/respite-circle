@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 import { PublicPage } from "@/components/public-page";
 import { RoleCard } from "@/components/role-card";
+import { STILL_LIFE } from "@/lib/photos";
 import { isDemoModeEnabled, ROLE_LABEL, type Role } from "@/server/auth/policy";
 import { listDemoLinks } from "@/server/repositories/demo";
 
@@ -177,6 +179,30 @@ export default async function DemoPage() {
           volunteer&apos;s board. Every name, ask, and time behind it is
           fictional.
         </p>
+
+        {/*
+          One still life, with a caption that repeats both limits. It sits
+          below the doors rather than above them on purpose: the round-4
+          first-screen promise (a whole role row and its way in inside 800px
+          at 1280 and 360) outranks the mockup's placement, and a tall
+          photograph above the list would push the first door out of view.
+        */}
+        <figure data-testid="demo-still-life" className="m-0">
+          <Image
+            src={STILL_LIFE.chair.src}
+            alt={STILL_LIFE.chair.alt}
+            width={STILL_LIFE.chair.width}
+            height={STILL_LIFE.chair.height}
+            sizes="(min-width: 1024px) 960px, 100vw"
+            className="h-[200px] w-full rounded-md object-cover object-center sm:h-[240px]"
+          />
+          <figcaption
+            data-testid="demo-still-life-caption"
+            className="mt-2 font-serif text-sm italic leading-snug text-ink-muted"
+          >
+            {STILL_LIFE.chair.caption}
+          </figcaption>
+        </figure>
 
         <section
           aria-labelledby="demo-model-heading"

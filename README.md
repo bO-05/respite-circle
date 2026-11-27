@@ -46,6 +46,20 @@ A church is set up by a developer today, with `npm run db:migrate` and
 admin surface the app does not have yet. Today those rows are added in the
 database by a developer.
 
+## Photographs
+
+The five still-life photographs in `public/images/` are served from this app
+through `next/image`, with their intrinsic width and height set. Nothing is
+hotlinked from a remote image host; every `src` is same-origin.
+
+Still-life photographs from Unsplash, used under the Unsplash License: church interior by Karl Fredrickson, tea by Rumman Amin. Three further photographs are by photographers whose names we could not record; the license does not require attribution. None of these photographs is of this church or of anyone in the demo.
+
+The five files are `church-pews.jpg` (the home hero), `chairs-table.jpg` (the
+demo), `tea-mug.jpg` (the first step and a companionship time), `bread.jpg`
+(the third step) and `soup-bowl.jpg` (a meal time). Each is a still life of a
+place or an object: no face, no map, and no invented count appears in any of
+them. Every alt string says what is pictured and repeats both limits.
+
 ## Stack
 
 Versions are pinned in `package.json`.

@@ -1,6 +1,14 @@
+import Image from "next/image";
+import type { StillLifePhoto } from "@/lib/photos";
+
 export type ProcessStep = {
   title: string;
   body: string;
+  /**
+   * A still life for the step. Every item that carries one uses the same
+   * fixed frame, or the equal-height cards stop lining up.
+   */
+  photo?: StillLifePhoto;
 };
 
 /**
@@ -14,7 +22,10 @@ export type ProcessStep = {
  *
  * The leading area is a fixed 64px tall in every item so the three titles sit
  * on one line, and `auto-rows-fr` makes the three items the same height whether
- * they are stacked at 360 or in three columns at 1280.
+ * they are stacked at 360 or in three columns at 1280. Each item also carries
+ * a 160x80 still-life thumbnail with its intrinsic width and height declared,
+ * so the three photographs share one fixed frame and no card grows around its
+ * own picture.
  *
  * `data-testid="landing-step-card"` is a measurement hook, not decoration:
  * `tests/e2e/a11y.measure.spec.ts` counts the cards, requires three identical
@@ -46,6 +57,21 @@ export function ProcessStrip({ steps }: { steps: readonly ProcessStep[] }) {
               </span>
             </p>
           </div>
+          {step.photo ? (
+            <div
+              data-testid="step-still-life"
+              className="mt-2 h-20 w-40 overflow-hidden rounded-sm bg-muted"
+            >
+              <Image
+                src={step.photo.src}
+                alt={step.photo.alt}
+                width={step.photo.width}
+                height={step.photo.height}
+                sizes="160px"
+                className="h-20 w-full object-cover object-center"
+              />
+            </div>
+          ) : null}
           <h3 className="mt-2 font-serif text-2xl leading-snug text-ink">
             {step.title}
           </h3>

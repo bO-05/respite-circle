@@ -117,7 +117,33 @@ test("VAL-R5DES-006 — at 1280 the hero is a split with the hall still-life ins
   // The image is honest and stable: same-origin, explicit intrinsic size,
   // eager (it is the LCP), and the approved alt naming both limits.
   const image = await heroPhoto(page);
-  await expect(page.locator("main img")).toHaveCount(1);
+  // Round 5 ships the hero plus one still life per process step. This pin
+  // changed from 1 to 4 in the photography feature; every rendered image is
+  // still a local photograph, and the hero remains the only eager one.
+  await expect(
+    page.locator("main img"),
+    "the hero and three rail still lifes",
+  ).toHaveCount(4);
+  const railPhotos = page.getByTestId("step-still-life");
+  await expect(railPhotos, "one still life per process step").toHaveCount(3);
+  const railHeights: number[] = [];
+  for (let index = 0; index < 3; index += 1) {
+    const thumb = railPhotos.nth(index).locator("img");
+    await expect(thumb).toHaveAttribute(
+      "src",
+      /^\/(?:_next\/image\?|images\/)/,
+    );
+    await expect(thumb).toHaveAttribute(
+      "alt",
+      /not a photograph of this church/i,
+    );
+    await expect(thumb).not.toHaveAttribute("loading", "eager");
+    railHeights.push((await boxOf(railPhotos.nth(index))).height);
+  }
+  expect(
+    new Set(railHeights.map((height) => Math.round(height))).size,
+    "the three rail thumbnails share one fixed height",
+  ).toBe(1);
   await expect(image).toHaveAttribute("src", /^\/(?:_next\/image\?|images\/)/);
   await expect(image).toHaveAttribute("width", "1800");
   await expect(image).toHaveAttribute("height", "1200");

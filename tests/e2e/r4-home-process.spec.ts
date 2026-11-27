@@ -233,12 +233,29 @@ test("VAL-R4VIS-001 and VAL-R4VIS-002 — the process strip is a numbered rail, 
 
   // Photographs ship in round 5. VAL-R4VIS-001's "no <Image> element"
   // clause is scoped to `5a41898..3d76358`; VAL-R5DES-005 and VAL-R5DES-006
-  // replace it with the image contract, so this pin now asserts the one hero
-  // photograph and its limits rather than a blanket zero.
+  // replace it with the image contract. The home page now carries the hero
+  // and one still life in each process step, so this pin changed from one
+  // image to four; every one is local, sized, and honest.
   const heroPhoto = page
     .getByTestId("home-hero-figure")
     .locator("img");
-  await expect(page.locator("main img"), "one hall photograph").toHaveCount(1);
+  await expect(
+    page.locator("main img"),
+    "the hero and three rail still lifes",
+  ).toHaveCount(4);
+  const railPhotos = page.getByTestId("step-still-life");
+  await expect(railPhotos, "one still life per step").toHaveCount(3);
+  for (let index = 0; index < 3; index += 1) {
+    const thumb = railPhotos.nth(index).locator("img");
+    await expect(thumb).toHaveAttribute(
+      "src",
+      /^\/(?:_next\/image\?|images\/)/,
+    );
+    await expect(thumb).toHaveAttribute(
+      "alt",
+      /not a photograph of this church or of anyone in the demo/i,
+    );
+  }
   await expect(heroPhoto).toHaveAttribute("loading", "eager");
   await expect(heroPhoto).toHaveAttribute(
     "alt",
