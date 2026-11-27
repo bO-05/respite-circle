@@ -33,7 +33,7 @@ function CheckpointLine({
 }) {
   if (!at) return null;
   return (
-    <p data-testid={testId} className="max-w-prose text-base leading-relaxed text-ink">
+    <p data-testid={testId} className="max-w-prose text-base leading-relaxed tabular-nums text-ink">
       <span className="font-semibold">{label}: </span>
       {formatWindowLabel(at, null, timeZone)}
     </p>

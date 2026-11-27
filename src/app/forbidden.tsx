@@ -11,7 +11,7 @@ export default function Forbidden() {
     <>
       <title>That area isn&apos;t part of your role — Respite Circle</title>
       <PageMain className="py-16">
-        <p className="text-base font-semibold uppercase tracking-wide text-accent">
+        <p className="font-serif italic font-medium text-[17px] text-accent">
           Not your area
         </p>
         <h1 className="mt-2 font-serif text-4xl leading-tight text-ink">

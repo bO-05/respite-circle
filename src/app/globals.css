@@ -11,8 +11,8 @@
 
 /*
   Respite Circle design tokens.
-  Warm paper, quiet ink, terracotta accent. There is deliberately no dark
-  theme: this surface stays calm and readable for tired, older eyes.
+  Stone linen paper, quiet ink, ivy-forest accent. There is deliberately no
+  dark theme: this surface stays calm and readable for tired, older eyes.
 */
 @theme {
   --color-paper: #efece4;
@@ -34,12 +34,26 @@
   --color-boundary: #7d776a;
   --color-focus: #2f5d45;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  /*
+    The vendored families come first; the system faces behind them are only a
+    fallback for the instant before `display: swap` resolves, never the voice
+    a reader is meant to meet. Both variables are set on <html> by
+    next/font/local in layout.tsx.
+  */
+  --font-sans: var(--font-source-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, Cambria,
+    "Times New Roman", Times, serif;
 
   --text-base: 1.125rem;
   --text-base--line-height: 1.6;
+  /*
+    Body copy carries `leading-relaxed` on almost every paragraph and notice.
+    Tailwind's default 1.625 is a hair looser than the 1.6 this app sets on
+    the body; binding the utility to the same value keeps one line height for
+    every paragraph instead of two that differ by 0.45px at 18px.
+  */
+  --leading-relaxed: 1.6;
 
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
@@ -49,9 +63,10 @@
 
 /*
   shadcn/ui semantic tokens.
-  `accent` keeps its Respite Circle meaning (terracotta action colour) and the
-  shadcn hover tint is exposed as `accent-soft`. `muted` is the quiet surface;
-  secondary text uses `muted-foreground` / `ink-muted`, which pass AA on paper.
+  `accent` keeps its Respite Circle meaning (the ivy-forest action colour) and
+  the shadcn hover tint is exposed as `accent-soft`. `muted` is the quiet
+  surface; secondary text uses `muted-foreground` / `ink-muted`, which pass AA
+  on paper.
 */
 @theme inline {
   --color-background: var(--color-paper);

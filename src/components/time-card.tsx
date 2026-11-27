@@ -157,7 +157,13 @@ export function TimeCard({
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:gap-5">
         <div className={cn("shrink-0", dayLine ? "sm:w-24" : "sm:w-20")}>
-          <p data-testid={windowTestId} className="text-ink">
+          {/*
+            A time is a number a person has to read and compare across rows,
+            so it is set in the sans with tabular figures — never in the serif
+            heading face. `tabular-nums` applies to the whole block, so the
+            start, the end and a travelling day line all line up.
+          */}
+          <p data-testid={windowTestId} className="tabular-nums text-ink">
             {clockBlock ? (
               <>
                 <span className="sr-only">{windowLabel}</span>
@@ -170,9 +176,7 @@ export function TimeCard({
                       {dayLine}
                     </span>
                   ) : null}
-                  <span className="font-serif text-2xl leading-none">
-                    {startClock}
-                  </span>
+                  <span className="text-2xl leading-none">{startClock}</span>
                   {endClock ? (
                     <span className="text-base leading-snug text-ink-muted">
                       to {endClock}

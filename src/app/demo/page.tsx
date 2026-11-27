@@ -154,7 +154,7 @@ export default async function DemoPage() {
             >
               <h2
                 id={`demo-group-${group.key}`}
-                className="text-base font-semibold uppercase tracking-wide text-accent"
+                className="font-serif italic font-medium text-[17px] text-accent"
               >
                 {group.label}
               </h2>

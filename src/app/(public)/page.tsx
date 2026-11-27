@@ -54,7 +54,7 @@ export default function HomePage() {
   return (
     <PageMain className="max-w-4xl py-8 sm:py-14">
       <section aria-labelledby="landing-heading">
-        <p className="text-base font-semibold uppercase tracking-wide text-accent">
+        <p className="font-serif italic font-medium text-[17px] text-accent">
           A church-run break
         </p>
         <h1

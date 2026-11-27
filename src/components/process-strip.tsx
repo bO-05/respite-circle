@@ -31,7 +31,7 @@ export function ProcessStrip({ steps }: { steps: readonly ProcessStep[] }) {
         >
           <div className="flex items-center gap-3">
             <IconWell icon={step.icon} />
-            <p className="text-base font-semibold uppercase tracking-wide text-ink-muted">
+            <p className="text-base font-semibold tabular-nums text-ink-muted">
               Step {index + 1}
             </p>
           </div>

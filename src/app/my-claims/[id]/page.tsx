@@ -139,7 +139,7 @@ export default async function MyClaimDetailPage({
         <div className="mt-3 flex flex-col gap-1">
           <p
             data-testid="claim-window"
-            className="max-w-prose text-xl leading-relaxed text-ink"
+            className="max-w-prose text-xl leading-relaxed tabular-nums text-ink"
           >
             {formatWindowLabel(
               claim.windowStart,

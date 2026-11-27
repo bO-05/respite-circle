@@ -73,7 +73,7 @@ export function SessionCalendarStrip({ overview }: { overview: SessionOverview }
               data-status={entry.status}
               className="flex flex-wrap items-baseline justify-between gap-2 border-t border-line pt-2 first:border-t-0 first:pt-0"
             >
-              <span className="text-base font-semibold text-ink">
+              <span className="text-base font-semibold tabular-nums text-ink">
                 <time dateTime={entry.startsAt.toISOString()}>
                   {formatSessionDateShort(entry.startsAt, overview.timeZone)}
                 </time>

@@ -33,12 +33,12 @@ export function DateGroup({
         <h3 id={headingId} className="text-ink">
           <time
             dateTime={day.key}
-            className="flex flex-wrap items-baseline gap-x-2 md:flex-col md:items-start"
+            className="flex flex-wrap items-baseline gap-x-2 font-sans tabular-nums md:flex-col md:items-start"
           >
-            <span className="text-base font-semibold uppercase tracking-wide text-ink-muted">
+            <span className="font-serif italic font-medium text-[17px] text-accent">
               {day.weekday}
             </span>{" "}
-            <span className="font-serif text-2xl leading-none md:text-3xl">
+            <span className="text-2xl leading-none md:text-3xl">
               {day.day}
             </span>{" "}
             <span className="text-base text-ink-muted">{day.month}</span>

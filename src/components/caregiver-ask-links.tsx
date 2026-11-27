@@ -62,7 +62,7 @@ export function CaregiverAskLinks({
               data-testid="care-ask-link-row"
               className="rounded-md border border-line bg-paper p-4"
             >
-              <p className="break-words text-base leading-relaxed text-ink-muted">
+              <p className="break-words text-base leading-relaxed tabular-nums text-ink-muted">
                 For {ask.careRecipientFirstName} · ask sent{" "}
                 {formatSessionDate(ask.createdAt, ask.timeZone)}
               </p>

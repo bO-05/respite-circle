@@ -257,7 +257,7 @@ export default async function DeskPolicyPage() {
                       rows={3}
                       className="w-full max-w-prose rounded-md border border-boundary bg-paper px-3 py-2 text-base leading-relaxed text-ink"
                     />
-                    <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+                    <p className="max-w-prose text-base leading-relaxed text-ink-muted">
                       {question.answerType === "yesno"
                         ? "Yes or no"
                         : `Pick one: ${question.options?.join(" · ") ?? ""}`}
@@ -310,7 +310,7 @@ export default async function DeskPolicyPage() {
                   defaultValue={current.localCrisisLine ?? ""}
                   className="min-h-11 w-full max-w-prose rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
                 />
-                <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+                <p className="max-w-prose text-base leading-relaxed text-ink-muted">
                   The church&apos;s own line and the hours a person answers it.
                   Leave blank if 988 is the only line this church prints.
                 </p>
@@ -441,7 +441,7 @@ export default async function DeskPolicyPage() {
                   defaultValue={current.reminderWindowHours}
                   className="min-h-11 w-32 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
                 />
-                <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+                <p className="max-w-prose text-base leading-relaxed text-ink-muted">
                   One reminder may be written this many hours before a covered
                   time.
                 </p>
@@ -464,7 +464,7 @@ export default async function DeskPolicyPage() {
                   defaultValue={current.callThresholdHours}
                   className="min-h-11 w-32 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
                 />
-                <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+                <p className="max-w-prose text-base leading-relaxed text-ink-muted">
                   Times nobody has taken yet appear on the desk this many
                   hours before a time starts. A bigger number means the church sees it earlier; a
                   smaller number means later.
@@ -488,7 +488,7 @@ export default async function DeskPolicyPage() {
                   defaultValue={current.callAfterOpenHours}
                   className="min-h-11 w-32 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
                 />
-                <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
+                <p className="max-w-prose text-base leading-relaxed text-ink-muted">
                   If a time is still untaken this many hours after it was
                   posted, a person picks up the phone. A bigger number means a
                   later call.
@@ -512,7 +512,7 @@ export default async function DeskPolicyPage() {
                 />
                 <p
                   id="policy-loosen-help"
-                  className="max-w-prose text-sm leading-relaxed text-ink"
+                  className="max-w-prose text-base leading-relaxed text-ink"
                 >
                   If either clock gives the church less notice — a smaller
                   first number, or a larger second number — type{" "}
@@ -552,7 +552,7 @@ export default async function DeskPolicyPage() {
               <p
                 id="policy-auto-publish-help"
                 data-testid="policy-auto-publish-help"
-                className="max-w-prose text-sm leading-relaxed text-ink"
+                className="max-w-prose text-base leading-relaxed text-ink"
               >
                 {AUTO_PUBLISH_RULES_COPY} It is off by default. Turning it on or
                 off is saved with this version, your name, and a line in the
@@ -560,7 +560,7 @@ export default async function DeskPolicyPage() {
               </p>
               <p
                 data-testid="policy-auto-publish-state"
-                className="max-w-prose text-sm leading-relaxed text-ink-muted"
+                className="max-w-prose text-base leading-relaxed text-ink-muted"
               >
                 This version is {current.autoPublishLowRisk ? "on" : "off"}.
                 Saving creates version {nextVersion}; the switch only matters
@@ -593,7 +593,7 @@ export default async function DeskPolicyPage() {
               />
               <p
                 id="policy-signoff-help"
-                className="max-w-prose text-sm leading-relaxed text-ink-muted"
+                className="max-w-prose text-base leading-relaxed text-ink-muted"
               >
                 A named person signs every version. Leaving this blank is
                 refused and saves nothing: publishing is blocked while unsigned.

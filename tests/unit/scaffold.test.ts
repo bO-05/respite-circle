@@ -139,9 +139,12 @@ describe("design tokens", () => {
     expect(theme).toContain("--text-base--line-height: 1.6;");
   });
 
-  it("declares a system serif heading stack and a sans body stack", () => {
-    expect(theme).toContain("--font-serif:");
-    expect(theme).toContain("--font-sans:");
+  it("puts the vendored Fraunces and Source Sans 3 first in the two stacks", () => {
+    expect(theme).toContain("--font-serif: var(--font-fraunces),");
+    expect(theme).toContain("--font-sans: var(--font-source-sans),");
+    // The system faces stay behind the vendored family as the swap fallback.
+    expect(theme).toContain("ui-serif, georgia");
+    expect(theme).toContain("ui-sans-serif, system-ui");
     expect(css).not.toContain("next/font/google");
   });
 });

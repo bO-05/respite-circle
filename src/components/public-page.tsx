@@ -27,7 +27,7 @@ export function PublicPage({
       className={width === "wide" ? "max-w-5xl py-16" : "py-16"}
     >
       {eyebrow ? (
-        <p className="text-base font-semibold uppercase tracking-wide text-accent">
+        <p className="font-serif italic font-medium text-[17px] text-accent">
           {eyebrow}
         </p>
       ) : null}

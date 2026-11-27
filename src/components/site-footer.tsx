@@ -17,7 +17,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-line bg-paper">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-5 py-8 sm:px-6">
-        <p className="max-w-prose text-base leading-relaxed text-ink-muted">
+        <p className="max-w-prose text-base leading-relaxed tabular-nums text-ink-muted">
           If someone is in danger, call{" "}
           <a
             href="tel:911"

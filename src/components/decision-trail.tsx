@@ -81,7 +81,7 @@ export function DecisionTrail({
 
       <p
         data-testid="trail-revision"
-        className="mt-2 max-w-prose text-base leading-relaxed text-ink"
+        className="mt-2 max-w-prose text-base leading-relaxed tabular-nums text-ink"
       >
         {revisionTrailSentence(revisionNumber, revisionCount)}
       </p>
@@ -158,7 +158,13 @@ export function DecisionTrail({
                 </p>
               ) : null}
 
-              <p className="mt-1 text-base text-ink-muted">
+              {/*
+                The receipt's numerals — the confidence percentage, the
+                revision count, the latency, the policy version — are set in
+                the sans with tabular figures so a caregiver can compare two
+                answers without the digits shifting under them.
+              */}
+              <p className="mt-1 text-base tabular-nums text-ink-muted">
                 {row.holdSource === "rule"
                   ? RULE_CONFIDENCE_LABEL
                   : CONFIDENCE_LABEL}
@@ -178,7 +184,7 @@ export function DecisionTrail({
       {run ? (
         <p
           data-testid="trail-run-metadata"
-          className="mt-4 max-w-prose text-base leading-relaxed text-ink"
+          className="mt-4 max-w-prose text-base leading-relaxed tabular-nums text-ink"
         >
           Model <strong>{run.model}</strong> · Provider{" "}
           <strong>{run.provider}</strong> · Latency{" "}
@@ -189,7 +195,7 @@ export function DecisionTrail({
       {policyVersion !== null ? (
         <p
           data-testid="trail-policy"
-          className="mt-1 text-base leading-relaxed text-ink-muted"
+          className="mt-1 text-base leading-relaxed tabular-nums text-ink-muted"
         >
           Church promises, policy version {policyVersion}
         </p>

@@ -157,7 +157,7 @@ export function DeskQueueSection({
           {safety ? (
             <p
               data-testid="desk-safety-first"
-              className="text-base font-semibold uppercase tracking-wider text-ink"
+              className="font-serif italic font-medium text-[17px] text-accent"
             >
               First on this desk
             </p>

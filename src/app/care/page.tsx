@@ -176,7 +176,7 @@ export default async function CarePage({
               >
                 <p
                   data-testid="care-confirmation-when"
-                  className="text-xl leading-relaxed text-ink"
+                  className="text-xl leading-relaxed tabular-nums text-ink"
                 >
                   {formatWindowLabel(
                     confirmation.windowStart,
@@ -196,7 +196,7 @@ export default async function CarePage({
                 >
                   {confirmation.body}
                 </blockquote>
-                <p className="mt-3 text-base text-ink-muted">
+                <p className="mt-3 text-base tabular-nums text-ink-muted">
                   Received in the app on{" "}
                   {formatWindowLabel(
                     confirmation.createdAt,
@@ -283,7 +283,7 @@ export default async function CarePage({
               >
                 <p
                   data-testid="care-reminder-when"
-                  className="text-xl leading-relaxed text-ink"
+                  className="text-xl leading-relaxed tabular-nums text-ink"
                 >
                   {formatWindowLabel(
                     reminder.windowStart,
@@ -300,7 +300,7 @@ export default async function CarePage({
                 >
                   {reminder.body}
                 </blockquote>
-                <p className="mt-3 text-base text-ink-muted">
+                <p className="mt-3 text-base tabular-nums text-ink-muted">
                   Received in the app on{" "}
                   {formatWindowLabel(
                     reminder.createdAt,

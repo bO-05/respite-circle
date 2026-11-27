@@ -53,7 +53,7 @@ export default function GlobalError({
           tabIndex={-1}
           className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 py-16 sm:px-6"
         >
-          <p className="text-base font-semibold uppercase tracking-wide text-accent">
+          <p className="font-serif italic font-medium text-[17px] text-accent">
             Something went wrong
           </p>
           <h1 className="mt-2 font-serif text-4xl leading-tight text-ink">
