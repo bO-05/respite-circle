@@ -115,7 +115,7 @@ export function MyClaimVisitPanel({
               <input type="hidden" name="action" value="check_out" />
               <button
                 type="submit"
-                className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-line bg-surface px-5 py-2 text-lg font-semibold text-ink"
+                className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-boundary bg-surface px-5 py-2 text-lg font-semibold text-ink"
               >
                 Check out
               </button>

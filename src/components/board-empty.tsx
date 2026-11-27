@@ -39,7 +39,7 @@ export function BoardEmpty({
       {empty.href && empty.linkLabel ? (
         <Link
           href={empty.href}
-          className="mt-3 inline-flex min-h-11 items-center rounded-md border border-line bg-paper px-4 text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+          className="mt-3 inline-flex min-h-11 items-center rounded-md border border-boundary bg-paper px-4 text-base font-semibold text-ink underline decoration-accent underline-offset-4"
         >
           {empty.linkLabel}
         </Link>

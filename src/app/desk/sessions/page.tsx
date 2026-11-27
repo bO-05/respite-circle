@@ -267,7 +267,7 @@ export default async function DeskSessionsPage() {
 
       <Link
         href="/desk"
-        className="inline-flex min-h-11 w-fit items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink"
+        className="inline-flex min-h-11 w-fit items-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink"
       >
         Back to the desk
       </Link>

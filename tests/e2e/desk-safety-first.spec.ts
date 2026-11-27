@@ -48,7 +48,7 @@ const WAITING_WORDS =
   "A Tuesday morning would help. She loves hymns and tea, and she naps after lunch.";
 
 const AMBER_SOFT = "rgb(253, 240, 213)";
-const AMBER = "rgb(168, 106, 18)";
+const AMBER = "rgb(138, 85, 16)";
 
 const EVIDENCE_DIR = path.join(
   process.cwd(),

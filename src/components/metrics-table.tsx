@@ -47,7 +47,7 @@ export function MetricsRangeForm({ range }: { range: MetricsRange }) {
             name="from"
             type="date"
             defaultValue={range.from}
-            className="min-h-11 w-full rounded-md border border-line bg-paper px-3 py-2 text-lg text-ink"
+            className="min-h-11 w-full rounded-md border border-boundary bg-paper px-3 py-2 text-lg text-ink"
           />
         </div>
 
@@ -63,7 +63,7 @@ export function MetricsRangeForm({ range }: { range: MetricsRange }) {
             name="to"
             type="date"
             defaultValue={range.to}
-            className="min-h-11 w-full rounded-md border border-line bg-paper px-3 py-2 text-lg text-ink"
+            className="min-h-11 w-full rounded-md border border-boundary bg-paper px-3 py-2 text-lg text-ink"
           />
         </div>
       </div>

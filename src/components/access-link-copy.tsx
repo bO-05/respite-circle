@@ -71,7 +71,7 @@ export function AccessLinkCopy({
         data-person-first-name={firstName}
         onFocus={(event) => event.currentTarget.select()}
         aria-describedby={statusId}
-        className="min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-ink"
+        className="min-h-11 w-full rounded-md border border-boundary bg-surface px-3 py-2 text-base text-ink"
       />
       <div className="flex flex-wrap items-center gap-3">
         <button

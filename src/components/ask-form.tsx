@@ -410,7 +410,7 @@ export function AskForm({
           aria-invalid={textError ? true : undefined}
           aria-describedby={textDescribedBy}
           rows={9}
-          className="min-h-48 w-full rounded-md border border-line bg-surface px-4 py-3 text-xl leading-relaxed text-ink"
+          className="min-h-48 w-full rounded-md border border-boundary bg-surface px-4 py-3 text-xl leading-relaxed text-ink"
           placeholder="For example: the nights are long, and I haven't had a morning to myself since March."
         />
         <p className="text-base text-ink-muted">
@@ -485,7 +485,7 @@ export function AskForm({
                 type="button"
                 onClick={() => applySample(sample.body)}
                 data-refusal-example={sample.supported ? undefined : "true"}
-                className="inline-flex min-h-11 w-full items-center rounded-md border border-line bg-surface px-4 py-3 text-left text-base font-semibold text-ink hover:bg-accent-soft"
+                className="inline-flex min-h-11 w-full items-center rounded-md border border-boundary bg-surface px-4 py-3 text-left text-base font-semibold text-ink hover:bg-accent-soft"
               >
                 Use the example: {sample.title}
               </button>
@@ -517,7 +517,7 @@ export function AskForm({
             aria-describedby={
               consentError ? `${CONSENT_HELP_ID} ${CONSENT_ERROR_ID}` : CONSENT_HELP_ID
             }
-            className="mt-1 h-11 w-11 shrink-0 rounded border-line accent-accent"
+            className="mt-1 h-11 w-11 shrink-0 rounded border-boundary accent-accent"
           />
           <span>{consentSentence(coordinatorFirstName)}</span>
         </label>

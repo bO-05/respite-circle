@@ -129,7 +129,7 @@ const CONTRAST_FN = `
     };
     const backgroundOf = (el) => {
       let node = el;
-      let result = [250, 246, 240, 1];
+      let result = [239, 236, 228, 1];
       const stack = [];
       while (node) {
         const bg = channels(getComputedStyle(node).backgroundColor);

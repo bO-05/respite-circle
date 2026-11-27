@@ -142,7 +142,7 @@ export function InviteComposer({
           value={selectedId}
           onChange={(event) => chooseFamily(event.target.value)}
           aria-describedby={selectHelpId}
-          className="min-h-11 w-full max-w-xl rounded-md border border-line bg-paper px-3 py-2 text-lg text-ink"
+          className="min-h-11 w-full max-w-xl rounded-md border border-boundary bg-paper px-3 py-2 text-lg text-ink"
           required
         >
           {families.map((family) => (
@@ -178,7 +178,7 @@ export function InviteComposer({
           }}
           aria-describedby={`${bodyHelpId} ${countId}`}
           rows={7}
-          className="w-full max-w-prose rounded-md border border-line bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
+          className="w-full max-w-prose rounded-md border border-boundary bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
           required
         />
         <p

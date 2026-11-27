@@ -202,7 +202,7 @@ export default async function DeskPolicyPage() {
                       name="promise"
                       defaultValue={promise}
                       rows={3}
-                      className="w-full max-w-prose rounded-md border border-line bg-paper px-3 py-2 text-base leading-relaxed text-ink"
+                      className="w-full max-w-prose rounded-md border border-boundary bg-paper px-3 py-2 text-base leading-relaxed text-ink"
                     />
                   </div>
                 );
@@ -219,7 +219,7 @@ export default async function DeskPolicyPage() {
                   name="promise"
                   defaultValue=""
                   rows={2}
-                  className="w-full max-w-prose rounded-md border border-line bg-paper px-3 py-2 text-base leading-relaxed text-ink"
+                  className="w-full max-w-prose rounded-md border border-boundary bg-paper px-3 py-2 text-base leading-relaxed text-ink"
                 />
               </div>
             </section>
@@ -255,7 +255,7 @@ export default async function DeskPolicyPage() {
                       name={`question.${question.id}`}
                       defaultValue={question.text}
                       rows={3}
-                      className="w-full max-w-prose rounded-md border border-line bg-paper px-3 py-2 text-base leading-relaxed text-ink"
+                      className="w-full max-w-prose rounded-md border border-boundary bg-paper px-3 py-2 text-base leading-relaxed text-ink"
                     />
                     <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
                       {question.answerType === "yesno"
@@ -293,7 +293,7 @@ export default async function DeskPolicyPage() {
                   name="crisisScript"
                   defaultValue={current.crisisScript}
                   rows={6}
-                  className="w-full max-w-prose rounded-md border border-line bg-paper px-3 py-2 text-base leading-relaxed text-ink"
+                  className="w-full max-w-prose rounded-md border border-boundary bg-paper px-3 py-2 text-base leading-relaxed text-ink"
                 />
               </div>
               <div className="flex flex-col gap-1">
@@ -308,7 +308,7 @@ export default async function DeskPolicyPage() {
                   name="localCrisisLine"
                   type="text"
                   defaultValue={current.localCrisisLine ?? ""}
-                  className="min-h-11 w-full max-w-prose rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+                  className="min-h-11 w-full max-w-prose rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
                 />
                 <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
                   The church&apos;s own line and the hours a person answers it.
@@ -355,7 +355,7 @@ export default async function DeskPolicyPage() {
                         name="referralName"
                         type="text"
                         defaultValue={resource.name}
-                        className="min-h-11 w-full max-w-prose rounded-md border border-line bg-surface px-3 py-2 text-base text-ink"
+                        className="min-h-11 w-full max-w-prose rounded-md border border-boundary bg-surface px-3 py-2 text-base text-ink"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
@@ -370,7 +370,7 @@ export default async function DeskPolicyPage() {
                         name="referralDetail"
                         defaultValue={resource.detail}
                         rows={2}
-                        className="w-full max-w-prose rounded-md border border-line bg-surface px-3 py-2 text-base leading-relaxed text-ink"
+                        className="w-full max-w-prose rounded-md border border-boundary bg-surface px-3 py-2 text-base leading-relaxed text-ink"
                       />
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -386,7 +386,7 @@ export default async function DeskPolicyPage() {
                           name="referralPhone"
                           type="text"
                           defaultValue={resource.phone}
-                          className="min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-ink"
+                          className="min-h-11 w-full rounded-md border border-boundary bg-surface px-3 py-2 text-base text-ink"
                         />
                       </div>
                       <div className="flex flex-col gap-1">
@@ -401,7 +401,7 @@ export default async function DeskPolicyPage() {
                           name="referralUrl"
                           type="text"
                           defaultValue={resource.url}
-                          className="min-h-11 w-full rounded-md border border-line bg-surface px-3 py-2 text-base text-ink"
+                          className="min-h-11 w-full rounded-md border border-boundary bg-surface px-3 py-2 text-base text-ink"
                         />
                       </div>
                     </div>
@@ -439,7 +439,7 @@ export default async function DeskPolicyPage() {
                   step={1}
                   inputMode="numeric"
                   defaultValue={current.reminderWindowHours}
-                  className="min-h-11 w-32 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+                  className="min-h-11 w-32 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
                 />
                 <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
                   One reminder may be written this many hours before a covered
@@ -462,7 +462,7 @@ export default async function DeskPolicyPage() {
                   step={1}
                   inputMode="numeric"
                   defaultValue={current.callThresholdHours}
-                  className="min-h-11 w-32 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+                  className="min-h-11 w-32 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
                 />
                 <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
                   Times nobody has taken yet appear on the desk this many
@@ -486,7 +486,7 @@ export default async function DeskPolicyPage() {
                   step={1}
                   inputMode="numeric"
                   defaultValue={current.callAfterOpenHours}
-                  className="min-h-11 w-32 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+                  className="min-h-11 w-32 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
                 />
                 <p className="max-w-prose text-sm leading-relaxed text-ink-muted">
                   If a time is still untaken this many hours after it was
@@ -508,7 +508,7 @@ export default async function DeskPolicyPage() {
                   type="text"
                   autoComplete="off"
                   aria-describedby="policy-loosen-help"
-                  className="min-h-11 w-full max-w-xs rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+                  className="min-h-11 w-full max-w-xs rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
                 />
                 <p
                   id="policy-loosen-help"
@@ -540,7 +540,7 @@ export default async function DeskPolicyPage() {
                   value="on"
                   defaultChecked={current.autoPublishLowRisk}
                   aria-describedby="policy-auto-publish-help"
-                  className="mt-1 h-11 w-11 shrink-0 rounded border border-line bg-surface"
+                  className="mt-1 h-11 w-11 shrink-0 rounded border border-boundary bg-surface"
                 />
                 <label
                   htmlFor="policy-auto-publish"
@@ -589,7 +589,7 @@ export default async function DeskPolicyPage() {
                 autoComplete="name"
                 aria-required="true"
                 aria-describedby="policy-signoff-help"
-                className="min-h-11 w-full max-w-prose rounded-md border border-line bg-surface px-3 py-2 text-base text-ink"
+                className="min-h-11 w-full max-w-prose rounded-md border border-boundary bg-surface px-3 py-2 text-base text-ink"
               />
               <p
                 id="policy-signoff-help"

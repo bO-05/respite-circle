@@ -88,13 +88,13 @@ export default async function DeskAuditPage({
           <div className="mt-4 flex flex-wrap gap-4">
             <Link
               href="/desk"
-              className="inline-flex min-h-11 items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+              className="inline-flex min-h-11 items-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink underline decoration-accent underline-offset-4"
             >
               Back to the desk
             </Link>
             <Link
               href="/desk/invite"
-              className="inline-flex min-h-11 items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink underline decoration-accent underline-offset-4"
+              className="inline-flex min-h-11 items-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink underline decoration-accent underline-offset-4"
             >
               Invite a family by name
             </Link>

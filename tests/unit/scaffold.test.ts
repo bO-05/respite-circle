@@ -113,13 +113,14 @@ describe("design tokens", () => {
   const theme = /@theme\s*\{([\s\S]*?)\}/.exec(css)?.[1] ?? "";
 
   const tokens: Record<string, string> = {
-    paper: "#faf6f0",
-    ink: "#2b2622",
-    accent: "#b4552d",
-    green: "#2e7d4f",
-    amber: "#a86a12",
-    muted: "#f2ece4",
-    line: "#e7ddd0",
+    paper: "#efece4",
+    ink: "#1f2420",
+    accent: "#2f5d45",
+    green: "#2f5d45",
+    amber: "#8a5510",
+    muted: "#e8e4da",
+    line: "#c9c3b4",
+    boundary: "#7d776a",
   };
 
   it("imports Tailwind", () => {

@@ -98,7 +98,7 @@ export function RevokeClaimForm({ slotId }: { slotId: string }) {
         required
         aria-invalid={reasonError || undefined}
         aria-describedby={reasonError ? `${hintId} ${errorId}` : hintId}
-        className="w-full max-w-prose rounded-md border border-line bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
+        className="w-full max-w-prose rounded-md border border-boundary bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
       />
       <div id={errorId}>
         <Feedback state={state} testId="revoke-claim-feedback" />
@@ -108,7 +108,7 @@ export function RevokeClaimForm({ slotId }: { slotId: string }) {
         type="submit"
         data-testid="revoke-claim"
         disabled={pending}
-        className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-line bg-surface px-5 py-2 text-lg font-semibold text-ink disabled:opacity-60"
+        className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-boundary bg-surface px-5 py-2 text-lg font-semibold text-ink disabled:opacity-60"
       >
         {pending ? "Taking the claim back…" : "Take this claim back"}
       </button>

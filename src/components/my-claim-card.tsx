@@ -65,7 +65,7 @@ export function MyClaimCard({
       footer={
         <Link
           href={`/my-claims/${claim.id}`}
-          className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-line bg-paper px-5 py-2 text-lg font-semibold text-ink underline decoration-accent underline-offset-4"
+          className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-boundary bg-paper px-5 py-2 text-lg font-semibold text-ink underline decoration-accent underline-offset-4"
         >
           View this time
         </Link>

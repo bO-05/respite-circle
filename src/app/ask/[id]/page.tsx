@@ -317,7 +317,7 @@ export default async function AskReceiptPage({
           <Link
             href="/ask"
             data-testid="receipt-another-week"
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink sm:w-auto"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink sm:w-auto"
           >
             Tell us about another week
           </Link>

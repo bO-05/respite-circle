@@ -132,7 +132,7 @@ export function DemoResetForm() {
           value={token}
           onChange={(event) => setToken(event.target.value)}
           aria-describedby="demo-reset-token-help"
-          className="min-h-11 w-full max-w-prose rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+          className="min-h-11 w-full max-w-prose rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
         />
         <p
           id="demo-reset-token-help"

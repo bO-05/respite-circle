@@ -179,7 +179,7 @@ export function DraftSlotCard({
               name="kind"
               data-testid="draft-kind"
               defaultValue={values?.kind ?? slot.kind}
-              className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+              className="min-h-11 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
               aria-describedby={
                 fieldError("kind") ? `${slot.id}-kind-error` : undefined
               }
@@ -221,7 +221,7 @@ export function DraftSlotCard({
               type="text"
               maxLength={120}
               defaultValue={values?.label ?? slot.label}
-              className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+              className="min-h-11 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
               aria-describedby={
                 fieldError("label") ? `${slot.id}-label-error` : undefined
               }
@@ -249,7 +249,7 @@ export function DraftSlotCard({
               data-testid="draft-window-start"
               type="datetime-local"
               defaultValue={values?.windowStart ?? slot.windowStartLocal}
-              className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+              className="min-h-11 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
               aria-describedby={
                 fieldError("window") ? `${slot.id}-window-error` : undefined
               }
@@ -269,7 +269,7 @@ export function DraftSlotCard({
               data-testid="draft-window-end"
               type="datetime-local"
               defaultValue={values?.windowEnd ?? slot.windowEndLocal}
-              className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+              className="min-h-11 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
               aria-describedby={
                 fieldError("window") ? `${slot.id}-window-error` : undefined
               }
@@ -297,7 +297,7 @@ export function DraftSlotCard({
             data-testid="draft-gated-flag"
             type="checkbox"
             defaultChecked={values?.gated ?? slot.gated}
-            className="mt-1 size-11 rounded border border-line"
+            className="mt-1 size-11 rounded border border-boundary"
           />
           <label htmlFor={`${slot.id}-gated`} className="text-base text-ink">
             Needs the in-home checks or the driver policy before anyone can take
@@ -319,7 +319,7 @@ export function DraftSlotCard({
             rows={5}
             maxLength={2_000}
             defaultValue={values?.orientationNote ?? slot.orientationNote}
-            className="rounded-md border border-line bg-paper px-3 py-2 text-base leading-relaxed text-ink"
+            className="rounded-md border border-boundary bg-paper px-3 py-2 text-base leading-relaxed text-ink"
             aria-describedby={
               fieldError("orientationNote")
                 ? `${slot.id}-orientation-error`
@@ -350,7 +350,7 @@ export function DraftSlotCard({
               data-testid="draft-hold-reason"
               type="text"
               maxLength={500}
-              className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+              className="min-h-11 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
               aria-describedby={
                 fieldError("reason") ? `${slot.id}-hold-error` : undefined
               }
@@ -394,7 +394,7 @@ export function DraftSlotCard({
               value="release"
               data-testid="draft-release"
               disabled={pending}
-              className="inline-flex min-h-11 items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
+              className="inline-flex min-h-11 items-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
             >
               Resolve the hold
             </button>
@@ -405,7 +405,7 @@ export function DraftSlotCard({
               value="hold"
               data-testid="draft-hold-submit"
               disabled={pending}
-              className="inline-flex min-h-11 items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
+              className="inline-flex min-h-11 items-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
             >
               Hold this draft
             </button>
@@ -417,7 +417,7 @@ export function DraftSlotCard({
             value="remove"
             data-testid="draft-remove"
             disabled={pending}
-            className="inline-flex min-h-11 items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
+            className="inline-flex min-h-11 items-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
           >
             Remove this draft
           </button>
@@ -458,7 +458,7 @@ export function AddDraftForm({
           name="kind"
           data-testid="draft-add-kind"
           defaultValue="meal"
-          className="min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-base text-ink"
+          className="min-h-11 rounded-md border border-boundary bg-paper px-3 py-2 text-base text-ink"
         >
           {KIND_OPTIONS.map((option) => (
             <option
@@ -484,7 +484,7 @@ export function AddDraftForm({
         type="submit"
         data-testid="draft-add-submit"
         disabled={pending}
-        className="inline-flex min-h-11 w-fit items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
+        className="inline-flex min-h-11 w-fit items-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
       >
         {pending ? "Adding…" : "Add this draft"}
       </button>

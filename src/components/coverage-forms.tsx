@@ -108,7 +108,7 @@ export function CoverageCallForm({ slotId }: { slotId: string }) {
         maxLength={COVERAGE_NOTE_MAX_LENGTH}
         defaultValue={state.values?.note ?? ""}
         aria-describedby={noteError ? `${hintId} ${errorId}` : hintId}
-        className="w-full max-w-prose rounded-md border border-line bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
+        className="w-full max-w-prose rounded-md border border-boundary bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
       />
 
       <button
@@ -157,7 +157,7 @@ export function CoverageReofferForm({
         type="submit"
         data-testid="coverage-reoffer"
         disabled={pending}
-        className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-line bg-surface px-5 py-2 text-lg font-semibold text-ink disabled:opacity-60"
+        className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-boundary bg-surface px-5 py-2 text-lg font-semibold text-ink disabled:opacity-60"
       >
         {pending ? "Offering the time again…" : "Offer this time to the congregation again"}
       </button>
@@ -183,7 +183,7 @@ export function CoverageExpireForm({ slotId }: { slotId: string }) {
         type="submit"
         data-testid="coverage-expire"
         disabled={pending}
-        className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-line bg-surface px-5 py-2 text-lg font-semibold text-ink disabled:opacity-60"
+        className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-boundary bg-surface px-5 py-2 text-lg font-semibold text-ink disabled:opacity-60"
       >
         {pending
           ? "Closing the time…"

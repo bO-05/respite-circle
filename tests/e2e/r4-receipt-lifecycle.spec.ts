@@ -155,7 +155,7 @@ test.describe("VAL-R4VIS-006 — the receipt shows progress without losing its c
       (element) => getComputedStyle(element).backgroundColor,
     );
     expect(currentBg, "the current stage is accent-soft").toBe(
-      "rgb(247, 227, 215)",
+      "rgb(226, 238, 230)",
     );
 
     const careLabels = await stageLabels(careRow);

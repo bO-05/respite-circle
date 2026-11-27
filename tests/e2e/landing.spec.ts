@@ -24,7 +24,7 @@ test("VAL-TRUST-005 and VAL-FOUND-005 — landing page serves the design system 
     const style = getComputedStyle(document.body);
     return { background: style.backgroundColor, fontSize: style.fontSize };
   });
-  expect(surface.background).toBe("rgb(250, 246, 240)");
+  expect(surface.background).toBe("rgb(239, 236, 228)");
   expect(surface.fontSize).toBe("18px");
 
   await page.screenshot({

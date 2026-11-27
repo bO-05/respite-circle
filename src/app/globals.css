@@ -15,23 +15,24 @@
   theme: this surface stays calm and readable for tired, older eyes.
 */
 @theme {
-  --color-paper: #faf6f0;
-  --color-surface: #fffcf8;
-  --color-ink: #2b2622;
-  --color-ink-muted: #6b615a;
-  --color-muted: #f2ece4;
-  --color-muted-foreground: #6b615a;
-  --color-accent: #b4552d;
-  --color-accent-soft: #f7e3d7;
-  --color-accent-foreground: #fffaf5;
-  --color-green: #2e7d4f;
-  --color-green-soft: #e2f2e7;
-  --color-amber: #a86a12;
+  --color-paper: #efece4;
+  --color-surface: #f7f4ec;
+  --color-ink: #1f2420;
+  --color-ink-muted: #5c6158;
+  --color-muted: #e8e4da;
+  --color-muted-foreground: #5c6158;
+  --color-accent: #2f5d45;
+  --color-accent-soft: #e2eee6;
+  --color-accent-foreground: #f6f8f4;
+  --color-green: #2f5d45;
+  --color-green-soft: #e2eee6;
+  --color-amber: #8a5510;
   --color-amber-soft: #fdf0d5;
-  --color-red: #b3372e;
-  --color-red-soft: #fbe7e4;
-  --color-line: #e7ddd0;
-  --color-focus: #b4552d;
+  --color-red: #8f3d32;
+  --color-red-soft: #f3e6e2;
+  --color-line: #c9c3b4;
+  --color-boundary: #7d776a;
+  --color-focus: #2f5d45;
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
@@ -65,7 +66,7 @@
   --color-secondary-foreground: var(--color-ink);
   --color-destructive: var(--color-red);
   --color-border: var(--color-line);
-  --color-input: var(--color-line);
+  --color-input: var(--color-boundary);
   --color-ring: var(--color-accent);
   --font-heading: var(--font-serif);
 }
@@ -115,7 +116,7 @@
     min-height: 2.75rem;
     align-items: center;
     border-radius: var(--radius-md);
-    border: 1px solid var(--color-line);
+    border: 1px solid var(--color-boundary);
     background: var(--color-surface);
     padding: 0 1.25rem;
     color: var(--color-ink);

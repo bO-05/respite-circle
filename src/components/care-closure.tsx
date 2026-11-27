@@ -74,12 +74,12 @@ export function CareClosure({
             rows={3}
             maxLength={THANK_YOU_MAX_LENGTH}
             aria-describedby={`care-thank-you-help-${slotId}`}
-            className="max-w-prose rounded-md border border-line bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
+            className="max-w-prose rounded-md border border-boundary bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
           />
           <button
             type="submit"
             data-testid="care-thank-you-submit"
-            className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-line bg-surface px-5 py-2 text-lg font-semibold text-ink"
+            className="inline-flex min-h-11 min-w-11 w-fit touch-manipulation items-center justify-center rounded-md border border-boundary bg-surface px-5 py-2 text-lg font-semibold text-ink"
           >
             Keep this thank-you
           </button>

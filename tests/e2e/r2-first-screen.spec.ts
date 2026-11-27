@@ -20,7 +20,7 @@ import {
  */
 
 const FOLD = 800;
-const ACCENT = "rgb(180, 85, 45)";
+const ACCENT = "rgb(47, 93, 69)";
 const EVIDENCE_DIR = path.join(
   process.cwd(),
   ".research",

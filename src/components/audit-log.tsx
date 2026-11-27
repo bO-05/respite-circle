@@ -65,7 +65,7 @@ export function AuditFilterForm({
             id="audit-entity"
             name="entity"
             defaultValue={filter.entity ?? ""}
-            className="min-h-11 w-full rounded-md border border-line bg-paper px-3 py-2 text-lg text-ink"
+            className="min-h-11 w-full rounded-md border border-boundary bg-paper px-3 py-2 text-lg text-ink"
           >
             <option value="">Every kind of action</option>
             {options.entities.map((entity) => (
@@ -87,7 +87,7 @@ export function AuditFilterForm({
             id="audit-actor"
             name="actor"
             defaultValue={auditActorFilterValue(filter.actor)}
-            className="min-h-11 w-full rounded-md border border-line bg-paper px-3 py-2 text-lg text-ink"
+            className="min-h-11 w-full rounded-md border border-boundary bg-paper px-3 py-2 text-lg text-ink"
           >
             <option value="all">Everyone</option>
             <option value="ai">The AI ({options.aiCount})</option>

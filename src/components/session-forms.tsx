@@ -120,7 +120,7 @@ export function RestoreSessionForm({
         type="submit"
         data-testid={`session-restore-${sessionId}`}
         disabled={pending}
-        className="inline-flex min-h-11 w-fit items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
+        className="inline-flex min-h-11 w-fit items-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
       >
         {pending ? "Restoring…" : `Put ${dateLabel} back on the calendar`}
       </button>
@@ -146,7 +146,7 @@ export function MarkCalledForm({ slotId }: { slotId: string }) {
         type="submit"
         data-testid={`call-task-done-${slotId}`}
         disabled={pending}
-        className="inline-flex min-h-11 w-fit items-center rounded-md border border-line bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
+        className="inline-flex min-h-11 w-fit items-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink disabled:opacity-60"
       >
         {pending ? "Recording…" : "I called this family"}
       </button>
