@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Handshake, PenLine, Phone, UserCheck } from "lucide-react";
+import { Phone } from "lucide-react";
 import { PageMain } from "@/components/page-main";
 import { ProcessStrip, type ProcessStep } from "@/components/process-strip";
 import { IconWell } from "@/components/visual-primitives";
@@ -23,17 +23,14 @@ export const metadata: Metadata = {
  */
 const STEPS: readonly ProcessStep[] = [
   {
-    icon: PenLine,
     title: "You write it in your own words",
     body: "Type it or say it. Your words are kept exactly as you wrote them, and they stay with the person who reads them.",
   },
   {
-    icon: UserCheck,
     title: "A person approves what is offered",
     body: "A named coordinator reads every word and decides what, if anything, is offered.",
   },
   {
-    icon: Handshake,
     title: "A neighbour takes a time",
     body: "They see a time and what it needs. They never see your words, your family's name, or the reason you asked.",
   },
@@ -95,7 +92,7 @@ export default function HomePage() {
             data-primary-action
             className={
               demoMode
-                ? "inline-flex min-h-11 w-full items-center justify-center rounded-md border border-ink/50 bg-surface px-5 py-2 text-base font-semibold text-ink sm:w-auto"
+                ? "inline-flex min-h-11 w-full items-center justify-center rounded-md border border-boundary bg-surface px-5 py-2 text-base font-semibold text-ink sm:w-auto"
                 : "inline-flex min-h-11 w-full items-center justify-center rounded-md bg-accent px-5 py-2 text-base font-semibold text-accent-foreground sm:w-auto"
             }
           >
@@ -113,12 +110,15 @@ export default function HomePage() {
       */}
       <section
         aria-label="Three steps from an ask to a time"
-        className="mt-10 sm:mt-14"
+        className="mt-10 border-t border-line pt-8 sm:mt-14 sm:pt-10"
       >
         <ProcessStrip steps={STEPS} />
       </section>
 
-      <section aria-labelledby="loop-heading" className="mt-8">
+      <section
+        aria-labelledby="loop-heading"
+        className="mt-10 border-t border-line pt-8"
+      >
         <h2
           id="loop-heading"
           className="font-serif text-2xl leading-tight text-ink"
@@ -150,7 +150,7 @@ export default function HomePage() {
       <section
         aria-labelledby="call-heading"
         data-testid="landing-call-request"
-        className="mt-6 rounded-lg border border-line bg-amber-soft p-5 sm:mt-8 sm:p-6"
+        className="mt-8 rounded-md border-t border-line bg-amber-soft p-5 sm:p-6"
       >
         <div className="flex items-start gap-4">
           <IconWell icon={Phone} tone="amber" />
@@ -178,7 +178,7 @@ export default function HomePage() {
       <section
         aria-labelledby="sample-heading"
         data-testid="landing-sample-receipt"
-        className="mt-8"
+        className="mt-8 border-t border-line pt-8"
       >
         <h2
           id="sample-heading"
@@ -186,7 +186,7 @@ export default function HomePage() {
         >
           {SAMPLE_RECEIPT_LABEL}
         </h2>
-        <div className="mt-3 rounded-lg border border-line bg-surface p-5">
+        <div className="mt-3 rounded-md border-t border-line bg-surface px-5 py-4">
           <blockquote className="border-l-2 border-line pl-4 font-serif text-lg leading-relaxed text-ink">
             {SAMPLE_RECEIPT.words}
           </blockquote>
@@ -211,7 +211,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <nav aria-label="More about Respite Circle" className="mt-8">
+      <nav
+        aria-label="More about Respite Circle"
+        className="mt-8 border-t border-line pt-6"
+      >
         <ul className="flex flex-wrap gap-x-6 gap-y-2">
           {TRUST_LINKS.map((link) => (
             <li key={link.href}>

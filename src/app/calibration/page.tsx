@@ -194,7 +194,7 @@ export default async function CalibrationPage() {
           <div>
             <dt className="text-base font-semibold text-ink">Live run</dt>
             <dd className="mt-1">
-              <code className="rounded bg-muted px-1.5 py-0.5 text-base text-ink">
+              <code className="rounded-sm bg-muted px-1.5 py-0.5 text-base text-ink">
                 {CALIBRATION_COMMANDS.live}
               </code>
               <span className="ml-2 text-base text-ink-muted">
@@ -207,7 +207,7 @@ export default async function CalibrationPage() {
               Deterministic baseline
             </dt>
             <dd className="mt-1">
-              <code className="rounded bg-muted px-1.5 py-0.5 text-base text-ink">
+              <code className="rounded-sm bg-muted px-1.5 py-0.5 text-base text-ink">
                 {CALIBRATION_COMMANDS["deterministic-baseline"]}
               </code>
               <span className="ml-2 text-base text-ink-muted">

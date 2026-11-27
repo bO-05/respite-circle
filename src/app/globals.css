@@ -55,10 +55,16 @@
   */
   --leading-relaxed: 1.6;
 
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  /*
+    Hall Light caps every surface at a 3px corner. The four names stay because
+    Tailwind classes key off them, but `lg` and `xl` no longer mean a softer
+    card: a notice sheet has square shoulders. `rounded-full` is still used
+    for pills, chips and the numbered step circle, which are not cards.
+  */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.1875rem;
+  --radius-lg: 0.1875rem;
+  --radius-xl: 0.1875rem;
 }
 
 /*

@@ -30,8 +30,8 @@ import type { DeskQueueItem } from "@/server/repositories/coordinator";
  */
 
 const PANEL: Record<QueueCategory, string> = {
-  safety: "rounded-xl border-2 border-amber bg-amber-soft p-5 sm:p-6",
-  personal_care: "rounded-lg border border-accent bg-accent-soft p-5",
+  safety: "rounded-md border-t-2 border-amber bg-amber-soft p-5 sm:p-6",
+  personal_care: "rounded-md border-t-2 border-accent bg-accent-soft p-5",
   waiting: "",
 };
 
@@ -64,7 +64,7 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
       data-category={item.category}
       data-bilingual={item.bilingualNeeded ? "true" : "false"}
       data-created-at={item.createdAt.toISOString()}
-      className="rounded-lg border border-line bg-surface p-4"
+      className="rounded-md border-t border-line bg-surface p-4"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <a
@@ -108,7 +108,7 @@ function QueueRow({ item, now }: { item: DeskQueueItem; now: Date }) {
       {item.holdReason ? (
         <p
           data-testid="desk-hold-reason"
-          className="mt-3 rounded-md border border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
+          className="mt-3 rounded-md border-t border-line bg-surface px-4 py-3 text-base leading-relaxed text-ink"
         >
           {item.holdReason}
         </p>

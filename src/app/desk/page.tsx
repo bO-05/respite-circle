@@ -62,7 +62,7 @@ export default async function DeskPage() {
         <section
           data-testid="desk-coverage-watch"
           aria-labelledby="desk-coverage-watch-heading"
-          className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-5"
+          className="flex flex-col gap-3 rounded-md border-t border-line bg-surface p-5"
         >
           <div>
             <h2
@@ -85,7 +85,7 @@ export default async function DeskPage() {
                 data-testid="desk-coverage-row"
                 data-slot-id={item.slotId}
                 data-messages={item.caregiverOutboxCount}
-                className="rounded-md border border-line bg-paper p-4"
+                className="rounded-md border-t border-line bg-paper p-4"
               >
                 <a
                   href={`/desk/slot/${item.slotId}`}
@@ -137,7 +137,7 @@ export default async function DeskPage() {
         <section
           data-testid="desk-pending-claims"
           aria-labelledby="desk-pending-claims-heading"
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-3 border-t border-line pt-6"
         >
           <div>
             <h2
@@ -159,7 +159,7 @@ export default async function DeskPage() {
                 key={claim.slotId}
                 data-testid="desk-pending-claim"
                 data-slot-id={claim.slotId}
-                className="rounded-lg border border-line bg-surface p-4"
+                className="rounded-md border-t border-line bg-surface p-4"
               >
                 <a
                   href={`/desk/slot/${claim.slotId}`}
@@ -195,7 +195,7 @@ export default async function DeskPage() {
         <section
           data-testid="desk-empty"
           aria-labelledby="desk-empty-heading"
-          className="rounded-lg border border-line bg-surface p-5"
+          className="rounded-md border-t border-line bg-surface p-5"
         >
           <IconWell icon={CalendarOff} tone="accent" />
           <h2

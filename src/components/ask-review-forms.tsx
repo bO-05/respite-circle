@@ -116,7 +116,7 @@ export function SendBackForm({ askId }: { askId: string }) {
         defaultValue={state.values?.note ?? ""}
         aria-invalid={noteError || undefined}
         aria-describedby={noteError ? `${hintId} ${errorId}` : hintId}
-        className="w-full max-w-prose rounded-md border border-line bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
+        className="w-full max-w-prose rounded-md border border-boundary bg-paper px-4 py-3 text-lg leading-relaxed text-ink"
       />
       <div id={errorId}>
         <Feedback state={state} testId="send-back-feedback" />

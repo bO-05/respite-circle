@@ -517,7 +517,7 @@ export function AskForm({
             aria-describedby={
               consentError ? `${CONSENT_HELP_ID} ${CONSENT_ERROR_ID}` : CONSENT_HELP_ID
             }
-            className="mt-1 h-11 w-11 shrink-0 rounded border-boundary accent-accent"
+            className="mt-1 h-11 w-11 shrink-0 rounded-sm border-boundary accent-accent"
           />
           <span>{consentSentence(coordinatorFirstName)}</span>
         </label>

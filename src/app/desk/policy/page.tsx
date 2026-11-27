@@ -540,7 +540,7 @@ export default async function DeskPolicyPage() {
                   value="on"
                   defaultChecked={current.autoPublishLowRisk}
                   aria-describedby="policy-auto-publish-help"
-                  className="mt-1 h-11 w-11 shrink-0 rounded border border-boundary bg-surface"
+                  className="mt-1 h-11 w-11 shrink-0 rounded-sm border border-boundary bg-surface"
                 />
                 <label
                   htmlFor="policy-auto-publish"

@@ -27,7 +27,7 @@ export function DateGroup({
       data-testid="date-group"
       data-date={day.key}
       aria-labelledby={headingId}
-      className="grid gap-3 md:grid-cols-[6.5rem_minmax(0,1fr)] md:gap-6"
+      className="grid gap-3 border-t border-line pt-5 first:border-t-0 first:pt-0 md:grid-cols-[6.5rem_minmax(0,1fr)] md:gap-6"
     >
       <div className="md:border-r md:border-line md:pr-4 md:pt-1">
         <h3 id={headingId} className="text-ink">

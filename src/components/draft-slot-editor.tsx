@@ -297,7 +297,7 @@ export function DraftSlotCard({
             data-testid="draft-gated-flag"
             type="checkbox"
             defaultChecked={values?.gated ?? slot.gated}
-            className="mt-1 size-11 rounded border border-boundary"
+            className="mt-1 size-11 rounded-sm border border-boundary"
           />
           <label htmlFor={`${slot.id}-gated`} className="text-base text-ink">
             Needs the in-home checks or the driver policy before anyone can take

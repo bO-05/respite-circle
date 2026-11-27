@@ -51,7 +51,7 @@ function Legend() {
               className="rounded-md border border-line bg-surface p-4"
             >
               <dt className="text-base font-semibold text-ink">
-                <code className="rounded bg-paper px-2 py-0.5 text-sm text-ink-muted">
+                <code className="rounded-sm bg-paper px-2 py-0.5 text-sm text-ink-muted">
                   {code}
                 </code>{" "}
                 {copy.title}
@@ -231,7 +231,7 @@ export function ExclusionPanelSection({
                     >
                       <code
                         data-testid="exclusion-rule-code"
-                        className="rounded bg-paper px-2 py-0.5 text-sm text-ink-muted"
+                        className="rounded-sm bg-paper px-2 py-0.5 text-sm text-ink-muted"
                       >
                         {row.ruleCode}
                       </code>{" "}

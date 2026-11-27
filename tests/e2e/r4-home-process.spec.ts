@@ -3,7 +3,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 /**
  * VAL-R4VIS-002 and the amended VAL-SHELL-001, measured on the rendered page.
  *
- * The home page shows the loop as a three-step strip with icon wells, says the
+ * The home page shows the loop as a three-step numbered rail, says the
  * meal exception once, shows the failure path as a call request that sends the
  * family nothing, and shows one sample receipt with three yes/no lines under a
  * neutral label. Nothing is added above the demo call to action, so the
@@ -162,9 +162,14 @@ test("VAL-R4VIS-002 — at 360x800 the demo action stays in the first screen and
   await shot(page, "home-360x800-first-fold");
 });
 
-test("VAL-R4VIS-001 and VAL-R4VIS-002 — every icon is 24px in a 48px well, decorative and beside its words", async ({
+test("VAL-R4VIS-001 and VAL-R4VIS-002 — the process strip is a numbered rail, not an icon well", async ({
   page,
 }) => {
+  // VAL-R4VIS-001 is scoped to `5a41898..3d76358` (validation-contract.md):
+  // round 5 superseded the round-4 icon-well arrangement by owner decision of
+  // 2026-11-27 (`VAL-R5DES-004`), because the strip is now a numbered rail.
+  // This clause is amended from "one 24px lucide icon in a 48px well per step"
+  // to "a 36px numeral circle in the sans, with no icon in a filled circle".
   await page.setViewportSize({ width: 1280, height: FOLD });
   await page.goto("/");
 
@@ -173,29 +178,58 @@ test("VAL-R4VIS-001 and VAL-R4VIS-002 — every icon is 24px in a 48px well, dec
 
   for (let index = 0; index < 3; index += 1) {
     const card = cards.nth(index);
-    const well = card.locator("span[aria-hidden='true']").first();
-    await expect(well, `card ${index + 1} has an icon well`).toHaveCount(1);
-    await expect(well).toHaveAttribute("aria-hidden", "true");
+    const numeral = card.getByTestId("step-numeral");
+    await expect(numeral, `card ${index + 1} has one numeral`).toHaveCount(1);
+    await expect(numeral).toHaveAttribute("aria-hidden", "true");
+    await expect(numeral).toHaveText(String(index + 1));
 
-    const wellBox = await boxOf(well);
-    expect(Math.round(wellBox.width), `well ${index + 1} width`).toBe(48);
-    expect(Math.round(wellBox.height), `well ${index + 1} height`).toBe(48);
+    const numeralBox = await boxOf(numeral);
+    expect(Math.round(numeralBox.width), `numeral ${index + 1} width`).toBe(36);
+    expect(Math.round(numeralBox.height), `numeral ${index + 1} height`).toBe(
+      36,
+    );
 
-    const icon = well.locator("svg");
-    await expect(icon, `card ${index + 1} has one icon`).toHaveCount(1);
-    const iconBox = await boxOf(icon);
-    expect(Math.round(iconBox.width), `icon ${index + 1} width`).toBe(24);
-    expect(Math.round(iconBox.height), `icon ${index + 1} height`).toBe(24);
+    // The numeral is a number a reader compares across the three steps, so it
+    // stays in the sans with tabular figures — never the Fraunces heading face.
+    const type = await numeral.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        fontFamily: style.fontFamily,
+        fontVariantNumeric: style.fontVariantNumeric,
+      };
+    });
+    expect(type.fontFamily, `numeral ${index + 1} family`).toMatch(
+      /source[ _-]?sans/i,
+    );
+    expect(type.fontFamily, `numeral ${index + 1} is not Fraunces`).not.toMatch(
+      /fraunces/i,
+    );
+    expect(type.fontVariantNumeric).toBe("tabular-nums");
 
-    // Decoration only: no accessible name, no role of its own, and a visible
-    // heading beside it that says what it means.
-    expect(await icon.getAttribute("aria-hidden")).toBe("true");
-    expect(await icon.getAttribute("aria-label")).toBeNull();
-    expect(await icon.getAttribute("role")).toBeNull();
+    // Decoration only, and no icon: a numeral inside a filled circle holding a
+    // lucide glyph is the pattern round 5 removes from this strip.
+    await expect(card.locator("svg"), `card ${index + 1} carries no icon`).toHaveCount(
+      0,
+    );
+    await expect(
+      card.locator("span.size-12"),
+      `card ${index + 1} carries no 48px icon well`,
+    ).toHaveCount(0);
     await expect(card.getByRole("heading", { level: 3 })).toBeVisible();
   }
 
-  // No photograph of a person, and no second icon pack, on this surface.
+  // The strip's first paragraph is still the step number, not new copy.
+  const firstParagraph = await page.evaluate(() => {
+    const strip = document.querySelector(
+      'main section[aria-label*="three steps" i]',
+    );
+    return (strip?.querySelector("p")?.textContent ?? "").trim();
+  });
+  expect(firstParagraph).toBe("Step 1");
+
+  // Photographs belong to the round-5 photography feature. Until they ship no
+  // image renders on this surface; VAL-R5DES-005 replaces this with the image
+  // contract rather than a weaker claim.
   await expect(page.locator("main img")).toHaveCount(0);
 });
 

@@ -153,7 +153,7 @@ export function TimeCard({
     <li
       data-testid={testId}
       {...dataAttributes}
-      className="rounded-lg border border-line bg-surface p-4 sm:p-5"
+      className="rounded-md border-t border-line bg-surface p-4 sm:p-5"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:gap-5">
         <div className={cn("shrink-0", dayLine ? "sm:w-24" : "sm:w-20")}>

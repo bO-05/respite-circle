@@ -53,7 +53,7 @@ export function CalibrationMissingReport({
         To produce the file this page reads, run{" "}
         <code
           data-testid="calibration-command"
-          className="rounded bg-muted px-1.5 py-0.5 text-base text-ink"
+          className="rounded-sm bg-muted px-1.5 py-0.5 text-base text-ink"
         >
           {command}
         </code>{" "}

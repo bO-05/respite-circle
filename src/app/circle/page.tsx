@@ -156,7 +156,7 @@ export default async function CirclePage({
         <section
           data-testid="board-taken"
           aria-labelledby="board-taken-heading"
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-4 border-t border-line pt-8"
         >
           <div>
             <h2
