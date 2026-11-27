@@ -187,7 +187,7 @@ export default async function CarePage({
                 <p className="mt-1 text-base text-ink-muted">
                   {confirmation.label}
                   {confirmation.volunteerFirstName
-                    ? ` Â· ${confirmation.volunteerFirstName}`
+                    ? ` · ${confirmation.volunteerFirstName}`
                     : ""}
                 </p>
                 <blockquote
