@@ -286,10 +286,10 @@ between tests.
 |---|---|---|
 | `npm run typecheck` | Next typegen and `tsc --noEmit`. | — |
 | `npm run lint` | ESLint with zero warnings, then the copy lint over UI copy, comments, and this README. | — |
-| `npm run test:unit` | Pure domain and component tests; no network. | — |
-| `npm run test:integration` | PostgreSQL invariants: the claim race, gating in SQL, notification absence, verbatim immutability, privacy projections. One worker; about an hour against remote Neon. | `E2E_DATABASE_URL_UNPOOLED`, `RC_DB_BRANCH=e2e` |
+| `npm run test:unit` | Unit tests from `tests/unit` only (60 files, 1097 tests); no network. The seven `tests/component` files run under `npm run test`. | — |
+| `npm run test:integration` | PostgreSQL invariants: the claim race, gating in SQL, notification absence, verbatim immutability, privacy projections. One worker; about 80 minutes against remote Neon (33 files passed plus 1 skipped, 256 passed plus 1 skipped by design). | `E2E_DATABASE_URL_UNPOOLED`, `RC_DB_BRANCH=e2e` |
 | `npm run test` | Unit and component, then integration. | both of the above |
-| `npm run test:e2e` | Playwright with one worker and one retry: the happy path, failure path, role boundaries, safety and personal care, policy, trust pages, privacy payloads, and the parallel claim. Builds production and serves it on 127.0.0.1:3130; about 50 minutes. | `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, `RC_DB_BRANCH=e2e` |
+| `npm run test:e2e` | Playwright with one worker and one retry: the happy path, failure path, role boundaries, safety and personal care, policy, trust pages, privacy payloads, and the parallel claim. Builds production and serves it on 127.0.0.1:3130; about 66 minutes for 207 specs. | `E2E_DATABASE_URL`, `E2E_DATABASE_URL_UNPOOLED`, `RC_DB_BRANCH=e2e` |
 | `npm run verify:production-flow` | The deployed-flow proof: enters as Ruth through the real access link, requires an open claimable card on `/circle`, claims one time through the real claim route, requires the claim on the board and on `/my-claims`, then resets the demo and requires 12 of 12 seed assertions and the `sha256:` seed digest. **The only command that mutates production**; the reset runs in a `finally` block, and it refuses any origin other than the configured production URL. | `RC_DEMO_RESET_TOKEN` in `.env.local` or the shell |
 | `npm run build` | Production build with Turbopack. | — |
 
@@ -594,6 +594,10 @@ licenses:
 
 React, Zod, Radix UI, and Testing Library are MIT; Playwright is Apache-2.0.
 Each package keeps its own copyright and license text in `node_modules`.
+
+Live typed answers come from Mistral, with the Hugging Face router as the
+alternate provider; without a provider key the app runs its own deterministic
+rules engine and labels every result as rules, not AI.
 
 ---
 
